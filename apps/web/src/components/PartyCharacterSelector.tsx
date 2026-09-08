@@ -13,12 +13,35 @@ interface Props {
 export function PartyCharacterSelector({ characters, currentCharacterId, partySlots, currentHuntId, onAdd }: Props) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [position, setPosition] = useState({ top: 0, right: 0 });
   const sockets = useRef<LiveSocket[]>([]);
   const available = characters.filter((character) => character.id !== currentCharacterId);
 
   useEffect(() => () => {
     for (const socket of sockets.current) socket.close();
     sockets.current = [];
+  }, []);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      const outfit = document.querySelector<HTMLElement>('.party-outfit-btn');
+      if (!outfit) return;
+      const rect = outfit.getBoundingClientRect();
+      setPosition({
+        top: Math.round(rect.bottom + 6),
+        right: Math.max(12, Math.round(window.innerWidth - rect.right)),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    const timer = window.setInterval(updatePosition, 1000);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -48,10 +71,10 @@ export function PartyCharacterSelector({ characters, currentCharacterId, partySl
       data-party-selector
       style={{
         position: 'fixed',
-        right: 22,
-        top: 92,
+        top: position.top,
+        right: position.right,
         zIndex: 1000,
-        minWidth: 230,
+        width: 230,
       }}
     >
       <button
