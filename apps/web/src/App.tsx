@@ -5,6 +5,7 @@ import { useLocale } from './i18n/Locale.js';
 import { AuthScreen } from './screens/AuthScreen.js';
 import { GameScreen } from './screens/GameScreen.js';
 import { SelectScreen } from './screens/SelectScreen.js';
+import { PartyCharacterSelector } from './components/PartyCharacterSelector.js';
 
 type Screen = 'boot' | 'auth' | 'select' | 'game';
 
@@ -107,6 +108,15 @@ export function App() {
 
   if (!character) return null;
 
+  const addPartyCharacter = async (characterId: number) => {
+    if (!character.session?.huntId) throw new Error('Entre em uma cave primeiro.');
+    await api.startHunt(characterId, character.session.huntId, 1);
+    await loadRoster();
+    const refreshed = await api.character(character.id);
+    setCharacter(refreshed.character);
+    setSettlement(refreshed.settlement);
+  };
+
   return (
     <>
       {hadSocket && socketStatus !== 'open' && (
@@ -136,6 +146,13 @@ export function App() {
         onClaimed={() => {
           void loadRoster();
         }}
+      />
+      <PartyCharacterSelector
+        characters={characters}
+        currentCharacterId={character.id}
+        partySlots={character.partySlots ?? 1}
+        currentHuntId={character.session?.huntId ?? null}
+        onAdd={addPartyCharacter}
       />
     </>
   );
