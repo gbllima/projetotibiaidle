@@ -1,0 +1,2298 @@
+[
+  {
+    "id": "abyssador",
+    "monsterId": "abyssador",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "adlerauge",
+    "monsterId": "adlerauge",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "ahau",
+    "monsterId": "ahau",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "alptramun",
+    "monsterId": "alptramun",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 250,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "amenef-the-burning",
+    "monsterId": "amenef the burning",
+    "category": "boss",
+    "location": "Issavi",
+    "minLevel": 150,
+    "description": "Archfoe em Issavi. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "ancient-spawn-of-morgathla",
+    "monsterId": "ancient spawn of morgathla",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 400,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "annihilon",
+    "monsterId": "annihilon",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "anomaly",
+    "monsterId": "anomaly",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 250,
+    "description": "Archfoe em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "arachir-the-ancient-one",
+    "monsterId": "arachir the ancient one",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "arbaziloth",
+    "monsterId": "arbaziloth",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "arthei",
+    "monsterId": "arthei",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "arthom-the-hunter",
+    "monsterId": "arthom the hunter",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "ashmunrah",
+    "monsterId": "ashmunrah",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "ayana-the-crimson-curse",
+    "monsterId": "ayana the crimson curse",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "bakragore",
+    "monsterId": "bakragore",
+    "category": "boss",
+    "location": "Rotten Blood",
+    "minLevel": 500,
+    "description": "Nemesis em Rotten Blood. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "barbaria",
+    "monsterId": "barbaria",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "battlemaster-zunzu",
+    "monsterId": "battlemaster zunzu",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "bibby-bloodbath",
+    "monsterId": "bibby bloodbath",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "big-boss-trolliver",
+    "monsterId": "big boss trolliver",
+    "category": "raid",
+    "location": "Edron",
+    "minLevel": 20,
+    "description": "Nemesis — raid de mundo em Edron. Spawn anunciado ou raro."
+  },
+  {
+    "id": "black-knight",
+    "monsterId": "black knight",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "black-vixen",
+    "monsterId": "black vixen",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "blight-mariner",
+    "monsterId": "blight mariner",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "bloodback",
+    "monsterId": "bloodback",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "boogey",
+    "monsterId": "boogey",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "boreth",
+    "monsterId": "boreth",
+    "category": "boss",
+    "location": "Vengoth",
+    "minLevel": 20,
+    "description": "Bane em Vengoth. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "bragrumol",
+    "monsterId": "bragrumol",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "brain-head",
+    "monsterId": "brain head",
+    "category": "boss",
+    "location": "Feaster of Souls",
+    "minLevel": 200,
+    "description": "Archfoe em Feaster of Souls. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "brokul",
+    "monsterId": "brokul",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "brother-worm",
+    "monsterId": "brother worm",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "brutus-bloodbeard",
+    "monsterId": "brutus bloodbeard",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "bullwark",
+    "monsterId": "bullwark",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "captain-jones",
+    "monsterId": "captain jones",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "chagorz",
+    "monsterId": "chagorz",
+    "category": "boss",
+    "location": "Rotten Blood",
+    "minLevel": 400,
+    "description": "Archfoe em Rotten Blood. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "chayenne",
+    "monsterId": "chayenne",
+    "category": "event",
+    "location": "Store Event",
+    "minLevel": 200,
+    "description": "Boss — evento especial (Store Event)."
+  },
+  {
+    "id": "chikhaton",
+    "monsterId": "chikhaton",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "chizzoron-the-distorter",
+    "monsterId": "chizzoron the distorter",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "clavius",
+    "monsterId": "clavius",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "count-vlarkorth",
+    "monsterId": "count vlarkorth",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 200,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "countess-sorrow",
+    "monsterId": "countess sorrow",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "court-warlock",
+    "monsterId": "court warlock",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "cublarc-the-plunderer",
+    "monsterId": "cublarc the plunderer",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "custodian",
+    "monsterId": "custodian",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "darkfang",
+    "monsterId": "darkfang",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "dazed-leaf-golem",
+    "monsterId": "dazed leaf golem",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "deadeye-devious",
+    "monsterId": "deadeye devious",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "death-priest-shargon",
+    "monsterId": "death priest shargon",
+    "category": "boss",
+    "location": "Dark Cathedral",
+    "minLevel": 200,
+    "description": "Bane em Dark Cathedral. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "deathstrike",
+    "monsterId": "deathstrike",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "deep-terror",
+    "monsterId": "deep terror",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "demodras",
+    "monsterId": "demodras",
+    "category": "boss",
+    "location": "Darashia",
+    "minLevel": 50,
+    "description": "Boss em Darashia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "dharalion",
+    "monsterId": "dharalion",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "diblis-the-fair",
+    "monsterId": "diblis the fair",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "dipthrah",
+    "monsterId": "dipthrah",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "dirtbeard",
+    "monsterId": "dirtbeard",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "diseased-bill",
+    "monsterId": "diseased bill",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "diseased-dan",
+    "monsterId": "diseased dan",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "diseased-fred",
+    "monsterId": "diseased fred",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "doctor-perhaps",
+    "monsterId": "doctor perhaps",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "dracola",
+    "monsterId": "dracola",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "dreadful-disruptor",
+    "monsterId": "dreadful disruptor",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "dreadmaw",
+    "monsterId": "dreadmaw",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "drume",
+    "monsterId": "drume",
+    "category": "boss",
+    "location": "Bounac",
+    "minLevel": 200,
+    "description": "Archfoe em Bounac. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "duke-krule",
+    "monsterId": "duke krule",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 200,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "earl-osam",
+    "monsterId": "earl osam",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 200,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "ekatrix",
+    "monsterId": "ekatrix",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "eldritch-dragon-lord",
+    "monsterId": "eldritch dragon lord",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "elvira-hammerthrust",
+    "monsterId": "elvira hammerthrust",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "eradicator",
+    "monsterId": "eradicator",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 250,
+    "description": "Archfoe em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "evil-mastermind",
+    "monsterId": "evil mastermind",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "faceless-bane",
+    "monsterId": "faceless bane",
+    "category": "boss",
+    "location": "Bounac",
+    "minLevel": 150,
+    "description": "Archfoe em Bounac. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "feroxa",
+    "monsterId": "feroxa",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "ferumbras",
+    "monsterId": "ferumbras",
+    "category": "raid",
+    "location": "Ferumbras Tower",
+    "minLevel": 200,
+    "description": "Nemesis — raid de mundo em Ferumbras Tower. Spawn anunciado ou raro."
+  },
+  {
+    "id": "ferumbras-mortal-shell",
+    "monsterId": "ferumbras mortal shell",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 400,
+    "description": "Boss em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "fleabringer",
+    "monsterId": "fleabringer",
+    "category": "event",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis — evento especial (Tibia)."
+  },
+  {
+    "id": "fleshslicer",
+    "monsterId": "fleshslicer",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "foreman-kneebiter",
+    "monsterId": "foreman kneebiter",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "furyosa",
+    "monsterId": "furyosa",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "gaffir",
+    "monsterId": "gaffir",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "gaz-haragoth",
+    "monsterId": "gaz'haragoth",
+    "category": "raid",
+    "location": "Rathleton",
+    "minLevel": 300,
+    "description": "Nemesis — raid de mundo em Rathleton. Spawn anunciado ou raro."
+  },
+  {
+    "id": "gelidrazah-the-frozen",
+    "monsterId": "gelidrazah the frozen",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "general-murius",
+    "monsterId": "general murius",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "ghazbaran",
+    "monsterId": "ghazbaran",
+    "category": "raid",
+    "location": "Edron",
+    "minLevel": 200,
+    "description": "Nemesis — raid de mundo em Edron. Spawn anunciado ou raro."
+  },
+  {
+    "id": "ghulosh",
+    "monsterId": "ghulosh",
+    "category": "boss",
+    "location": "Secret Library",
+    "minLevel": 250,
+    "description": "Archfoe em Secret Library. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "glitterscale",
+    "monsterId": "glitterscale",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "glooth-fairy",
+    "monsterId": "glooth fairy",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "gnomevil",
+    "monsterId": "gnomevil",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "golgordan",
+    "monsterId": "golgordan",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "gorzindel",
+    "monsterId": "gorzindel",
+    "category": "boss",
+    "location": "Secret Library",
+    "minLevel": 250,
+    "description": "Archfoe em Secret Library. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "goshnar-s-cruelty",
+    "monsterId": "goshnar's cruelty",
+    "category": "boss",
+    "location": "Soul War",
+    "minLevel": 250,
+    "description": "Archfoe em Soul War. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "goshnar-s-greed",
+    "monsterId": "goshnar's greed",
+    "category": "boss",
+    "location": "Soul War",
+    "minLevel": 250,
+    "description": "Archfoe em Soul War. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "goshnar-s-hatred",
+    "monsterId": "goshnar's hatred",
+    "category": "boss",
+    "location": "Soul War",
+    "minLevel": 250,
+    "description": "Archfoe em Soul War. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "goshnar-s-malice",
+    "monsterId": "goshnar's malice",
+    "category": "boss",
+    "location": "Soul War",
+    "minLevel": 250,
+    "description": "Archfoe em Soul War. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "goshnar-s-megalomania-green",
+    "monsterId": "goshnar's megalomania green",
+    "category": "boss",
+    "location": "Soul War",
+    "minLevel": 400,
+    "description": "Nemesis em Soul War. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "goshnar-s-spite",
+    "monsterId": "goshnar's spite",
+    "category": "boss",
+    "location": "Soul War",
+    "minLevel": 250,
+    "description": "Archfoe em Soul War. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "gralvalon",
+    "monsterId": "gralvalon",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "grand-canon-dominus",
+    "monsterId": "grand canon dominus",
+    "category": "boss",
+    "location": "Falcon Bastion",
+    "minLevel": 100,
+    "description": "Bane em Falcon Bastion. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "grand-chaplain-gaunder",
+    "monsterId": "grand chaplain gaunder",
+    "category": "boss",
+    "location": "Falcon Bastion",
+    "minLevel": 100,
+    "description": "Bane em Falcon Bastion. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "grand-commander-soeren",
+    "monsterId": "grand commander soeren",
+    "category": "boss",
+    "location": "Falcon Bastion",
+    "minLevel": 100,
+    "description": "Bane em Falcon Bastion. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "grand-master-oberon",
+    "monsterId": "grand master oberon",
+    "category": "boss",
+    "location": "Falcon Bastion",
+    "minLevel": 200,
+    "description": "Archfoe em Falcon Bastion. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "grand-mother-foulscale",
+    "monsterId": "grand mother foulscale",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "grandfather-tridian",
+    "monsterId": "grandfather tridian",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "gravelord-oshuran",
+    "monsterId": "gravelord oshuran",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "groam",
+    "monsterId": "groam",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "grorlam",
+    "monsterId": "grorlam",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "guard-captain-quaid",
+    "monsterId": "guard captain quaid",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "hairman-the-huge",
+    "monsterId": "hairman the huge",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "hellgorak",
+    "monsterId": "hellgorak",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "heoni",
+    "monsterId": "heoni",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "high-templar-cobrass",
+    "monsterId": "high templar cobrass",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "hirintror",
+    "monsterId": "hirintror",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "horestis",
+    "monsterId": "horestis",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "ichgahal",
+    "monsterId": "ichgahal",
+    "category": "boss",
+    "location": "Rotten Blood",
+    "minLevel": 400,
+    "description": "Archfoe em Rotten Blood. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "inkwing",
+    "monsterId": "inkwing",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "irgix-the-flimsy",
+    "monsterId": "irgix the flimsy",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "izcandar-champion-of-summer",
+    "monsterId": "izcandar champion of summer",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 200,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "izcandar-champion-of-winter",
+    "monsterId": "izcandar champion of winter",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 200,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "izcandar-the-banished",
+    "monsterId": "izcandar the banished",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 250,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "jailer",
+    "monsterId": "jailer",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "jaul",
+    "monsterId": "jaul",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "jesse-the-wicked",
+    "monsterId": "jesse the wicked",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "kalyassa",
+    "monsterId": "kalyassa",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "katex-blood-tongue",
+    "monsterId": "katex blood tongue",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "king-zelos",
+    "monsterId": "king zelos",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 300,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "koshei-the-deathless",
+    "monsterId": "koshei the deathless",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "kroazur",
+    "monsterId": "kroazur",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "lady-tenebris",
+    "monsterId": "lady tenebris",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 200,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "latrivan",
+    "monsterId": "latrivan",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "lersatio",
+    "monsterId": "lersatio",
+    "category": "boss",
+    "location": "Vengoth",
+    "minLevel": 20,
+    "description": "Bane em Vengoth. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "lethal-lissy",
+    "monsterId": "lethal lissy",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "leviathan",
+    "monsterId": "leviathan",
+    "category": "raid",
+    "location": "Svargrond",
+    "minLevel": 100,
+    "description": "Boss — raid de mundo em Svargrond. Spawn anunciado ou raro."
+  },
+  {
+    "id": "lisa",
+    "monsterId": "lisa",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "lloyd",
+    "monsterId": "lloyd",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 200,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "lokathmor",
+    "monsterId": "lokathmor",
+    "category": "boss",
+    "location": "Secret Library",
+    "minLevel": 250,
+    "description": "Archfoe em Secret Library. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "lord-azaram",
+    "monsterId": "lord azaram",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 250,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "lord-of-the-elements",
+    "monsterId": "lord of the elements",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "lord-retro",
+    "monsterId": "lord retro",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "mad-mage",
+    "monsterId": "mad mage",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "madareth",
+    "monsterId": "madareth",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "magma-bubble",
+    "monsterId": "magma bubble",
+    "category": "boss",
+    "location": "Primal Ordeal",
+    "minLevel": 300,
+    "description": "Archfoe em Primal Ordeal. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "mahrdis",
+    "monsterId": "mahrdis",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "malofur-mangrinder",
+    "monsterId": "malofur mangrinder",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 250,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "malvaroth",
+    "monsterId": "malvaroth",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "man-in-the-cave",
+    "monsterId": "man in the cave",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "marziel",
+    "monsterId": "marziel",
+    "category": "boss",
+    "location": "Vengoth",
+    "minLevel": 20,
+    "description": "Bane em Vengoth. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "massacre",
+    "monsterId": "massacre",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "mawhawk",
+    "monsterId": "mawhawk",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "maxxenius",
+    "monsterId": "maxxenius",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 250,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "mazoran",
+    "monsterId": "mazoran",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "mazzinor",
+    "monsterId": "mazzinor",
+    "category": "boss",
+    "location": "Secret Library",
+    "minLevel": 250,
+    "description": "Archfoe em Secret Library. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "megasylvan-yselda",
+    "monsterId": "megasylvan yselda",
+    "category": "boss",
+    "location": "Bounac",
+    "minLevel": 150,
+    "description": "Archfoe em Bounac. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "melting-frozen-horror",
+    "monsterId": "melting frozen horror",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 200,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "mephiles",
+    "monsterId": "mephiles",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "michael-the-stalwart",
+    "monsterId": "michael the stalwart",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "minishabaal",
+    "monsterId": "minishabaal",
+    "category": "event",
+    "location": "Halloween",
+    "minLevel": 100,
+    "description": "Boss — evento especial (Halloween)."
+  },
+  {
+    "id": "mitmah-vanguard",
+    "monsterId": "mitmah vanguard",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "monstor",
+    "monsterId": "monstor",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "morgaroth",
+    "monsterId": "morgaroth",
+    "category": "raid",
+    "location": "Edron",
+    "minLevel": 150,
+    "description": "Nemesis — raid de mundo em Edron. Spawn anunciado ou raro."
+  },
+  {
+    "id": "morguthis",
+    "monsterId": "morguthis",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "mornenion",
+    "monsterId": "mornenion",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "morshabaal",
+    "monsterId": "morshabaal",
+    "category": "raid",
+    "location": "Ab'Dendriel",
+    "minLevel": 400,
+    "description": "Nemesis — raid de mundo em Ab'Dendriel. Spawn anunciado ou raro."
+  },
+  {
+    "id": "mozradek",
+    "monsterId": "mozradek",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "mr-punish",
+    "monsterId": "mr. punish",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "murcion",
+    "monsterId": "murcion",
+    "category": "boss",
+    "location": "Rotten Blood",
+    "minLevel": 400,
+    "description": "Archfoe em Rotten Blood. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "necropharus",
+    "monsterId": "necropharus",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "neferi-the-spy",
+    "monsterId": "neferi the spy",
+    "category": "boss",
+    "location": "Issavi",
+    "minLevel": 150,
+    "description": "Archfoe em Issavi. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "obujos",
+    "monsterId": "obujos",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "ocyakao",
+    "monsterId": "ocyakao",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "omrafir",
+    "monsterId": "omrafir",
+    "category": "raid",
+    "location": "Roshamuul",
+    "minLevel": 250,
+    "description": "Nemesis — raid de mundo em Roshamuul. Spawn anunciado ou raro."
+  },
+  {
+    "id": "omruc",
+    "monsterId": "omruc",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "oodok-witchmaster",
+    "monsterId": "oodok witchmaster",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "orshabaal",
+    "monsterId": "orshabaal",
+    "category": "raid",
+    "location": "Edron",
+    "minLevel": 150,
+    "description": "Nemesis — raid de mundo em Edron. Spawn anunciado ou raro."
+  },
+  {
+    "id": "outburst",
+    "monsterId": "outburst",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 250,
+    "description": "Archfoe em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "overseer-osverger",
+    "monsterId": "overseer osverger",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "plagirath",
+    "monsterId": "plagirath",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "plagueroot",
+    "monsterId": "plagueroot",
+    "category": "boss",
+    "location": "Dream Courts",
+    "minLevel": 250,
+    "description": "Nemesis em Dream Courts. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "preceptor-lazare",
+    "monsterId": "preceptor lazare",
+    "category": "boss",
+    "location": "Falcon Bastion",
+    "minLevel": 100,
+    "description": "Bane em Falcon Bastion. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "professor-maxxen",
+    "monsterId": "professor maxxen",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "ragiaz",
+    "monsterId": "ragiaz",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "raging-mage",
+    "monsterId": "raging mage",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "rahemos",
+    "monsterId": "rahemos",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "ratmiral-blackwhiskers",
+    "monsterId": "ratmiral blackwhiskers",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "raxias",
+    "monsterId": "raxias",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "razzagorn",
+    "monsterId": "razzagorn",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "realityquake",
+    "monsterId": "realityquake",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 200,
+    "description": "Archfoe em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "robby-the-reckless",
+    "monsterId": "robby the reckless",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "ron-the-ripper",
+    "monsterId": "ron the ripper",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "rotworm-queen",
+    "monsterId": "rotworm queen",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "rukor-zad",
+    "monsterId": "rukor zad",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "rupture",
+    "monsterId": "rupture",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 250,
+    "description": "Archfoe em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "scarlett-etzel",
+    "monsterId": "scarlett etzel",
+    "category": "boss",
+    "location": "Bounac",
+    "minLevel": 150,
+    "description": "Archfoe em Bounac. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "shadowpelt",
+    "monsterId": "shadowpelt",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sharpclaw",
+    "monsterId": "sharpclaw",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "shulgrax",
+    "monsterId": "shulgrax",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sir-baeloc",
+    "monsterId": "sir baeloc",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 200,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sir-leonard",
+    "monsterId": "sir leonard",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "sir-leopold",
+    "monsterId": "sir leopold",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sir-nictros",
+    "monsterId": "sir nictros",
+    "category": "boss",
+    "location": "Grave Danger",
+    "minLevel": 200,
+    "description": "Archfoe em Grave Danger. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sir-valorcrest",
+    "monsterId": "sir valorcrest",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sister-hetai",
+    "monsterId": "sister hetai",
+    "category": "boss",
+    "location": "Issavi",
+    "minLevel": 150,
+    "description": "Archfoe em Issavi. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "smuggler-baron-silvertoe",
+    "monsterId": "smuggler baron silvertoe",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "soul-of-dragonking-zyrtarch",
+    "monsterId": "soul of dragonking zyrtarch",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "srezz-yellow-eyes",
+    "monsterId": "srezz yellow eyes",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "stonecracker",
+    "monsterId": "stonecracker",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "sugar-daddy",
+    "monsterId": "sugar daddy",
+    "category": "boss",
+    "location": "Candia",
+    "minLevel": 100,
+    "description": "Bane em Candia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "sugar-mommy",
+    "monsterId": "sugar mommy",
+    "category": "boss",
+    "location": "Candia",
+    "minLevel": 100,
+    "description": "Bane em Candia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "tanjis",
+    "monsterId": "tanjis",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "tarbaz",
+    "monsterId": "tarbaz",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "tazhadur",
+    "monsterId": "tazhadur",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "tentugly-s-head",
+    "monsterId": "tentugly's head",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "thalas",
+    "monsterId": "thalas",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "thawing-dragon-lord",
+    "monsterId": "thawing dragon lord",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-abomination",
+    "monsterId": "the abomination",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 300,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "the-baron-from-below",
+    "monsterId": "the baron from below",
+    "category": "boss",
+    "location": "Warzone",
+    "minLevel": 250,
+    "description": "Bane em Warzone. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-big-bad-one",
+    "monsterId": "the big bad one",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-blazing-rose",
+    "monsterId": "the blazing rose",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-blazing-time-guardian",
+    "monsterId": "the blazing time guardian",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 200,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-blightfather",
+    "monsterId": "the blightfather",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-bloodweb",
+    "monsterId": "the bloodweb",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-brainstealer",
+    "monsterId": "the brainstealer",
+    "category": "boss",
+    "location": "Podzilla",
+    "minLevel": 250,
+    "description": "Archfoe em Podzilla. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-count-of-the-core",
+    "monsterId": "the count of the core",
+    "category": "boss",
+    "location": "Warzone",
+    "minLevel": 250,
+    "description": "Bane em Warzone. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-diamond-blossom",
+    "monsterId": "the diamond blossom",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 150,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-dread-maiden",
+    "monsterId": "the dread maiden",
+    "category": "boss",
+    "location": "Feaster of Souls",
+    "minLevel": 250,
+    "description": "Archfoe em Feaster of Souls. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-duke-of-the-depths",
+    "monsterId": "the duke of the depths",
+    "category": "boss",
+    "location": "Warzone",
+    "minLevel": 250,
+    "description": "Bane em Warzone. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-enraged-thorn-knight",
+    "monsterId": "the enraged thorn knight",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 200,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-evil-eye",
+    "monsterId": "the evil eye",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-false-god",
+    "monsterId": "the false god",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-fear-feaster",
+    "monsterId": "the fear feaster",
+    "category": "boss",
+    "location": "Feaster of Souls",
+    "minLevel": 250,
+    "description": "Archfoe em Feaster of Souls. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-first-dragon",
+    "monsterId": "the first dragon",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 150,
+    "description": "Nemesis em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-frog-prince",
+    "monsterId": "the frog prince",
+    "category": "event",
+    "location": "Thais",
+    "minLevel": 20,
+    "description": "Nemesis — evento especial (Thais)."
+  },
+  {
+    "id": "the-gravedigger",
+    "monsterId": "the gravedigger",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-handmaiden",
+    "monsterId": "the handmaiden",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "the-horned-fox",
+    "monsterId": "the horned fox",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-imperor",
+    "monsterId": "the imperor",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "the-last-lore-keeper",
+    "monsterId": "the last lore keeper",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 300,
+    "description": "Nemesis em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-lily-of-night",
+    "monsterId": "the lily of night",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 100,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-lord-of-the-lice",
+    "monsterId": "the lord of the lice",
+    "category": "boss",
+    "location": "Warzone",
+    "minLevel": 200,
+    "description": "Bane em Warzone. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-monster",
+    "monsterId": "the monster",
+    "category": "boss",
+    "location": "Ingol",
+    "minLevel": 150,
+    "description": "Archfoe em Ingol. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-mutated-pumpkin",
+    "monsterId": "the mutated pumpkin",
+    "category": "event",
+    "location": "Halloween",
+    "minLevel": 300,
+    "description": "Nemesis — evento especial (Halloween)."
+  },
+  {
+    "id": "the-nightmare-beast",
+    "monsterId": "the nightmare beast",
+    "category": "boss",
+    "location": "Feaster of Souls",
+    "minLevel": 400,
+    "description": "Archfoe em Feaster of Souls. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-old-widow",
+    "monsterId": "the old widow",
+    "category": "boss",
+    "location": "Plains of Havoc",
+    "minLevel": 50,
+    "description": "Boss em Plains of Havoc. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-pale-count",
+    "monsterId": "the pale count",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 150,
+    "description": "Nemesis em Drefia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-pale-worm",
+    "monsterId": "the pale worm",
+    "category": "boss",
+    "location": "Feaster of Souls",
+    "minLevel": 300,
+    "description": "Archfoe em Feaster of Souls. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-percht-queen",
+    "monsterId": "the percht queen",
+    "category": "event",
+    "location": "Winterlight Solstice",
+    "minLevel": 50,
+    "description": "Nemesis — evento especial (Winterlight Solstice)."
+  },
+  {
+    "id": "the-plasmother",
+    "monsterId": "the plasmother",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "the-ravager",
+    "monsterId": "the ravager",
+    "category": "boss",
+    "location": "Hive",
+    "minLevel": 150,
+    "description": "Bane em Hive. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-rootkraken",
+    "monsterId": "the rootkraken",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-scourge-of-oblivion",
+    "monsterId": "the scourge of oblivion",
+    "category": "boss",
+    "location": "Secret Library",
+    "minLevel": 400,
+    "description": "Archfoe em Secret Library. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-shatterer",
+    "monsterId": "the shatterer",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "the-snapper",
+    "monsterId": "the snapper",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-souldespoiler",
+    "monsterId": "the souldespoiler",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 250,
+    "description": "Archfoe em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-source-of-corruption",
+    "monsterId": "the source of corruption",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 300,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-time-guardian",
+    "monsterId": "the time guardian",
+    "category": "boss",
+    "location": "Forgotten Knowledge",
+    "minLevel": 200,
+    "description": "Archfoe em Forgotten Knowledge. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-unarmored-voidborn",
+    "monsterId": "the unarmored voidborn",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-unwelcome",
+    "monsterId": "the unwelcome",
+    "category": "boss",
+    "location": "Feaster of Souls",
+    "minLevel": 250,
+    "description": "Archfoe em Feaster of Souls. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-voice-of-ruin",
+    "monsterId": "the voice of ruin",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "the-welter",
+    "monsterId": "the welter",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "thul",
+    "monsterId": "thul",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "timira-the-many-headed",
+    "monsterId": "timira the many-headed",
+    "category": "boss",
+    "location": "Marapur",
+    "minLevel": 200,
+    "description": "Archfoe em Marapur. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "tiquandas-revenge",
+    "monsterId": "tiquandas revenge",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Boss em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "twisterror",
+    "monsterId": "twisterror",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "tyrn",
+    "monsterId": "tyrn",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "unaz-the-mean",
+    "monsterId": "unaz the mean",
+    "category": "boss",
+    "location": "Issavi",
+    "minLevel": 150,
+    "description": "Archfoe em Issavi. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "urmahlullu-the-immaculate",
+    "monsterId": "urmahlullu the immaculate",
+    "category": "boss",
+    "location": "Kilmaresh",
+    "minLevel": 300,
+    "description": "Archfoe em Kilmaresh. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "urmahlullu-the-weakened",
+    "monsterId": "urmahlullu the weakened",
+    "category": "boss",
+    "location": "Kilmaresh",
+    "minLevel": 200,
+    "description": "Archfoe em Kilmaresh. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "ushuriel",
+    "monsterId": "ushuriel",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "utua-stone-sting",
+    "monsterId": "utua stone sting",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "vashresamun",
+    "monsterId": "vashresamun",
+    "category": "boss",
+    "location": "Drefia",
+    "minLevel": 50,
+    "description": "Bane em Drefia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "vemiath",
+    "monsterId": "vemiath",
+    "category": "boss",
+    "location": "Rotten Blood",
+    "minLevel": 400,
+    "description": "Archfoe em Rotten Blood. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "vladrukh",
+    "monsterId": "vladrukh",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 250,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "vok-the-freakish",
+    "monsterId": "vok the freakish",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "warlord-ruzad",
+    "monsterId": "warlord ruzad",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "white-pale",
+    "monsterId": "white pale",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "willi-wasp",
+    "monsterId": "willi wasp",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "world-devourer",
+    "monsterId": "world devourer",
+    "category": "boss",
+    "location": "Heart of Destruction",
+    "minLevel": 150,
+    "description": "Nemesis em Heart of Destruction. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "wrathful-archivist",
+    "monsterId": "wrathful archivist",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "xenia",
+    "monsterId": "xenia",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "xogixath",
+    "monsterId": "xogixath",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "yaga-the-crone",
+    "monsterId": "yaga the crone",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "yakchal",
+    "monsterId": "yakchal",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "yirkas-blue-scales",
+    "monsterId": "yirkas blue scales",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "zamulosh",
+    "monsterId": "zamulosh",
+    "category": "boss",
+    "location": "Ferumbras Ascendant",
+    "minLevel": 250,
+    "description": "Archfoe em Ferumbras Ascendant. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "zarabustor",
+    "monsterId": "zarabustor",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 50,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "zevelon-duskbringer",
+    "monsterId": "zevelon duskbringer",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "zomba",
+    "monsterId": "zomba",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 20,
+    "description": "Nemesis em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "zorvorax",
+    "monsterId": "zorvorax",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Archfoe em Tibia. Boss de alavanca com cooldown de 20 horas."
+  },
+  {
+    "id": "zugurosh",
+    "monsterId": "zugurosh",
+    "category": "boss",
+    "location": "Tibia",
+    "minLevel": 200,
+    "description": "Bane em Tibia. Pode ser morto várias vezes em 20h (Bosstiary)."
+  },
+  {
+    "id": "zulazza-the-corruptor",
+    "monsterId": "zulazza the corruptor",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 150,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  },
+  {
+    "id": "zushuka",
+    "monsterId": "zushuka",
+    "category": "raid",
+    "location": "Tibia",
+    "minLevel": 100,
+    "description": "Nemesis — raid de mundo em Tibia. Spawn anunciado ou raro."
+  }
+]

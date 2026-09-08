@@ -1,0 +1,2263 @@
+[
+  {
+    "id": "outfit_citizen",
+    "name": "Citizen",
+    "coins": 50,
+    "male": 128,
+    "female": 136,
+    "outfit": 128,
+    "premium": false,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_hunter",
+    "name": "Hunter",
+    "coins": 80,
+    "male": 129,
+    "female": 137,
+    "outfit": 129,
+    "premium": false,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_knight",
+    "name": "Knight",
+    "coins": 80,
+    "male": 131,
+    "female": 139,
+    "outfit": 131,
+    "premium": false,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_mage",
+    "name": "Mage",
+    "coins": 80,
+    "male": 130,
+    "female": 138,
+    "outfit": 130,
+    "premium": false,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_jersey",
+    "name": "Jersey",
+    "coins": 100,
+    "male": 619,
+    "female": 620,
+    "outfit": 619,
+    "premium": true,
+    "from": "default",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_recruiter",
+    "name": "Recruiter",
+    "coins": 100,
+    "male": 746,
+    "female": 745,
+    "outfit": 746,
+    "premium": false,
+    "from": "default",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_summoner",
+    "name": "Summoner",
+    "coins": 120,
+    "male": 133,
+    "female": 141,
+    "outfit": 133,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_warrior",
+    "name": "Warrior",
+    "coins": 120,
+    "male": 134,
+    "female": 142,
+    "outfit": 134,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_barbarian",
+    "name": "Barbarian",
+    "coins": 150,
+    "male": 143,
+    "female": 147,
+    "outfit": 143,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_druid",
+    "name": "Druid",
+    "coins": 150,
+    "male": 144,
+    "female": 148,
+    "outfit": 144,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_nobleman",
+    "name": "Nobleman",
+    "coins": 150,
+    "male": 132,
+    "female": null,
+    "outfit": 132,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_noblewoman",
+    "name": "Noblewoman",
+    "coins": 150,
+    "male": null,
+    "female": 140,
+    "outfit": 140,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_oriental",
+    "name": "Oriental",
+    "coins": 150,
+    "male": 146,
+    "female": 150,
+    "outfit": 146,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_wizard",
+    "name": "Wizard",
+    "coins": 150,
+    "male": 145,
+    "female": 149,
+    "outfit": 145,
+    "premium": true,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_champion",
+    "name": "Champion",
+    "coins": 570,
+    "male": 633,
+    "female": 632,
+    "outfit": 633,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_seaweaver",
+    "name": "Seaweaver",
+    "coins": 570,
+    "male": 733,
+    "female": 732,
+    "outfit": 733,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_arbalester",
+    "name": "Arbalester",
+    "coins": 600,
+    "male": 1449,
+    "female": 1450,
+    "outfit": 1449,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_armoured_archer",
+    "name": "Armoured Archer",
+    "coins": 600,
+    "male": 1618,
+    "female": 1619,
+    "outfit": 1618,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_bat_knight",
+    "name": "Bat Knight",
+    "coins": 600,
+    "male": 1874,
+    "female": 1875,
+    "outfit": 1874,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_beekeeper",
+    "name": "Beekeeper",
+    "coins": 600,
+    "male": 1776,
+    "female": 1777,
+    "outfit": 1776,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_blade_dancer",
+    "name": "Blade Dancer",
+    "coins": 600,
+    "male": 1745,
+    "female": 1746,
+    "outfit": 1745,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_breezy_garb",
+    "name": "Breezy Garb",
+    "coins": 600,
+    "male": 1245,
+    "female": 1246,
+    "outfit": 1245,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_celestial_avenger",
+    "name": "Celestial Avenger",
+    "coins": 600,
+    "male": 1725,
+    "female": 1726,
+    "outfit": 1725,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_darklight_evoker",
+    "name": "Darklight Evoker",
+    "coins": 600,
+    "male": 1675,
+    "female": 1676,
+    "outfit": 1675,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_death_herald",
+    "name": "Death Herald",
+    "coins": 600,
+    "male": 667,
+    "female": 666,
+    "outfit": 667,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_doom_knight",
+    "name": "Doom Knight",
+    "coins": 600,
+    "male": 1713,
+    "female": 1714,
+    "outfit": 1713,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_formal_dress",
+    "name": "Formal Dress",
+    "coins": 600,
+    "male": 1460,
+    "female": 1461,
+    "outfit": 1460,
+    "premium": true,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_ghost_blade",
+    "name": "Ghost Blade",
+    "coins": 600,
+    "male": 1489,
+    "female": 1490,
+    "outfit": 1489,
+    "premium": true,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_merry_garb",
+    "name": "Merry Garb",
+    "coins": 600,
+    "male": 1382,
+    "female": 1383,
+    "outfit": 1382,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_moth_cape",
+    "name": "Moth Cape",
+    "coins": 600,
+    "male": 1338,
+    "female": 1339,
+    "outfit": 1338,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_owl_keeper",
+    "name": "Owl Keeper",
+    "coins": 600,
+    "male": 1173,
+    "female": 1174,
+    "outfit": 1173,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_retro_nobleman",
+    "name": "Retro Nobleman",
+    "coins": 600,
+    "male": 966,
+    "female": null,
+    "outfit": 966,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_retro_noblewoman",
+    "name": "Retro Noblewoman",
+    "coins": 600,
+    "male": null,
+    "female": 967,
+    "outfit": 967,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_royal_costume",
+    "name": "Royal Costume",
+    "coins": 600,
+    "male": 1457,
+    "female": 1456,
+    "outfit": 1457,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_sea_dog",
+    "name": "Sea Dog",
+    "coins": 600,
+    "male": 750,
+    "female": 749,
+    "outfit": 750,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_shadowlotus_disciple",
+    "name": "Shadowlotus Disciple",
+    "coins": 600,
+    "male": 1581,
+    "female": 1582,
+    "outfit": 1581,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_siege_master",
+    "name": "Siege Master",
+    "coins": 600,
+    "male": 1051,
+    "female": 1050,
+    "outfit": 1051,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_sinister_archer",
+    "name": "Sinister Archer",
+    "coins": 600,
+    "male": 1102,
+    "female": 1103,
+    "outfit": 1102,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_spirit_caller",
+    "name": "Spirit Caller",
+    "coins": 600,
+    "male": 699,
+    "female": 698,
+    "outfit": 699,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_trailblazer",
+    "name": "Trailblazer",
+    "coins": 600,
+    "male": 1292,
+    "female": 1293,
+    "outfit": 1292,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_ceremonial_garb",
+    "name": "Ceremonial Garb",
+    "coins": 750,
+    "male": 695,
+    "female": 694,
+    "outfit": 695,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_conjurer",
+    "name": "Conjurer",
+    "coins": 750,
+    "male": 634,
+    "female": 635,
+    "outfit": 634,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_entrepreneur",
+    "name": "Entrepreneur",
+    "coins": 750,
+    "male": 472,
+    "female": 471,
+    "outfit": 472,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_fencer",
+    "name": "Fencer",
+    "coins": 750,
+    "male": 1575,
+    "female": 1576,
+    "outfit": 1575,
+    "premium": true,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_forest_warden",
+    "name": "Forest Warden",
+    "coins": 750,
+    "male": 1415,
+    "female": 1416,
+    "outfit": 1415,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_frost_tracer",
+    "name": "Frost Tracer",
+    "coins": 750,
+    "male": 1612,
+    "female": 1613,
+    "outfit": 1612,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_herbalist",
+    "name": "Herbalist",
+    "coins": 750,
+    "male": 1021,
+    "female": 1020,
+    "outfit": 1021,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_herder",
+    "name": "Herder",
+    "coins": 750,
+    "male": 1279,
+    "female": 1280,
+    "outfit": 1279,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_nordic_chieftain",
+    "name": "Nordic Chieftain",
+    "coins": 750,
+    "male": 1500,
+    "female": 1501,
+    "outfit": 1500,
+    "premium": true,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_pharaoh",
+    "name": "Pharaoh",
+    "coins": 750,
+    "male": 955,
+    "female": 956,
+    "outfit": 955,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_philosopher",
+    "name": "Philosopher",
+    "coins": 750,
+    "male": 873,
+    "female": 874,
+    "outfit": 873,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_ranger",
+    "name": "Ranger",
+    "coins": 750,
+    "male": 684,
+    "female": 683,
+    "outfit": 684,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_sun_priest",
+    "name": "Sun Priest",
+    "coins": 750,
+    "male": 1023,
+    "female": 1024,
+    "outfit": 1023,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_veteran_paladin",
+    "name": "Veteran Paladin",
+    "coins": 750,
+    "male": 1204,
+    "female": 1205,
+    "outfit": 1204,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_void_master",
+    "name": "Void Master",
+    "coins": 750,
+    "male": 1202,
+    "female": 1203,
+    "outfit": 1202,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_evoker",
+    "name": "Evoker",
+    "coins": 840,
+    "male": 725,
+    "female": 724,
+    "outfit": 725,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_royal_pumpkin",
+    "name": "Royal Pumpkin",
+    "coins": 840,
+    "male": 760,
+    "female": 759,
+    "outfit": 760,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_arena_champion",
+    "name": "Arena Champion",
+    "coins": 870,
+    "male": 884,
+    "female": 885,
+    "outfit": 884,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_beastmaster",
+    "name": "Beastmaster",
+    "coins": 870,
+    "male": 637,
+    "female": 636,
+    "outfit": 637,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_dragon_knight",
+    "name": "Dragon Knight",
+    "coins": 870,
+    "male": 1444,
+    "female": 1445,
+    "outfit": 1444,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_flamefury_mage",
+    "name": "Flamefury Mage",
+    "coins": 870,
+    "male": 1680,
+    "female": 1681,
+    "outfit": 1680,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_grove_keeper",
+    "name": "Grove Keeper",
+    "coins": 870,
+    "male": 908,
+    "female": 909,
+    "outfit": 908,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_guidon_bearer",
+    "name": "Guidon Bearer",
+    "coins": 870,
+    "male": 1186,
+    "female": 1187,
+    "outfit": 1186,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_jouster",
+    "name": "Jouster",
+    "coins": 870,
+    "male": 1331,
+    "female": 1332,
+    "outfit": 1331,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_lupine_warden",
+    "name": "Lupine Warden",
+    "coins": 870,
+    "male": 899,
+    "female": 900,
+    "outfit": 899,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_martial_artist",
+    "name": "Martial Artist",
+    "coins": 870,
+    "male": 1837,
+    "female": 1838,
+    "outfit": 1837,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_mercenary",
+    "name": "Mercenary",
+    "coins": 870,
+    "male": 1056,
+    "female": 1057,
+    "outfit": 1056,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_necromancer",
+    "name": "Necromancer",
+    "coins": 870,
+    "male": 1845,
+    "female": 1846,
+    "outfit": 1845,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_pumpkin_mummy",
+    "name": "Pumpkin Mummy",
+    "coins": 870,
+    "male": 1127,
+    "female": 1128,
+    "outfit": 1127,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_puppeteer",
+    "name": "Puppeteer",
+    "coins": 870,
+    "male": 697,
+    "female": 696,
+    "outfit": 697,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_retro_citizen",
+    "name": "Retro Citizen",
+    "coins": 870,
+    "male": 974,
+    "female": 975,
+    "outfit": 974,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_retro_hunter",
+    "name": "Retro Hunter",
+    "coins": 870,
+    "male": 972,
+    "female": 973,
+    "outfit": 972,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_retro_knight",
+    "name": "Retro Knight",
+    "coins": 870,
+    "male": 970,
+    "female": 971,
+    "outfit": 970,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_retro_mage",
+    "name": "Retro Mage",
+    "coins": 870,
+    "male": 968,
+    "female": 969,
+    "outfit": 968,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_retro_summoner",
+    "name": "Retro Summoner",
+    "coins": 870,
+    "male": 964,
+    "female": 965,
+    "outfit": 964,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_retro_warrior",
+    "name": "Retro Warrior",
+    "coins": 870,
+    "male": 962,
+    "female": 963,
+    "outfit": 962,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_rune_master",
+    "name": "Rune Master",
+    "coins": 870,
+    "male": 1384,
+    "female": 1385,
+    "outfit": 1384,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_trophy_hunter",
+    "name": "Trophy Hunter",
+    "coins": 870,
+    "male": 957,
+    "female": 958,
+    "outfit": 957,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_winged_druid",
+    "name": "Winged Druid",
+    "coins": 870,
+    "male": 1831,
+    "female": 1832,
+    "outfit": 1831,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_winter_warden",
+    "name": "Winter Warden",
+    "coins": 870,
+    "male": 853,
+    "female": 852,
+    "outfit": 853,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_chaos_acolyte",
+    "name": "Chaos Acolyte",
+    "coins": 900,
+    "male": 665,
+    "female": 664,
+    "outfit": 665,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_lion_of_war",
+    "name": "Lion of War",
+    "coins": 1750,
+    "male": 1206,
+    "female": 1207,
+    "outfit": 1206,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_dragon_slayer",
+    "name": "Dragon Slayer",
+    "coins": 5000,
+    "male": 1288,
+    "female": 1289,
+    "outfit": 1288,
+    "premium": false,
+    "from": "store",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_afflicted",
+    "name": "Afflicted",
+    "coins": 400,
+    "male": 430,
+    "female": 431,
+    "outfit": 430,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_ancient_aucar",
+    "name": "Ancient Aucar",
+    "coins": 400,
+    "male": 1597,
+    "female": 1598,
+    "outfit": 1597,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_assassin",
+    "name": "Assassin",
+    "coins": 400,
+    "male": 152,
+    "female": 156,
+    "outfit": 152,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_battle_mage",
+    "name": "Battle Mage",
+    "coins": 400,
+    "male": 1069,
+    "female": 1070,
+    "outfit": 1069,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_beggar",
+    "name": "Beggar",
+    "coins": 400,
+    "male": 153,
+    "female": 157,
+    "outfit": 153,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_brotherhood",
+    "name": "Brotherhood",
+    "coins": 400,
+    "male": 278,
+    "female": 279,
+    "outfit": 278,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_cave_explorer",
+    "name": "Cave Explorer",
+    "coins": 400,
+    "male": 574,
+    "female": 575,
+    "outfit": 574,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_citizen_of_issavi",
+    "name": "Citizen of Issavi",
+    "coins": 400,
+    "male": 1386,
+    "female": 1387,
+    "outfit": 1386,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_crystal_warlord",
+    "name": "Crystal Warlord",
+    "coins": 400,
+    "male": 512,
+    "female": 513,
+    "outfit": 512,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_decaying_defender",
+    "name": "Decaying Defender",
+    "coins": 400,
+    "male": 1662,
+    "female": 1663,
+    "outfit": 1662,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_deepling",
+    "name": "Deepling",
+    "coins": 400,
+    "male": 463,
+    "female": 464,
+    "outfit": 463,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_demon",
+    "name": "Demon",
+    "coins": 400,
+    "male": 541,
+    "female": 542,
+    "outfit": 541,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_demon_hunter",
+    "name": "Demon Hunter",
+    "coins": 400,
+    "male": 289,
+    "female": 288,
+    "outfit": 289,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_discoverer",
+    "name": "Discoverer",
+    "coins": 400,
+    "male": 1094,
+    "female": 1095,
+    "outfit": 1094,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_draccoon_herald",
+    "name": "Draccoon Herald",
+    "coins": 400,
+    "male": 1722,
+    "female": 1723,
+    "outfit": 1722,
+    "premium": false,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_dream_warden",
+    "name": "Dream Warden",
+    "coins": 400,
+    "male": 577,
+    "female": 578,
+    "outfit": 577,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_dream_warrior",
+    "name": "Dream Warrior",
+    "coins": 400,
+    "male": 1146,
+    "female": 1147,
+    "outfit": 1146,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_elementalist",
+    "name": "Elementalist",
+    "coins": 400,
+    "male": 432,
+    "female": 433,
+    "outfit": 432,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_falconer",
+    "name": "Falconer",
+    "coins": 400,
+    "male": 1282,
+    "female": 1283,
+    "outfit": 1282,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_feral_trapper",
+    "name": "Feral Trapper",
+    "coins": 400,
+    "male": 1907,
+    "female": 1906,
+    "outfit": 1907,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_festive",
+    "name": "Festive",
+    "coins": 400,
+    "male": 931,
+    "female": 929,
+    "outfit": 931,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_field_surgeon",
+    "name": "Field Surgeon",
+    "coins": 400,
+    "male": 1814,
+    "female": 1815,
+    "outfit": 1814,
+    "premium": false,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_fiend_slayer",
+    "name": "Fiend Slayer",
+    "coins": 400,
+    "male": 1809,
+    "female": 1808,
+    "outfit": 1809,
+    "premium": false,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_fire_fighter",
+    "name": "Fire-Fighter",
+    "coins": 400,
+    "male": 1568,
+    "female": 1569,
+    "outfit": 1568,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_glooth_engineer",
+    "name": "Glooth Engineer",
+    "coins": 400,
+    "male": 610,
+    "female": 618,
+    "outfit": 610,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_golden",
+    "name": "Golden",
+    "coins": 400,
+    "male": 1210,
+    "female": 1211,
+    "outfit": 1210,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_hand_of_the_inquisition",
+    "name": "Hand of the Inquisition",
+    "coins": 400,
+    "male": 1243,
+    "female": 1244,
+    "outfit": 1243,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_illuminator",
+    "name": "Illuminator",
+    "coins": 400,
+    "male": 1860,
+    "female": 1861,
+    "outfit": 1860,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_insectoid",
+    "name": "Insectoid",
+    "coins": 400,
+    "male": 465,
+    "female": 466,
+    "outfit": 465,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_jester",
+    "name": "Jester",
+    "coins": 400,
+    "male": 273,
+    "female": 270,
+    "outfit": 273,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 10,
+      "body": 19,
+      "legs": 69,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_makeshift_warrior",
+    "name": "Makeshift Warrior",
+    "coins": 400,
+    "male": 1042,
+    "female": 1043,
+    "outfit": 1042,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 39,
+      "body": 57,
+      "legs": 76,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_newly_wed",
+    "name": "Newly Wed",
+    "coins": 400,
+    "male": 328,
+    "female": 329,
+    "outfit": 328,
+    "premium": false,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_nightmare",
+    "name": "Nightmare",
+    "coins": 400,
+    "male": 268,
+    "female": 269,
+    "outfit": 268,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_norseman",
+    "name": "Norseman",
+    "coins": 400,
+    "male": 251,
+    "female": null,
+    "outfit": 251,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_norsewoman",
+    "name": "Norsewoman",
+    "coins": 400,
+    "male": null,
+    "female": 252,
+    "outfit": 252,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_orcsoberfest_garb",
+    "name": "Orcsoberfest Garb",
+    "coins": 400,
+    "male": 1251,
+    "female": 1252,
+    "outfit": 1251,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 58,
+      "body": 22,
+      "legs": 24,
+      "feet": 76
+    }
+  },
+  {
+    "id": "outfit_percht_raider",
+    "name": "Percht Raider",
+    "coins": 400,
+    "male": 1161,
+    "female": 1162,
+    "outfit": 1161,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_pirate",
+    "name": "Pirate",
+    "coins": 400,
+    "male": 151,
+    "female": 155,
+    "outfit": 151,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_poltergeist",
+    "name": "Poltergeist",
+    "coins": 400,
+    "male": 1270,
+    "female": 1271,
+    "outfit": 1270,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 132,
+      "body": 76,
+      "legs": 95,
+      "feet": 114
+    }
+  },
+  {
+    "id": "outfit_rascoohan",
+    "name": "Rascoohan",
+    "coins": 400,
+    "male": 1371,
+    "female": 1372,
+    "outfit": 1371,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_revenant",
+    "name": "Revenant",
+    "coins": 400,
+    "male": 1322,
+    "female": 1323,
+    "outfit": 1322,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_rift_warrior",
+    "name": "Rift Warrior",
+    "coins": 400,
+    "male": 846,
+    "female": 845,
+    "outfit": 846,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_rootwalker",
+    "name": "Rootwalker",
+    "coins": 400,
+    "male": 1774,
+    "female": 1775,
+    "outfit": 1774,
+    "premium": false,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_royal_bounacean_advisor",
+    "name": "Royal Bounacean Advisor",
+    "coins": 400,
+    "male": 1436,
+    "female": 1437,
+    "outfit": 1436,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 77,
+      "body": 128,
+      "legs": 114,
+      "feet": 0
+    }
+  },
+  {
+    "id": "outfit_shaman",
+    "name": "Shaman",
+    "coins": 400,
+    "male": 154,
+    "female": 158,
+    "outfit": 154,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 3,
+      "body": 70,
+      "legs": 95,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_soil_guardian",
+    "name": "Soil Guardian",
+    "coins": 400,
+    "male": 516,
+    "female": 514,
+    "outfit": 516,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_warmaster",
+    "name": "Warmaster",
+    "coins": 400,
+    "male": 335,
+    "female": 336,
+    "outfit": 335,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 0,
+      "body": 86,
+      "legs": 87,
+      "feet": 95
+    }
+  },
+  {
+    "id": "outfit_wayfarer",
+    "name": "Wayfarer",
+    "coins": 400,
+    "male": 367,
+    "female": 366,
+    "outfit": 367,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 114,
+      "body": 120,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_yalaharian",
+    "name": "Yalaharian",
+    "coins": 400,
+    "male": 325,
+    "female": 324,
+    "outfit": 325,
+    "premium": true,
+    "from": "quest",
+    "unlocked": false,
+    "colors": {
+      "head": 78,
+      "body": 94,
+      "legs": 114,
+      "feet": 115
+    }
+  },
+  {
+    "id": "outfit_monk",
+    "name": "Monk",
+    "coins": 100,
+    "male": 1824,
+    "female": 1825,
+    "outfit": 1824,
+    "premium": false,
+    "from": "default",
+    "unlocked": true,
+    "colors": {
+      "head": 95,
+      "body": 113,
+      "legs": 39,
+      "feet": 115
+    }
+  }
+]

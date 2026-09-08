@@ -1,0 +1,28 @@
+# Fontes de terceiros (130 MB de assets + servidor). Necessários para rodar os
+# pipelines, mas não versionados. Os artefatos gerados é que entram no repo.
+/cliente pc/
+/servidor/
+
+# Saída dos pipelines
+/tools/extractor/out/
+/_probe_out/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Ambiente
+.env
+.env.local
+
+# Editor / SO
+.DS_Store
+Thumbs.db
