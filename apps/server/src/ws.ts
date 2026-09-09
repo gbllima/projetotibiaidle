@@ -45,7 +45,7 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
         const { loaded, settlement } = loadCharacter(db, subscription.accountId, subscription.characterId);
         send({
           type: 'state',
-          character: describeCharacter(loaded, db),
+          character: { ...describeCharacter(loaded, db), partyEvents: loaded.partyEvents ?? [] },
           settlement: publicSettlement(settlement),
         });
       } catch (error) {

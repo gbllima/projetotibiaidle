@@ -167,7 +167,7 @@ export function StorePanel({
   character: CharacterView;
   world: WorldView | null;
   busy: boolean;
-  onAct: (body: Record<string, unknown>) => Promise<void>;
+  onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }) {
   const [walletTab, setWalletTab] = useState<WalletTab>('store');
   const [category, setCategory] = useState<StoreCategory>('mounts');
@@ -520,7 +520,7 @@ function StoreOfferRow({
   lookType: number;
   previewAddon: number;
   owned: boolean;
-  onAct: (body: Record<string, unknown>) => Promise<void>;
+  onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }) {
   const canAfford = character.coins >= offer.coins;
 

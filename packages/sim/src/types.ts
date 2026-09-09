@@ -166,6 +166,7 @@ export function policyForWave(character: CharacterState, waveIndex: number): Hun
 export interface CharacterState {
   name: string;
   vocationId: number;
+  active?: boolean;
   level: number;
   experience: number;
   skills: Record<SkillName, SkillState>;
@@ -424,6 +425,8 @@ export type SimEventType =
 export interface SimEvent {
   tick: number;
   type: SimEventType;
+  /** Character that produced the event when it comes from a party member. */
+  actorId?: number;
   /** Target or source monster uid where relevant. */
   uid?: number;
   monsterId?: string;
@@ -521,6 +524,14 @@ export interface PartyHunter {
   level: number;
   vocationId: number;
   appearance?: Appearance;
+  experience?: number;
+  health?: number;
+  maxHealth?: number;
+  mana?: number;
+  maxMana?: number;
+  equipment?: Record<string, { id: number; name: string }>;
+  backpackContents?: Array<{ itemId: number; name: string; count: number }>;
+  backpackCapacity?: number;
 }
 
 /** Remaining spell-group cooldown ticks. Migrates legacy single `spellCooldown`. */

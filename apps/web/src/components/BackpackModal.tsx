@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { itemsById } from '@tibia-idle/data';
-import { isConsumableItem, isEquipableItem } from '@tibia-idle/sim';
+import { canEquipFor, isConsumableItem, isEquipableItem } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { formatNumber, itemRarity, itemValue } from '../format.js';
 import { itemTooltipLines } from '../itemFormat.js';
@@ -19,8 +19,8 @@ function padStacks<T extends { itemId: number; count: number; name: string }>(
   items: T[],
   size: number,
 ): Array<T | { itemId: 0; count: 0; name: '' }> {
-  const next = items.slice(0, size);
-  const empty = { itemId: 0 as const, count: 0, name: '' };
+  const next: Array<T | { itemId: 0; count: 0; name: '' }> = items.slice(0, size);
+  const empty = { itemId: 0, count: 0, name: '' } as const;
   while (next.length < size) next.push(empty);
   return next;
 }
@@ -88,6 +88,7 @@ export function BackpackModal({
   const def = menu ? itemsById.get(menu.itemId) : null;
   const consumable = def ? isConsumableItem(def) : false;
   const equipable = def ? isEquipableItem(def) : false;
+  const compatible = def ? canEquipFor(def, character.vocation.id, character.level) : false;
   const sellable = Boolean(def?.sellPrice);
   const unit = menu ? itemValue(menu.itemId) : 0;
   const canUnequip = stacks.length === 0;
@@ -153,7 +154,7 @@ export function BackpackModal({
             <button type="button" disabled={busy} onClick={() => run(() => onInspect(menu.itemId))}>Inspecionar</button>
           )}
           {equipable && !consumable && (
-            <button type="button" disabled={busy} onClick={() => run(() => onEquip(menu.itemId))}>Equipar</button>
+            <button type="button" disabled={busy || !compatible} title={!compatible ? 'Item incompatível com sua classe ou nível' : undefined} onClick={() => run(() => onEquip(menu.itemId))}>Equipar</button>
           )}
           {consumable && (
             <button type="button" disabled={busy} onClick={() => run(() => onUseItem(menu.itemId))}>Usar</button>

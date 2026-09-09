@@ -1,4 +1,4 @@
-import type { HuntSession } from '@tibia-idle/sim';
+import type { HuntSession, SimEvent } from '@tibia-idle/sim';
 
 /** Shapes the server sends. Mirrors apps/server/src/game.ts. */
 
@@ -212,9 +212,21 @@ export interface CharacterView {
     name: string;
     level: number;
     vocationId: number;
+    active?: boolean;
+    experience?: number;
+    health?: number;
+    maxHealth?: number;
+    mana?: number;
+    maxMana?: number;
+    equipment?: Record<string, EquippedItem>;
+    backpackContents?: SupplyView[];
+    backpackCapacity?: number;
     self?: boolean;
+    policy?: { autoAttack?: boolean; disabledSpells?: string[]; spellPriority?: string[] };
     appearance?: { outfit: number; head: number; body: number; legs: number; feet: number; aura?: number; mount?: number; addons?: number };
   }>;
+  /** Transient combat events produced by active party members. */
+  partyEvents?: SimEvent[];
   guildId: number | null;
   decorations: string[];
   lastDummyTries: number;
@@ -280,6 +292,15 @@ export interface CharacterView {
     pvp?: CharacterView['policy'];
   };
   equipmentTiers: Record<string, number>;
+}
+
+export interface LobbyPlayer {
+  id: number;
+  name: string;
+  level: number;
+  vocationId: number;
+  appearance?: CharacterView['appearance'];
+  active: boolean;
 }
 
 export interface RankRow {

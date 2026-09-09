@@ -96,6 +96,7 @@ export class TrainingRenderer {
   private attackTimer = 0;
   private attackMs = DEFAULT_ATTACK_MS;
   private playerKey: string | null = null;
+  private dead = false;
 
   alive(): boolean {
     return !this.dead && Boolean(this.app);

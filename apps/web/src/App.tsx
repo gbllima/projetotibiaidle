@@ -110,11 +110,35 @@ export function App() {
 
   const addPartyCharacter = async (characterId: number) => {
     if (!character.session?.huntId) throw new Error('Entre em uma cave primeiro.');
+    await api.addPartyMember(character.id, characterId);
     await api.startHunt(characterId, character.session.huntId, 1);
     await loadRoster();
     const refreshed = await api.character(character.id);
     setCharacter(refreshed.character);
     setSettlement(refreshed.settlement);
+  };
+
+  const createAndAddPartyCharacter = async (input: {
+    name: string;
+    vocationId: number;
+    gender: 'm' | 'f';
+    weapon: 'axe' | 'sword' | 'club';
+  }) => {
+    if (!character.session?.huntId) throw new Error('Entre em uma cave primeiro.');
+    const created = await api.createCharacter(input.name, input.vocationId, {
+      gender: input.gender,
+      weapon: input.weapon,
+    });
+    try {
+      await api.addPartyMember(character.id, created.character.id);
+      await api.startHunt(created.character.id, character.session.huntId, 1);
+    } finally {
+      await loadRoster();
+      const refreshed = await api.character(character.id);
+      setCharacter(refreshed.character);
+      setSettlement(refreshed.settlement);
+    }
+    return created.character.id;
   };
 
   return (
@@ -149,10 +173,12 @@ export function App() {
       />
       <PartyCharacterSelector
         characters={characters}
+        account={account}
         currentCharacterId={character.id}
         partySlots={character.partySlots ?? 1}
         currentHuntId={character.session?.huntId ?? null}
         onAdd={addPartyCharacter}
+        onCreate={createAndAddPartyCharacter}
       />
     </>
   );

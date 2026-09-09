@@ -4,7 +4,7 @@ import { TICK_MS, isBossHunt } from '@tibia-idle/sim';
 import { accountFromHeader, AuthError, claimAccount, isGuestUsername, login, register, registerGuest } from './auth.js';
 import type { Database } from './db.js';
 import {
-  characterSlotCap, createNewCharacter, describeCharacter, listBosses, listHunts, loadCharacter,
+  addPartyMember, characterSlotCap, createNewCharacter, describeCharacter, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
   sellPouch, stashPouch, startHunt, stopHunt, upgradeGear,
 } from './game.js';
 import { act, worldSnapshot, type ActBody } from './systems.js';
@@ -134,6 +134,15 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     }
   });
 
+  app.get('/api/lobby', async (request, reply) => {
+    try {
+      requireAccount(db, request);
+      return reply.send({ players: lobbyPlayers(db) });
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
   app.post('/api/characters', async (request, reply) => {
     try {
       const accountId = requireAccount(db, request);
@@ -184,6 +193,34 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const id = Number((request.params as { id: string }).id);
       const { loaded } = loadCharacter(db, accountId, id);
       return reply.send({ bosses: listBosses(loaded.character) });
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
+  app.post('/api/characters/:id/party/members', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const ownerId = Number((request.params as { id: string }).id);
+      const body = (request.body ?? {}) as { characterId?: unknown };
+      const memberId = Number(body.characterId);
+      if (!Number.isInteger(memberId)) throw new GameError('Missing "characterId".');
+      addPartyMember(db, accountId, ownerId, memberId);
+      const { loaded } = loadCharacter(db, accountId, ownerId);
+      return reply.send({ character: describeCharacter(loaded, db) });
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
+  app.delete('/api/characters/:id/party/members/:memberId', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const params = request.params as { id: string; memberId: string };
+      const ownerId = Number(params.id);
+      removePartyMember(db, accountId, ownerId, Number(params.memberId));
+      const { loaded } = loadCharacter(db, accountId, ownerId);
+      return reply.send({ character: describeCharacter(loaded, db) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -259,13 +296,13 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const body = (request.body ?? {}) as ActBody;
-      const { loaded, extra } = act(db, accountId, id, body);
+      const { loaded, targetLoaded, extra } = act(db, accountId, id, body);
       track(db, `act:${String(body.type ?? 'unknown')}`, {
         accountId,
         characterId: id,
         value: Number(extra?.['gold'] ?? 0),
       });
-      return reply.send({ character: describeCharacter(loaded, db), ...extra });
+      return reply.send({ character: describeCharacter(loaded, db), targetCharacter: targetLoaded ? describeCharacter(targetLoaded, db) : undefined, ...extra });
     } catch (error) {
       return fail(reply, error);
     }

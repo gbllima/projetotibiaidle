@@ -421,6 +421,17 @@ export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string):
   paintProceduralRoom(parent, tiles, huntId);
 }
 
+/** Real Tibia city cut used as the shared lobby background. */
+export function paintCityScene(parent: Container, tiles: Atlas): void {
+  const cityHunt = 'yalahar-arena';
+  const room = huntMaps[cityHunt];
+  if (room && room.filled >= 40) {
+    paintOtbmRoom(parent, tiles, room, cityHunt);
+    return;
+  }
+  paintProceduralRoom(parent, tiles, 'training-dojo');
+}
+
 const HOUSE_DECO: Record<string, Array<{ id: number; x: number; y: number; ground?: boolean }>> = {
   torch: [
     { id: 2921, x: 1, y: 2 },

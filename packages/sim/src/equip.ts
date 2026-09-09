@@ -139,7 +139,7 @@ export function wearItem(character: CharacterState, itemId: number): EquipOk | E
 export function removeWorn(character: CharacterState, slot: EquipSlot): { ok: true; itemId: number } | EquipFail {
   const itemId = character.equipment[slot];
   if (!itemId) return { ok: false, reason: 'That slot is empty.' };
-  if (slot === 'backpack' && (character.backpackContents?.length ?? 0) > 0) {
+  if (slot === 'backpack' && (character.backpackContents ?? []).some((stack) => stack.count > 0)) {
     return { ok: false, reason: 'Esvazie a backpack antes de desequipar.' };
   }
   unbindJewelry(character, slot);

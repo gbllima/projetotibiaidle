@@ -13,6 +13,22 @@ export type CombatType =
   | 'COMBAT_DEATHDAMAGE'
   | 'COMBAT_HEALING';
 
+export interface SpellCatalogEntry {
+  spellid: number;
+  name: string;
+  formulaWithoutParams: string;
+  spellGroupPrimary: string;
+  spellGroupSecondary: string;
+  iconIndex: number;
+  minimumCasterLevel: number;
+  aggressive: boolean;
+  allowedVocations: string[];
+  castCostMana?: number;
+  manaCost?: number;
+  manaCostPercent?: number;
+  isRune?: boolean;
+}
+
 export interface MonsterAttack {
   kind: 'melee' | 'combat' | 'other';
   name: string;

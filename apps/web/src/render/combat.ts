@@ -1,4 +1,4 @@
-import { AnimatedSprite, Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { AnimatedSprite, Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { itemsById, monstersById, mountsByServerId } from '@tibia-idle/data';
 import type { SimEvent } from '@tibia-idle/sim';
 import type { ActiveMonsterView } from '../api/types.js';
@@ -7,10 +7,11 @@ import { attackAnimationSpeed, loadAttackFrames, preloadAttackFrames } from './a
 import { burstsFor, damageTint, isCustomMeleeSwing, magicEffectId, outgoingDamageTint } from './effects.js';
 import { missileAim, shootEffectId } from './missiles.js';
 import { recoloredFrames, appearancePoseKey, creatureRecolorAppearance } from './outfit.js';
-import { paintDecorations, paintHuntScene } from './scenes.js';
+import { paintCityScene, paintDecorations, paintHuntScene } from './scenes.js';
 import {
   chebyshev, faceOf, MONSTER_STEP_MS, PLAYER_STEP_MS, spawnTile, stepToward, surroundGoal,
 } from './walk.js';
+import { chooseHeroTargetForMonster, chooseMonsterTargetForAlly, desiredCombatRange, isMeleeVocation } from './combatAi.js';
 import {
   ammoAreaOffsets,
   combatAreaOffsets,
@@ -68,9 +69,14 @@ interface SpriteEntry {
   scaleX: number;
   moving: boolean;
   stationary?: boolean;
+  vocationId?: number;
+  characterId?: number;
+  clickGoalX?: number;
+  clickGoalY?: number;
 }
 
 export interface PlayerView {
+  id?: number;
   name: string;
   vocationId: number;
   health: number;
@@ -142,6 +148,8 @@ export class CombatScene {
   }> = [];
   private sprites = new Map<number, SpriteEntry>();
   private allies = new Map<string, SpriteEntry>();
+  private allyAttackCooldown = new Map<string, number>();
+  private monsterTargets = new Map<number, SpriteEntry>();
   private player: SpriteEntry | null = null;
   private floaters: Array<{ text: Text; life: number; maxLife: number; driftX: number }> = [];
   /** Stack index per creature so AOE numbers don't sit on top of each other. */
@@ -151,6 +159,7 @@ export class CombatScene {
   private dead = false;
   private host: HTMLElement | null = null;
   private mounting: Promise<void> | null = null;
+  private cityLobby = false;
 
   private alive(): boolean {
     return !this.dead && Boolean(this.app && this.world && this.actors && !this.actors.destroyed);
@@ -221,6 +230,14 @@ export class CombatScene {
     this.fx = new Container();
     this.fx.sortableChildren = true;
     world.addChild(this.fx);
+    world.eventMode = 'static';
+    world.hitArea = new Rectangle(0, 0, COLS * TILE, ROWS * TILE);
+    world.on('pointertap', (event) => {
+      if (!this.cityLobby || !this.player) return;
+      const position = event.getLocalPosition(world);
+      this.player.clickGoalX = Math.max(1, Math.min(COLS - 2, Math.floor(position.x / TILE)));
+      this.player.clickGoalY = Math.max(1, Math.min(ROWS - 2, Math.floor(position.y / TILE)));
+    });
 
     const [creatures, outfits, mounts, tiles, effects, missiles] = await Promise.all([
       loadAtlas('creatures').catch(() => null),
@@ -260,6 +277,7 @@ export class CombatScene {
   }
 
   setHunt(huntId: string): void {
+    this.cityLobby = false;
     const changed = this.huntId !== huntId;
     this.huntId = huntId;
     if (!this.alive()) return;
@@ -270,6 +288,20 @@ export class CombatScene {
       this.face(this.player, 0, 1, false);
     }
     if (this.world) this.paintFloor(huntId);
+  }
+
+  setCityLobby(): void {
+    this.cityLobby = true;
+    if (!this.alive() || !this.world) return;
+    this.floor?.destroy({ children: true });
+    const floor = new Container();
+    if (this.tiles) paintCityScene(floor, this.tiles);
+    this.world.addChildAt(floor, 0);
+    this.floor = floor;
+    if (this.player) {
+      this.player.clickGoalX = undefined;
+      this.player.clickGoalY = undefined;
+    }
   }
 
   /** Drop actors/events from a previous character without tearing down the GPU app. */
@@ -285,6 +317,8 @@ export class CombatScene {
     }
     this.floaters = [];
     this.floatStacks.clear();
+    this.allyAttackCooldown.clear();
+    this.monsterTargets.clear();
     this.shots = [];
     if (this.fx && !this.fx.destroyed) {
       for (const child of [...this.fx.children]) {
@@ -438,13 +472,14 @@ export class CombatScene {
           { appearance: ally.appearance, stepMs: PLAYER_STEP_MS, fill: 0x60c8ff },
         );
         if (created) {
-          created.stationary = true;
+          created.vocationId = ally.vocationId;
+          created.characterId = ally.id;
           this.allies.set(ally.name, created);
           void this.drawMount(created, ally.appearance);
         }
         return;
       }
-      this.placeAt(existing, x, y);
+      existing.vocationId = ally.vocationId;
       existing.appearance = ally.appearance;
       this.layoutHud(existing, ally.health / Math.max(1, ally.maxHealth));
       void this.drawMount(existing, ally.appearance);
@@ -639,7 +674,8 @@ export class CombatScene {
       if (this.player) this.floatFree(this.player.root.x, this.player.root.y - 40, `Level ${event.level}!`, 0xe8c547, 11);
     } else if (event.type === 'player_attack') {
       if (event.words && this.player) {
-        this.floatFree(this.player.root.x, this.player.root.y - 22, event.words, 0xe07030, 9);
+        const caster = this.actorFor(event);
+        this.floatFree(caster.root.x, caster.root.y - 22, event.words, 0xe07030, 9);
       }
       // Caster-centered area spells: paint SQM tiles once, not on each target sprite.
       if (event.area && event.words) {
@@ -647,6 +683,7 @@ export class CombatScene {
           event.areaShape as CombatAreaId | undefined,
           event.effect,
           event.areaDirection,
+          this.actorFor(event),
         );
         return;
       }
@@ -801,12 +838,14 @@ export class CombatScene {
       if (event.leech && this.player) {
         this.floatDamage(this.player, event.leech, 0x66ff66, 'heal');
       }
-    } else if (event.type === 'monster_attack' && this.player) {
+    } else if (event.type === 'monster_attack') {
+      const monster = this.resolveMonster(event.uid);
+      const target = monster ? this.findHeroTargetForMonster(monster, event.uid) : this.player;
       const amount = event.amount ?? 0;
-      if (amount > 0) {
-        this.floatDamage(this.player, amount, damageTint(event.damageType), 'in');
-      } else if (event.blocked) {
-        this.floatLabel(this.player.root.x, this.player.root.y - 30, '0', 0xb0b0b0, 'in');
+      if (amount > 0 && target) {
+        this.floatDamage(target, amount, damageTint(event.damageType), 'in');
+      } else if (event.blocked && target) {
+        this.floatLabel(target.root.x, target.root.y - 30, '0', 0xb0b0b0, 'in');
       }
     } else if (event.type === 'condition' && this.player) {
       const amount = event.amount ?? 0;
@@ -818,6 +857,43 @@ export class CombatScene {
   private resolveMonster(uid: number | undefined): SpriteEntry | undefined {
     if (uid === undefined) return undefined;
     return this.sprites.get(uid);
+  }
+
+  private actorFor(event: SimEvent): SpriteEntry {
+    if (event.actorId !== undefined) {
+      const ally = [...this.allies.values()].find((entry) => entry.characterId === event.actorId);
+      if (ally) return ally;
+    }
+    return this.player ?? [...this.allies.values()][0]!;
+  }
+
+  private findHeroTargetForMonster(monster: SpriteEntry, uid?: number): SpriteEntry | null {
+    const assigned = uid !== undefined ? this.monsterTargets.get(uid) : undefined;
+    if (assigned && assigned.root.alpha >= 1) return assigned;
+    const heroes: SpriteEntry[] = [];
+    if (this.player) heroes.push(this.player);
+    for (const ally of this.allies.values()) heroes.push(ally);
+    if (heroes.length === 0) return null;
+    const target = chooseHeroTargetForMonster(
+      { tileX: monster.destX, tileY: monster.destY },
+      this.player ?? { tileX: PLAYER_TILE.x, tileY: PLAYER_TILE.y },
+      heroes.map((hero) => ({ tileX: hero.destX, tileY: hero.destY })),
+    );
+    if (!target) return null;
+    const match = heroes.find((hero) => hero.destX === target.tileX && hero.destY === target.tileY);
+    if (match) return match;
+    return this.player ?? null;
+  }
+
+  private tryAllyStrike(name: string, ally: SpriteEntry, target: SpriteEntry, delta: number): void {
+    const key = `${name}:${Math.round(target.root.x)}:${Math.round(target.root.y)}`;
+    const cooldown = (this.allyAttackCooldown.get(key) ?? 0) - delta;
+    this.allyAttackCooldown.set(key, Math.max(0, cooldown));
+    if (cooldown > 0) return;
+    this.allyAttackCooldown.set(key, 650);
+    const amount = Math.max(1, Math.round((ally.lastHealth ?? 1) * 0.12));
+    this.floatDamage(target, amount, 0x7ec8ff, 'out');
+    this.playEffect(target.root.x, target.root.y - TILE / 2, 14);
   }
 
   private playBursts(event: SimEvent): void {
@@ -834,12 +910,13 @@ export class CombatScene {
     shape: CombatAreaId | undefined,
     effectName?: string,
     direction?: number,
+    caster: SpriteEntry = this.player!,
   ): void {
-    if (!this.player) return;
+    if (!caster) return;
     const effectId = magicEffectId(effectName) ?? 10; // HITAREA
     const area = shape ?? 'square1';
-    const cx = this.player.tileX;
-    const cy = this.player.tileY;
+    const cx = caster.tileX;
+    const cy = caster.tileY;
     for (const [dx, dy] of combatAreaOffsets(area, direction ?? DIRECTION_SOUTH)) {
       this.playEffect((cx + dx) * TILE + TILE / 2, (cy + dy) * TILE + TILE / 2, effectId);
     }
@@ -912,11 +989,13 @@ export class CombatScene {
     const monster = event.uid !== undefined ? this.sprites.get(event.uid) : undefined;
     if (!monster) return false;
     if (event.type === 'player_attack') {
-      this.launchShot(this.player, monster, event.shoot, onHit);
+      this.launchShot(this.actorFor(event), monster, event.shoot, onHit);
       return true;
     }
     if (event.type === 'monster_attack') {
-      this.launchShot(monster, this.player, event.shoot, onHit);
+      const target = this.findHeroTargetForMonster(monster, event.uid);
+      if (!target) return false;
+      this.launchShot(monster, target, event.shoot, onHit);
       return true;
     }
     return false;
@@ -1146,22 +1225,110 @@ export class CombatScene {
     if (!this.alive()) return;
     const player = this.player;
     if (player) this.advanceWalk(player, delta);
+    if (this.cityLobby) {
+      if (player && player.walkLeft <= 0
+        && player.clickGoalX !== undefined && player.clickGoalY !== undefined) {
+        if (player.tileX === player.clickGoalX && player.tileY === player.clickGoalY) {
+          player.clickGoalX = undefined;
+          player.clickGoalY = undefined;
+          this.face(player, 0, 1, false);
+        } else {
+          const next = stepToward(
+            player.tileX,
+            player.tileY,
+            player.clickGoalX,
+            player.clickGoalY,
+            this.occupiedTiles(player),
+          );
+          if (next) this.beginStep(player, next.x, next.y);
+          else {
+            player.clickGoalX = undefined;
+            player.clickGoalY = undefined;
+          }
+        }
+      }
+      this.sortActors();
+      return;
+    }
     for (const entry of this.sprites.values()) this.advanceWalk(entry, delta);
+    for (const entry of this.allies.values()) this.advanceWalk(entry, delta);
 
     if (player && player.walkLeft <= 0) {
       const target = this.closestMonster(player);
       if (target) this.chase(player, target.destX, target.destY);
     }
-    if (player) {
-      const px = player.tileX;
-      const py = player.tileY;
-      const reserved = this.occupiedTiles();
-      for (const [uid, entry] of this.sprites) {
-        if (entry.walkLeft > 0 || entry.root.alpha < 1) continue;
-        this.chaseMonster(entry, px, py, reserved, Number(uid) || 0);
+    const heroes: SpriteEntry[] = [];
+    if (player && player.root.alpha >= 1) heroes.push(player);
+    heroes.push(...[...this.allies.values()].filter((entry) => entry.root.alpha >= 1));
+    const liveMonsterIds = new Set<number>();
+    [...this.sprites.entries()]
+      .sort(([left], [right]) => left - right)
+      .forEach(([uid, entry], index) => {
+        liveMonsterIds.add(uid);
+        const target = heroes.length > 0 ? heroes[index % heroes.length] : undefined;
+        if (target) this.monsterTargets.set(uid, target);
+        if (entry.walkLeft > 0 || entry.root.alpha < 1 || !target) return;
+        if (target !== player) {
+          entry.standX = undefined;
+          entry.standY = undefined;
+        }
+        this.chaseMonster(entry, target.destX, target.destY, this.occupiedTiles(entry), uid);
+      });
+    for (const uid of this.monsterTargets.keys()) {
+      if (!liveMonsterIds.has(uid)) this.monsterTargets.delete(uid);
+    }
+    for (const [name, ally] of this.allies) {
+      if (ally.walkLeft > 0 || ally.root.alpha < 1) continue;
+      const localReserved = this.occupiedTiles(ally);
+      const target = this.closestMonster(ally) ?? player;
+      if (!target) continue;
+      const monsterTarget = chooseMonsterTargetForAlly(ally, player ?? ally, [...this.sprites.values()].map((entry) => ({ tileX: entry.destX, tileY: entry.destY })));
+      if (monsterTarget) {
+        const monsterSprite = [...this.sprites.values()].find((entry) => entry.destX === monsterTarget.tileX && entry.destY === monsterTarget.tileY) ?? null;
+        if (monsterSprite && chebyshev(ally.tileX, ally.tileY, monsterSprite.destX, monsterSprite.destY) <= 1) {
+          this.tryAllyStrike(name, ally, monsterSprite, delta);
+        }
       }
+      this.chaseAlly(ally, target, localReserved, [...this.allies.keys()].indexOf(name));
     }
     this.sortActors();
+  }
+
+  private chaseAlly(entry: SpriteEntry, target: SpriteEntry, reserved: Set<string>, salt: number): void {
+    const dist = chebyshev(entry.tileX, entry.tileY, target.destX, target.destY);
+    const desired = desiredCombatRange(entry.vocationId);
+    const melee = isMeleeVocation(entry.vocationId ?? 0);
+
+    if (melee) {
+      if (dist <= 1) {
+        reserved.add(`${entry.tileX},${entry.tileY}`);
+        this.face(entry, target.destX - entry.tileX, target.destY - entry.tileY, false);
+        return;
+      }
+    } else if (dist <= desired) {
+      reserved.add(`${entry.tileX},${entry.tileY}`);
+      this.face(entry, target.destX - entry.tileX, target.destY - entry.tileY, false);
+      return;
+    }
+
+    const open = new Set(reserved);
+    open.delete(`${entry.tileX},${entry.tileY}`);
+    open.delete(`${entry.destX},${entry.destY}`);
+    const goal = surroundGoal(entry.tileX, entry.tileY, target.destX, target.destY, open, salt + 31);
+    if (!goal) {
+      this.face(entry, target.destX - entry.tileX, target.destY - entry.tileY, false);
+      return;
+    }
+    if (goal.x === entry.tileX && goal.y === entry.tileY) {
+      reserved.add(`${entry.tileX},${entry.tileY}`);
+      return;
+    }
+    const blocked = new Set(open);
+    blocked.delete(`${goal.x},${goal.y}`);
+    const next = stepToward(entry.tileX, entry.tileY, goal.x, goal.y, blocked);
+    if (!next) return;
+    reserved.add(`${next.x},${next.y}`);
+    this.beginStep(entry, next.x, next.y);
   }
 
   private advanceWalk(entry: SpriteEntry, delta: number): void {

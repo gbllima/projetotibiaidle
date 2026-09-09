@@ -32,7 +32,7 @@ import {
   type CharacterState, type EquipSlot, type HelperMode, type PreyBonus,
 } from '@tibia-idle/sim';
 import type { Database } from './db.js';
-import { buyCharacterSlot, characterSlotCap, listHunts, loadCharacter, MAX_CHARACTER_SLOTS, type LoadedCharacter } from './game.js';
+import { buyCharacterSlot, canManageActivePartyMember, characterSlotCap, listHunts, loadCharacter, MAX_CHARACTER_SLOTS, type LoadedCharacter } from './game.js';
 import { onlineCharacterIds } from './presence.js';
 import { GameError } from './settle.js';
 import { tryStartOrQueue } from './queue.js';
@@ -205,10 +205,18 @@ export function act(
   characterId: number,
   body: ActBody,
   now = Date.now(),
-): { loaded: LoadedCharacter; extra?: Record<string, unknown> } {
+): { loaded: LoadedCharacter; targetLoaded?: LoadedCharacter; extra?: Record<string, unknown> } {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
-  const character = loaded.character;
   const type = String(body.type ?? '');
+  let targetLoaded = loaded;
+  if ((type === 'equip' || type === 'unequip') && body.targetCharacterId !== undefined) {
+    const targetId = Number(body.targetCharacterId);
+    if (!Number.isInteger(targetId) || !canManageActivePartyMember(db, accountId, characterId, targetId)) {
+      throw new GameError('O personagem não está ativo na sua party.', 403);
+    }
+    targetLoaded = targetId === characterId ? loaded : loadCharacter(db, accountId, targetId, now).loaded;
+  }
+  const character = targetLoaded.character;
 
   switch (type) {
     case 'daily': {
@@ -553,16 +561,16 @@ export function act(
         }
         throw new GameError(worn.reason, 400);
       }
-      persist(db, loaded, now);
-      return { loaded, extra: { slot: worn.slot } };
+      persist(db, targetLoaded, now);
+      return { loaded, targetLoaded: targetLoaded === loaded ? undefined : targetLoaded, extra: { slot: worn.slot } };
     }
 
     case 'unequip': {
       const slot = String(body.slot ?? '') as EquipSlot;
       const removed = removeWorn(character, slot);
       if (!removed.ok) throw new GameError(removed.reason, 400);
-      persist(db, loaded, now);
-      return { loaded, extra: { itemId: removed.itemId } };
+      persist(db, targetLoaded, now);
+      return { loaded, targetLoaded: targetLoaded === loaded ? undefined : targetLoaded, extra: { itemId: removed.itemId } };
     }
 
     case 'destroy-item': {

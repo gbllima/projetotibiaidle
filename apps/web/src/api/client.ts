@@ -1,4 +1,4 @@
-import type { AccountView, BossView, CharacterView, HuntView, Settlement, WorldView } from './types.js';
+import type { AccountView, BossView, CharacterView, HuntView, LobbyPlayer, Settlement, WorldView } from './types.js';
 
 /**
  * Thin wrapper over the REST API.
@@ -86,11 +86,19 @@ export const api = {
 
   characters: () => request<{ characters: CharacterView[]; account: AccountView }>('GET', '/api/characters'),
 
+  lobby: () => request<{ players: LobbyPlayer[] }>('GET', '/api/lobby'),
+
   createCharacter: (name: string, vocationId: number, extras?: { gender?: 'm' | 'f'; weapon?: string }) =>
     request<{ character: CharacterView }>('POST', '/api/characters', { name, vocationId, ...extras }),
 
   character: (id: number) =>
     request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`),
+
+  addPartyMember: (ownerId: number, characterId: number) =>
+    request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party/members`, { characterId }),
+
+  removePartyMember: (ownerId: number, characterId: number) =>
+    request<{ character: CharacterView }>('DELETE', `/api/characters/${ownerId}/party/members/${characterId}`),
 
   hunts: (id: number) => request<{ hunts: HuntView[] }>('GET', `/api/characters/${id}/hunts`),
 
@@ -115,7 +123,7 @@ export const api = {
     request<{ character: CharacterView; items: number }>('POST', `/api/characters/${id}/stash`),
 
   act: (id: number, body: Record<string, unknown>) =>
-    request<{ character: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body),
+    request<{ character: CharacterView; targetCharacter?: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body),
 
   world: (channel = 'geral') => request<WorldView>('GET', `/api/world?channel=${encodeURIComponent(channel)}`),
 

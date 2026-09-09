@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { HEALTH_POTION_TIERS, HEAL_SPELLS, MANA_POTION_TIERS, SPIRIT_POTION_TIERS, healSpellsFor, runesFor, spellsFor, type HelperMode } from '@tibia-idle/sim';
+import { spellsCatalog } from '@tibia-idle/data';
+import { HEALTH_POTION_TIERS, HEAL_SPELLS, MANA_POTION_TIERS, SPIRIT_POTION_TIERS, SPELLS, healSpellsFor, runesFor, spellsFor, type HelperMode } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { useLocale } from '../i18n/Locale.js';
 import { ItemSlot } from './ItemSlot.js';
@@ -8,7 +9,7 @@ import { WindowHead } from './WindowHead.js';
 
 const PERCENTS = [0.2, 0.25, 0.35, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
 
-type Section = 'cura' | 'escudo' | 'equip' | 'provocar' | 'atacar' | 'magias' | 'runas' | 'suporte' | 'loot';
+type Section = 'cura' | 'escudo' | 'equip' | 'provocar' | 'atacar' | 'magias' | 'arvore' | 'runas' | 'suporte' | 'loot';
 
 const SECTIONS: Array<{ id: Section; label: string }> = [
   { id: 'cura', label: '+ Cura' },
@@ -17,6 +18,7 @@ const SECTIONS: Array<{ id: Section; label: string }> = [
   { id: 'provocar', label: 'Provocação' },
   { id: 'atacar', label: 'Atacar' },
   { id: 'magias', label: 'Magias de Ataque' },
+  { id: 'arvore', label: 'Árvore de Magias' },
   { id: 'runas', label: 'Runas' },
   { id: 'suporte', label: 'Suporte' },
   { id: 'loot', label: 'Loot' },
@@ -42,6 +44,9 @@ export function HelperModal({
   const save = (body: Record<string, unknown>) => onPolicy({ ...body, helperMode: mode });
   const heals = healSpellsFor(character.vocation.id, character.level);
   const attacks = spellsFor(character.vocation.id, character.level);
+  const spellTree = spellsCatalog
+    .filter((spell) => !spell.isRune && spell.allowedVocations.includes(character.vocation.name))
+    .sort((a, b) => a.minimumCasterLevel - b.minimumCasterLevel || a.name.localeCompare(b.name));
   const healthPotion = HEALTH_POTION_TIERS.find((tier) => tier.itemId === policy.healthPotionId)
     ?? HEALTH_POTION_TIERS.filter((tier) => character.level >= tier.level).at(-1);
   const manaPotion = MANA_POTION_TIERS.find((tier) => tier.itemId === policy.manaPotionId)
@@ -265,6 +270,34 @@ export function HelperModal({
                     </div>
                   );
                 })}
+              </>
+            )}
+
+            {section === 'arvore' && (
+              <>
+                <h3>Árvore de Magias</h3>
+                <p className="lede" style={{ textAlign: 'left' }}>
+                  {character.name} · {character.vocation.name} · nível {character.level}
+                </p>
+                <div className="spell-tree">
+                  {spellTree.length === 0 && <p className="soon">Nenhuma magia disponível para esta vocação.</p>}
+                  {spellTree.map((spell) => {
+                    const unlocked = character.level >= spell.minimumCasterLevel;
+                    const configured = attacks.some((known) => known.name === spell.name) && policy.spellPriority.some((id) => attacks.find((known) => known.name === spell.name)?.id === id);
+                    return (
+                      <div className={`spell-tree-row ${unlocked ? 'is-unlocked' : 'is-locked'}`} key={spell.spellid}>
+                        <div className="helper-icon"><span className="spell-tree-icon">{spell.iconIndex}</span></div>
+                        <div className="spell-tree-copy">
+                          <strong>{spell.name}</strong>
+                          <span>{spell.formulaWithoutParams} · {spell.castCostMana ?? spell.manaCost ?? 0} mana · {spell.spellGroupPrimary.replace('SPELLGROUP_', '').toLowerCase()}</span>
+                        </div>
+                        <div className="spell-tree-status">
+                          {unlocked ? (configured ? 'Na barra' : 'Liberada') : `Nível ${spell.minimumCasterLevel}`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </>
             )}
 

@@ -7,6 +7,7 @@ import { CombatScene } from '../components/CombatScene.js';
 import { HelperModal } from '../components/HelperModal.js';
 import { HuntModal } from '../components/HuntModal.js';
 import { TrainingScene } from '../components/TrainingScene.js';
+import { CityLobby } from '../components/CityLobby.js';
 import { trainingRoom } from '../trainingRooms.js';
 import { LeftDock } from '../components/LeftDock.js';
 import { RightDock } from '../components/RightDock.js';
@@ -69,9 +70,11 @@ export function GameScreen({
     () => localStorage.getItem('tibia-idle.training-room'),
   );
   const [outfitOpen, setOutfitOpen] = useState(false);
+  const [helperCharacter, setHelperCharacter] = useState<CharacterView | null>(null);
   const [huntError, setHuntError] = useState('');
   const [hunts, setHunts] = useState<HuntView[]>([]);
   const [bosses, setBosses] = useState<BossView[]>([]);
+  const [lobbyPlayers, setLobbyPlayers] = useState<Awaited<ReturnType<typeof api.lobby>>['players']>([]);
   const bossesByHuntId = useMemo(() => new Map(bosses.map((boss) => [boss.huntId, boss])), [bosses]);
   const huntLabel = (huntId: string) => huntsById.get(huntId)?.name ?? bossesByHuntId.get(huntId)?.name ?? huntId;
   const [busy, setBusy] = useState(false);
@@ -116,6 +119,21 @@ export function GameScreen({
     void api.hunts(character.id).then((payload) => setHunts(payload.hunts)).catch(() => undefined);
     void api.bosses(character.id).then((payload) => setBosses(payload.bosses)).catch(() => undefined);
   }, [character.id, character.level, pickingHunt]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      void api.lobby().then((payload) => {
+        if (!cancelled) setLobbyPlayers(payload.players);
+      }).catch(() => undefined);
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 10_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [character.id]);
 
   useEffect(() => {
     const serverChannel = chatTab === 'combat' || chatTab === 'loot'
@@ -294,6 +312,31 @@ export function GameScreen({
     void act(() => api.act(character.id, { type: 'policy', ...patch }).then((result) => onCharacter(result.character)));
   }
 
+  function savePartyPolicy(characterId: number, patch: Record<string, unknown>) {
+    if (characterId === character.id) {
+      savePolicy(patch);
+      return;
+    }
+    void act(() => api.act(characterId, { type: 'policy', ...patch }).then((result) => {
+      if (result.targetCharacter) {
+        setHelperCharacter(result.targetCharacter);
+      }
+      return api.character(character.id).then((current) => onCharacter(current.character));
+    }));
+  }
+
+  function saveHelperPolicy(patch: Record<string, unknown>) {
+    if (!helperCharacter) return;
+    const optimistic = applyPolicyPatch(helperCharacter, patch);
+    if (optimistic) setHelperCharacter(optimistic);
+    void act(() => api.act(helperCharacter.id, { type: 'policy', ...patch }).then((result) => setHelperCharacter(result.character)));
+  }
+
+  function openPartyHelper(characterId: number) {
+    setHelperCharacter(null);
+    void act(() => api.character(characterId).then((result) => setHelperCharacter(result.character)));
+  }
+
   function toggle(id: OverlayId) {
     if (id === 'helper') setHelperSection('cura');
     setOverlay((current) => (current === id ? 'none' : id));
@@ -375,16 +418,17 @@ export function GameScreen({
                 characterId={character.id}
                 huntId={character.session.huntId}
                 active={character.session.active}
-                events={events}
+                events={[...events, ...(character.partyEvents ?? [])]}
                 decorations={character.decorations}
                 allies={[
                   ...(character.caveParty ?? []).filter((mate) => !mate.self).map((mate) => ({
+                    id: mate.id,
                     name: mate.name,
                     vocationId: mate.vocationId,
-                    health: 1,
-                    maxHealth: 1,
-                    mana: 0,
-                    maxMana: 1,
+                    health: mate.health ?? 1,
+                    maxHealth: mate.maxHealth ?? 1,
+                    mana: mate.mana ?? 0,
+                    maxMana: mate.maxMana ?? 1,
                     appearance: mate.appearance,
                   })),
                   ...(character.session.summons ?? []).map((summon) => ({
@@ -499,18 +543,59 @@ export function GameScreen({
                   </div>
                 </div>
               ) : (
-                <div className="empty-hunt">
-                  <h2>{t('hunts')}</h2>
-                  <p>{t('pickHunt')}</p>
-                  <p className="dummy-hint">Enquanto isso o dummy treina <b>{character.dummySkill}</b> · 1 try / 8s · teto 8h.</p>
-                  {character.lastDummyTries > 0 && (
-                    <p className="dummy-hint">Última sessão no dummy: {character.lastDummyTries.toLocaleString('pt-BR')} tries.</p>
+                <CityLobby
+                  players={lobbyPlayers.length > 0 ? lobbyPlayers : [{
+                    id: character.id,
+                    name: character.name,
+                    level: character.level,
+                    vocationId: character.vocation.id,
+                    appearance: character.appearance,
+                    active: true,
+                  }]}
+                  selfId={character.id}
+                  scene={(
+                    <CombatScene
+                      key={`city-${character.id}`}
+                      characterId={character.id}
+                      huntId="city-lobby"
+                      cityLobby
+                      active={[]}
+                      events={[]}
+                      player={{
+                        name: character.name,
+                        vocationId: character.vocation.id,
+                        health: character.health,
+                        maxHealth: character.maxHealth,
+                        mana: character.mana,
+                        maxMana: character.maxMana,
+                        appearance: character.appearance,
+                      }}
+                      allies={[
+                        ...lobbyPlayers.filter((player) => player.id !== character.id).map((player) => ({
+                          id: player.id,
+                          name: player.name,
+                          vocationId: player.vocationId,
+                          health: 1,
+                          maxHealth: 1,
+                          mana: 0,
+                          maxMana: 1,
+                          appearance: player.appearance,
+                        })),
+                        {
+                          name: 'Mercado',
+                          vocationId: 4,
+                          health: 1,
+                          maxHealth: 1,
+                          mana: 0,
+                          maxMana: 1,
+                          appearance: { outfit: 128, head: 0, body: 0, legs: 0, feet: 0, aura: 0, mount: 0, addons: 0 },
+                        },
+                      ]}
+                    />
                   )}
-                  <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 12 }}>
-                    <button className="btn gold" onClick={() => { setHuntError(''); setHuntModalTab('hunts'); setPickingHunt(true); }}>{t('openHunts')}</button>
-                    <button className="btn" onClick={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}>Treino online</button>
-                  </div>
-                </div>
+                  onHunt={() => { setHuntError(''); setHuntModalTab('hunts'); setPickingHunt(true); }}
+                  onTraining={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}
+                />
               )}
               <Onboarding
                 character={character}
@@ -603,18 +688,24 @@ export function GameScreen({
               spells={hotbarSpells(character.vocation.id, character.level, character.policy)}
               hint={t('hotbarHint')}
               spellsConfigLabel={t('openHelperSpells')}
+              onOpenHelper={openPartyHelper}
               onOpenSpells={openHelperSpells}
-              onAutoAttack={() => savePolicy({ autoAttack: character.policy?.autoAttack === false })}
-              onSpellPriority={(spell) => savePolicy({
-                spellPriority: [spell.id, ...(character.policy?.spellPriority ?? []).filter((id) => id !== spell.id)],
-                disabledSpells: (character.policy?.disabledSpells ?? []).filter((id) => id !== spell.id),
+              onAutoAttack={(characterId) => savePartyPolicy(characterId, {
+                autoAttack: characterId === character.id
+                  ? character.policy?.autoAttack === false
+                  : character.caveParty.find((member) => member.id === characterId)?.policy?.autoAttack === false,
               })}
-              onSpellToggle={(spell, disabled) => {
-                const disabledList = character.policy?.disabledSpells ?? [];
-                savePolicy({
-                  disabledSpells: disabled
-                    ? [...disabledList, spell.id]
-                    : disabledList.filter((id) => id !== spell.id),
+              onSpellPriority={(characterId, spell) => savePartyPolicy(characterId, {
+                spellPriority: [spell.id, ...(character.caveParty.find((member) => member.id === characterId)?.policy?.spellPriority ?? []).filter((id) => id !== spell.id)],
+                disabledSpells: (character.caveParty.find((member) => member.id === characterId)?.policy?.disabledSpells ?? []).filter((id) => id !== spell.id),
+              })}
+              onSpellToggle={(characterId, spell, disabled) => {
+                const memberPolicy = characterId === character.id
+                  ? character.policy
+                  : character.caveParty.find((member) => member.id === characterId)?.policy;
+                const disabledList = memberPolicy?.disabledSpells ?? [];
+                savePartyPolicy(characterId, {
+                  disabledSpells: disabled ? [...disabledList, spell.id] : disabledList.filter((id) => id !== spell.id),
                 });
               }}
             />
@@ -630,17 +721,18 @@ export function GameScreen({
           }))}
           onUpgrade={() => void act(() => api.upgradeGear(character.id).then((r) => onCharacter(r.character)))}
           onParty={() => void act(() => api.act(character.id, { type: 'party-unlock' }).then((r) => onCharacter(r.character)))}
+          onRemoveParty={(memberId) => void act(() => api.removePartyMember(character.id, memberId).then((r) => onCharacter(r.character)))}
           onOutfit={() => setOutfitOpen(true)}
           onLootSlot={(currency) => void act(() => api.act(character.id, { type: 'loot-slot', currency }).then((r) => onCharacter(r.character)))}
           onSupplySlot={(currency) => void act(() => api.act(character.id, { type: 'supply-slot', currency }).then((r) => onCharacter(r.character)))}
           onLootFilter={(value) => savePolicy({ lootMinValue: value })}
-          onEquip={(itemId, source) => void act(() => api.act(character.id, { type: 'equip', itemId, source }).then((r) => {
+          onEquip={(itemId, source, targetCharacterId) => void act(() => api.act(character.id, { type: 'equip', itemId, source, targetCharacterId }).then((r) => {
             onCharacter(r.character);
             const slot = typeof r.slot === 'string' ? r.slot : '';
             const name = itemsById.get(itemId)?.name ?? 'item';
             pushLog(slot ? `Equipou ${name} (${slot}).` : `Equipou ${name}.`);
           }))}
-          onUnequip={(slot) => void act(() => api.act(character.id, { type: 'unequip', slot }).then((r) => onCharacter(r.character)))}
+          onUnequip={(slot, targetCharacterId) => void act(() => api.act(character.id, { type: 'unequip', slot, targetCharacterId }).then((r) => onCharacter(r.character)))}
           onDestroyItem={(itemId, source, count, slot) => void act(() => api.act(character.id, { type: 'destroy-item', itemId, source, count, slot }).then((r) => onCharacter(r.character)))}
           onSellItem={(itemId, source, count) => void act(() => api.act(character.id, { type: 'sell-item', itemId, source, count }).then((r) => {
             onCharacter(r.character);
@@ -667,14 +759,14 @@ export function GameScreen({
         />
       </div>
 
-      {overlay === 'helper' && (
+      {(overlay === 'helper' || helperCharacter) && (
         <HelperModal
-          key={helperSection}
-          character={character}
+          key={`${helperCharacter?.id ?? character.id}-${helperSection}`}
+          character={helperCharacter ?? character}
           busy={busy}
           initialSection={helperSection}
-          onClose={() => setOverlay('none')}
-          onPolicy={savePolicy}
+          onClose={() => { setOverlay('none'); setHelperCharacter(null); }}
+          onPolicy={helperCharacter ? saveHelperPolicy : savePolicy}
         />
       )}
 

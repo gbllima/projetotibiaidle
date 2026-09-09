@@ -117,6 +117,7 @@ export function backpackCapacity(character: CharacterState): number {
 /** Whether a new stack can occupy a backpack slot. Existing stacks always grow. */
 export function backpackHasRoom(character: CharacterState, itemId: number): boolean {
   character.backpackContents ??= [];
+  character.backpackContents = character.backpackContents.filter((stack) => stack.count > 0);
   if (character.backpackContents.some((stack) => stack.itemId === itemId)) return true;
   return character.backpackContents.length < backpackCapacity(character);
 }

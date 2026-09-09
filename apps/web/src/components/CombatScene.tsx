@@ -13,6 +13,7 @@ export function CombatScene({
   events,
   huntId,
   decorations = [],
+  cityLobby = false,
 }: {
   characterId: number;
   active: ActiveMonsterView[];
@@ -21,6 +22,7 @@ export function CombatScene({
   events: SimEvent[];
   huntId: string;
   decorations?: string[];
+  cityLobby?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<ReturnType<typeof acquireCombatScene> | null>(null);
@@ -67,7 +69,8 @@ export function CombatScene({
       try {
         renderer.resetViewport();
         renderer.setDecorations(latest.current.decorations ?? []);
-        renderer.setHunt(latest.current.huntId);
+        if (cityLobby) renderer.setCityLobby();
+        else renderer.setHunt(latest.current.huntId);
       } catch (error) {
         console.error('combat floor', error);
       }
@@ -83,7 +86,7 @@ export function CombatScene({
       if (scene.current === renderer) scene.current = null;
       releaseCombatScene(renderer);
     };
-  }, [characterId]);
+  }, [characterId, cityLobby]);
 
   useEffect(() => {
     if (ready.current) {

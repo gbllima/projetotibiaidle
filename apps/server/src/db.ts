@@ -558,6 +558,11 @@ export class Database {
     this.db.prepare('INSERT OR REPLACE INTO world_state (key, value) VALUES (?, ?)').run(key, value);
   }
 
+  worldKeys(prefix: string): string[] {
+    const rows = this.db.prepare('SELECT key FROM world_state WHERE key LIKE ?').all(`${prefix}%`) as Array<{ key: string }>;
+    return rows.map((row) => row.key);
+  }
+
   muteAccount(accountId: number, until: number, reason: string): void {
     this.db.prepare('INSERT OR REPLACE INTO mutes (account_id, until, reason) VALUES (?, ?, ?)').run(accountId, until, reason);
   }

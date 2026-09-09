@@ -251,7 +251,7 @@ export function combatAreaDirection(
 }
 
 /** Melee ring around the player — used for caster-centered spells (exori / caldera). */
-export function meleeSurroundSpots(cx = PLAYER_TILE.x, cy = PLAYER_TILE.y): Array<{ x: number; y: number }> {
+export function meleeSurroundSpots(cx: number = PLAYER_TILE.x, cy: number = PLAYER_TILE.y): Array<{ x: number; y: number }> {
   const spots: Array<{ x: number; y: number }> = [];
   for (let oy = -1; oy <= 1; oy += 1) {
     for (let ox = -1; ox <= 1; ox += 1) {

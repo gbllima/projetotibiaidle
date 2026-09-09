@@ -429,7 +429,7 @@ export function spellsFor(vocationId: number, level = 999): Spell[] {
 }
 
 /** Spells pinned to the action bar: priority order, enabled only. */
-export function hotbarSpells(vocationId: number, level: number, policy?: HuntPolicy): Spell[] {
+export function hotbarSpells(vocationId: number, level: number, policy?: Pick<HuntPolicy, 'disabledSpells' | 'spellPriority'>): Spell[] {
   const disabled = new Set(policy?.disabledSpells ?? []);
   const catalog = new Map(spellsFor(vocationId, level).map((spell) => [spell.id, spell]));
   const out: Spell[] = [];

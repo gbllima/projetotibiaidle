@@ -147,7 +147,7 @@ function Cyclopedia({
   tab: string;
   setTab: (value: string) => void;
   busy: boolean;
-  onAct: (body: Record<string, unknown>) => Promise<void>;
+  onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }) {
   const needle = query.trim().toLowerCase();
   const [itemId, setItemId] = useState<number | null>(null);
@@ -353,7 +353,7 @@ function Cyclopedia({
   );
 }
 
-function Charms({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Charms({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const [monsterId, setMonsterId] = useState('');
   const finished = Object.entries(character.bestiary)
     .filter(([id, kills]) => (monstersById.get(id)?.bestiary?.toKill ?? 1) <= kills)
@@ -409,7 +409,7 @@ function Codex({ query, setQuery }: { query: string; setQuery: (value: string) =
   );
 }
 
-function Daily({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Daily({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const today = new Date().toISOString().slice(0, 10);
   const claimed = character.dailyClaim === today;
   return (
@@ -426,7 +426,7 @@ function Daily({ character, busy, onAct }: { character: CharacterView; busy: boo
 const DEPOT_UI_COLS = 5;
 const DEPOT_UI_ROWS = 8;
 
-function Warehouse({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Warehouse({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const [page, setPage] = useState(0);
   const used = character.warehouse.length;
   const uiSlotsPerPage = DEPOT_UI_COLS * DEPOT_UI_ROWS;
@@ -478,7 +478,7 @@ function DepotPager({ page, pageCount, onChange }: { page: number; pageCount: nu
   );
 }
 
-function Merchant({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Merchant({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const promoted = character.promoted || isPromoted(character.vocation.id);
   return (
     <div>
@@ -530,7 +530,7 @@ function GoldMercado({
   character: CharacterView;
   world: WorldView | null;
   busy: boolean;
-  onAct: (body: Record<string, unknown>) => Promise<void>;
+  onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }) {
   const categories = world?.catalogs.npc ?? [];
   const [tab, setTab] = useState(categories[0]?.id ?? 'potions');
@@ -615,7 +615,7 @@ function Market({
   character: CharacterView;
   world: WorldView | null;
   busy: boolean;
-  onAct: (body: Record<string, unknown>) => Promise<void>;
+  onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
   currency: 'gold' | 'coins';
 }) {
   const [itemId, setItemId] = useState(character.warehouse[0]?.itemId ?? 0);
@@ -684,7 +684,7 @@ function Social({ world, comunidade }: { world: WorldView | null; comunidade?: b
   );
 }
 
-function Guild({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Guild({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const [name, setName] = useState('');
   const mine = world?.guilds.find((guild) => guild.id === character.guildId);
   const leader = mine && mine.leaderId === character.id;
@@ -726,7 +726,7 @@ function Guild({ character, world, busy, onAct }: { character: CharacterView; wo
   );
 }
 
-function Vip({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Vip({ character, busy, onAct }: { character: CharacterView; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const active = character.premium && character.vipUntil > Date.now();
   return (
     <div>
@@ -868,7 +868,7 @@ function Admin({ character }: { character: CharacterView }) {
   );
 }
 
-function Arena({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<void> }) {
+function Arena({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   return (
     <div>
       <p>{character.arenaWins}W / {character.arenaLosses}L · luta assíncrona contra o snapshot do outro char.</p>

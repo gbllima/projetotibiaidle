@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { itemsById } from '@tibia-idle/data';
-import { allMainBlessings, blessingCount, isConsumableItem, isEquipableItem, LOOT_SLOT_CAP, LOOT_SLOT_DEFAULT, POUCH_SLOTS_PER_PAGE, SUPPLY_SLOT_CAP } from '@tibia-idle/sim';
+import { itemsById, vocationsById } from '@tibia-idle/data';
+import { allMainBlessings, blessingCount, canEquipFor, isConsumableItem, isEquipableItem, LOOT_SLOT_CAP, LOOT_SLOT_DEFAULT, POUCH_SLOTS_PER_PAGE, SUPPLY_SLOT_CAP } from '@tibia-idle/sim';
 import type { CharacterView, EquippedItem } from '../api/types.js';
 import { itemRarity, itemValue, formatNumber, xpProgress } from '../format.js';
 import { itemTooltipLines } from '../itemFormat.js';
@@ -81,6 +81,7 @@ export function RightDock({
   onSell,
   onUpgrade,
   onParty,
+  onRemoveParty,
   onOutfit,
   onLootSlot,
   onSupplySlot,
@@ -99,12 +100,13 @@ export function RightDock({
   onSell: () => void;
   onUpgrade: () => void;
   onParty: () => void;
+  onRemoveParty: (characterId: number) => void;
   onOutfit: () => void;
   onLootSlot: (currency: SlotCurrency) => void;
   onSupplySlot: (currency: SlotCurrency) => void;
   onLootFilter: (value: number) => void;
-  onEquip: (itemId: number, source: 'pouch' | 'warehouse' | 'supply' | 'backpack') => void;
-  onUnequip: (slot: string) => void;
+  onEquip: (itemId: number, source: 'pouch' | 'warehouse' | 'supply' | 'backpack', targetCharacterId?: number) => void;
+  onUnequip: (slot: string, targetCharacterId?: number) => void;
   onDestroyItem: (itemId: number, source: ItemSource, count: number, slot?: string) => void;
   onSellItem: (itemId: number, source: Exclude<ItemSource, 'worn'>, count: number) => void;
   onMoveItem: (itemId: number, source: 'pouch' | 'supply', count: number) => void;
@@ -115,6 +117,8 @@ export function RightDock({
   const { t } = useLocale();
   const [rare, setRare] = useState(false);
   const [backpackOpen, setBackpackOpen] = useState(false);
+  const [partyInventoryId, setPartyInventoryId] = useState<number | null>(null);
+  const [setMemberId, setSetMemberId] = useState(character.id);
   const [blessOpen, setBlessOpen] = useState(false);
   const [lootPage, setLootPage] = useState(0);
   const [supplyPage, setSupplyPage] = useState(0);
@@ -133,7 +137,11 @@ export function RightDock({
   const supplyAll = pad(byValue(character.supplies.filter((stack) => stack.count > 0), rare), supplySlots, empty);
   const lootPaged = paginateSlots(lootAll, lootSlots, lootPage, empty);
   const supplyPaged = paginateSlots(supplyAll, supplySlots, supplyPage, empty);
-  const worn = Object.keys(character.equipment).length;
+  const activeParty = (character.caveParty ?? []).filter((mate) => mate.self || mate.active);
+  const selectedSetMember = activeParty.find((mate) => mate.id === setMemberId);
+  const viewingOwnSet = !selectedSetMember || selectedSetMember.id === character.id;
+  const setEquipment = viewingOwnSet ? character.equipment : selectedSetMember.equipment ?? {};
+  const setWorn = Object.keys(setEquipment).length;
   const blessMask = character.blessings ?? 0;
   const blessOwned = blessingCount(blessMask);
   const blessFull = allMainBlessings(blessMask);
@@ -149,6 +157,10 @@ export function RightDock({
   useEffect(() => {
     if (supplyPage !== supplyPaged.safePage) setSupplyPage(supplyPaged.safePage);
   }, [supplyPage, supplyPaged.safePage]);
+
+  useEffect(() => {
+    if (!activeParty.some((mate) => mate.id === setMemberId)) setSetMemberId(character.id);
+  }, [activeParty, character.id, setMemberId]);
 
   useEffect(() => {
     if (!menu) return;
@@ -191,6 +203,7 @@ export function RightDock({
   const def = menu ? itemsById.get(menu.itemId) : null;
   const consumable = def ? isConsumableItem(def) : false;
   const equipable = def ? isEquipableItem(def) : false;
+  const compatible = def ? canEquipFor(def, character.vocation.id, character.level) : false;
   const sellable = Boolean(def?.sellPrice);
   const unit = menu ? itemValue(menu.itemId) : 0;
 
@@ -201,42 +214,64 @@ export function RightDock({
             {(character.caveParty?.length
               ? character.caveParty
               : [{ id: character.id, name: character.name, level: character.level, vocationId: character.vocation.id, self: true, appearance: character.appearance }]
-            ).map((mate) => (
-              <div key={`${mate.id}-${mate.name}`} className={`party-member ${mate.self ? 'self' : ''}`}>
-                <div className="party-member-info">
-                  <div className="party-name">{mate.self ? character.name : mate.name}</div>
-                  <div className="party-sub">
-                    {mate.self
-                      ? `${character.vocation.name} - lvl ${character.level}`
-                      : `lvl ${mate.level}`}
+            ).map((mate) => {
+              const mateXp = mate.self ? xp : xpProgress(mate.level, mate.experience ?? 0);
+              const health = mate.self ? character.health : mate.health ?? 0;
+              const memberMaxHealth = mate.self ? character.maxHealth : mate.maxHealth;
+              const maxHealth = memberMaxHealth ?? Math.max(1, health);
+              const mana = mate.self ? character.mana : mate.mana ?? 0;
+              const memberMaxMana = mate.self ? character.maxMana : mate.maxMana;
+              const maxMana = memberMaxMana ?? Math.max(1, mana);
+              const backpack = mate.backpackContents ?? [];
+              return (
+                <div key={`${mate.id}-${mate.name}`} className={`party-member-wrap ${mate.self ? 'self' : ''}`}>
+                  <div className="party-member">
+                    <div className="party-member-info">
+                      <div className="party-name">{mate.self ? character.name : mate.name}</div>
+                      <div className="party-sub">
+                        {mate.self
+                          ? `${character.vocation.name} - lvl ${character.level}`
+                          : `${vocationsById.get(mate.vocationId)?.name ?? 'Classe desconhecida'} - lvl ${mate.level}`}
+                      </div>
+                    </div>
+                    {mate.self ? (
+                      <button type="button" className="btn gold party-outfit-btn" disabled={busy} onClick={onOutfit}>
+                        Outfit
+                      </button>
+                    ) : (
+                      <div className="party-member-actions">
+                        <button type="button" className="btn" onClick={() => setPartyInventoryId(partyInventoryId === mate.id ? null : mate.id)} title="Ver inventário" aria-label={`Ver inventário de ${mate.name}`}>
+                          Bag
+                        </button>
+                        <button
+                          type="button"
+                          className="btn danger party-remove-btn"
+                          disabled={busy}
+                          onClick={() => onRemoveParty(mate.id)}
+                          title="Remover da party"
+                          aria-label={`Remover ${mate.name} da party`}
+                        >
+                          −
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  <div className="party-member-stats">
+                    <div className="party-stat-line"><span>HP</span><div className="meter hp"><i style={{ width: `${(health / maxHealth) * 100}%` }} /></div><b>{health}</b></div>
+                    <div className="party-stat-line"><span>MP</span><div className="meter mana"><i style={{ width: `${(mana / maxMana) * 100}%` }} /></div><b>{mana}</b></div>
+                    <div className="party-stat-line"><span>XP</span><div className="meter xp"><i style={{ width: `${mateXp.percent}%` }} /></div><b>{Math.round(mateXp.percent)}%</b></div>
+                  </div>
+                  {partyInventoryId === mate.id && (
+                    <div className="party-member-inventory">
+                      <span>Inventário · {backpack.length}/{mate.backpackCapacity ?? backpack.length}</span>
+                      <div className="party-inventory-slots">
+                        {backpack.map((item) => <ItemSlot key={`${mate.id}-${item.itemId}`} itemId={item.itemId} count={item.count} label={item.name} compact />)}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {mate.self ? (
-                  <button type="button" className="btn gold party-outfit-btn" disabled={busy} onClick={onOutfit}>
-                    Outfit
-                  </button>
-                ) : (
-                  <span className="party-outfit-locked meta" title="Só você pode mudar a própria aparência">—</span>
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="bars">
-            <div className="barline">
-              <span>HP</span>
-              <div className="meter hp"><i style={{ width: `${(character.health / Math.max(1, character.maxHealth)) * 100}%` }} /></div>
-              <span>{character.health}</span>
-            </div>
-            <div className="barline">
-              <span>MP</span>
-              <div className="meter mana"><i style={{ width: `${(character.mana / Math.max(1, character.maxMana)) * 100}%` }} /></div>
-              <span>{character.mana}</span>
-            </div>
-            <div className="barline">
-              <span>XP</span>
-              <div className="meter xp"><i style={{ width: `${xp.percent}%` }} /></div>
-              <span>{Math.round(xp.percent)}%</span>
-            </div>
+              );
+            })}
           </div>
           {character.partySlots < 2 && (
             <div className="locked-slot">
@@ -258,9 +293,25 @@ export function RightDock({
           )}
       </DockBox>
 
-      <DockBox id="set" title={t('setTitle')} extra={<span>{worn} / 10</span>}>
+      <DockBox id="set" title={t('setTitle')} extra={<span>{setWorn} / 10</span>}>
+          {activeParty.length > 1 && (
+            <div className="party-set-tabs" role="tablist" aria-label="SET dos personagens ativos">
+              {activeParty.map((mate) => (
+                <button
+                  key={mate.id}
+                  type="button"
+                  className={`btn ${setMemberId === mate.id ? 'gold' : ''}`}
+                  onClick={() => setSetMemberId(mate.id)}
+                  role="tab"
+                  aria-selected={setMemberId === mate.id}
+                >
+                  {mate.self ? character.name : mate.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className={`paperdoll ${blessFull ? 'blessed' : ''}`}>
-            <div className="paper-bless-wrap">
+            {viewingOwnSet && <div className="paper-bless-wrap">
               <button
                 type="button"
                 className={`bless-set-btn ${blessFull ? 'gold' : blessOwned > 0 ? 'partial' : ''}`}
@@ -270,9 +321,9 @@ export function RightDock({
                 <img src={blessBtnIcon} alt="" width={20} height={20} draggable={false} />
                 <span className="bless-set-count">{blessOwned}/5</span>
               </button>
-            </div>
+            </div>}
             {PAPERDOLL_SLOTS.map((slot) => {
-              const item = character.equipment[slot.id] as EquippedItem | undefined;
+              const item = setEquipment[slot.id] as EquippedItem | undefined;
               return (
                 <div key={slot.id} className={`paper-slot ${slot.area}`}>
                   <ItemSlot
@@ -282,7 +333,7 @@ export function RightDock({
                     rarity={item ? itemRarity(item.id) : undefined}
                     onInspect={item ? inspect : undefined}
                     onClick={(event) => {
-                      if (slot.id === 'backpack' && item) {
+                      if (slot.id === 'backpack' && item && viewingOwnSet) {
                         setBackpackOpen(true);
                         return;
                       }
@@ -297,7 +348,7 @@ export function RightDock({
                       }
                     }}
                     onContextMenu={(event) => {
-                      if (slot.id === 'backpack' && item) {
+                      if (slot.id === 'backpack' && item && viewingOwnSet) {
                         event.preventDefault();
                         openMenu(event, {
                           itemId: item.id,
@@ -313,9 +364,20 @@ export function RightDock({
               );
             })}
           </div>
-          <div className="box-tools">
+          {viewingOwnSet && <div className="box-tools">
             <button className="btn" disabled={busy || Boolean(character.session)} onClick={onUpgrade}>{t('organize')}</button>
             <button className={`btn ${rare ? 'gold' : ''}`} onClick={() => setRare((on) => !on)}>Raridade</button>
+          </div>}
+          <div className="party-set-backpack">
+            <div className="party-set-backpack-title">
+              Backpack de {viewingOwnSet ? character.name : selectedSetMember?.name} · {(viewingOwnSet ? character.backpackContents : selectedSetMember?.backpackContents ?? []).length}/{viewingOwnSet ? character.backpackCapacity : selectedSetMember?.backpackCapacity ?? 0}
+            </div>
+            <div className="party-inventory-slots">
+              {(viewingOwnSet ? character.backpackContents : selectedSetMember?.backpackContents ?? []).map((item) => (
+                <ItemSlot key={`set-${viewingOwnSet ? character.id : selectedSetMember?.id}-${item.itemId}`} itemId={item.itemId} count={item.count} label={item.name} compact />
+              ))}
+              {(viewingOwnSet ? character.backpackContents : selectedSetMember?.backpackContents ?? []).length === 0 && <span className="party-empty-backpack">Backpack vazia</span>}
+            </div>
           </div>
       </DockBox>
 
@@ -426,7 +488,7 @@ export function RightDock({
           </div>
           <button type="button" disabled={busy} onClick={() => inspect(menu.itemId)}>Inspecionar</button>
           {menu.from === 'worn' && menu.slot && menu.slot !== 'backpack' && (
-            <button type="button" disabled={busy} onClick={() => run(() => onUnequip(menu.slot!))}>Desequipar</button>
+            <button type="button" disabled={busy} onClick={() => run(() => onUnequip(menu.slot!, setMemberId))}>Desequipar</button>
           )}
           {menu.from === 'worn' && menu.slot === 'backpack' && (
             <button type="button" disabled={busy} onClick={() => run(() => setBackpackOpen(true))}>Abrir</button>
@@ -435,10 +497,10 @@ export function RightDock({
             <button type="button" disabled={busy} onClick={() => run(() => onUnequip('backpack'))}>Desequipar</button>
           )}
           {menu.from === 'pouch' && equipable && !consumable && (
-            <button type="button" disabled={busy} onClick={() => run(() => onEquip(menu.itemId, 'pouch'))}>Equipar</button>
+            <button type="button" disabled={busy || !compatible} title={!compatible ? 'Item incompatível com sua classe ou nível' : undefined} onClick={() => run(() => onEquip(menu.itemId, 'pouch'))}>Equipar</button>
           )}
           {menu.from === 'supply' && equipable && !consumable && (
-            <button type="button" disabled={busy} onClick={() => run(() => onEquip(menu.itemId, 'supply'))}>Equipar</button>
+            <button type="button" disabled={busy || !compatible} title={!compatible ? 'Item incompatível com sua classe ou nível' : undefined} onClick={() => run(() => onEquip(menu.itemId, 'supply'))}>Equipar</button>
           )}
           {consumable && menu.from !== 'worn' && (
             <button type="button" disabled={busy} onClick={() => run(() => onUseItem(menu.itemId, menu.from === 'pouch' ? 'pouch' : 'supply'))}>Usar</button>

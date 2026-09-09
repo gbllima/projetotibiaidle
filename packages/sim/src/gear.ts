@@ -127,11 +127,15 @@ export function effectiveLevelRequirement(item: Item): number {
   return equipLevelRequired(item);
 }
 
-export function canEquip(item: Item, character: CharacterState): boolean {
-  if (equipLevelRequired(item) > character.level) return false;
+export function canEquipFor(item: Item, vocationId: number, level: number): boolean {
+  if (equipLevelRequired(item) > level) return false;
   if (item.vocations.length === 0) return true;
-  const aliases = VOCATION_ALIASES[character.vocationId] ?? [];
+  const aliases = VOCATION_ALIASES[vocationId] ?? [];
   return item.vocations.some((v) => aliases.includes(v));
+}
+
+export function canEquip(item: Item, character: CharacterState): boolean {
+  return canEquipFor(item, character.vocationId, character.level);
 }
 
 /**

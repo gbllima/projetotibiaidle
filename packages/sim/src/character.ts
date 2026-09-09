@@ -397,6 +397,13 @@ export function normalizeCharacter(character: CharacterState): CharacterState {
   character.policy ??= { ...DEFAULT_POLICY };
   character.helperProfiles ??= {};
   character.equipment ??= {};
+  if (character.vocationId === 2 || character.vocationId === 6) {
+    const held = itemsById.get(character.equipment.left ?? 0);
+    if (held?.weaponType !== 'wand' || !/\brod\b/i.test(held.name)) character.equipment.left = 3066;
+  } else if (character.vocationId === 1 || character.vocationId === 5) {
+    const held = itemsById.get(character.equipment.left ?? 0);
+    if (held?.weaponType !== 'wand' || /\brod\b/i.test(held.name)) character.equipment.left = 3074;
+  }
   character.coins ??= 10_000;
   character.vipUntil ??= 0;
   character.gender ??= 'm';

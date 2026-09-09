@@ -12,9 +12,10 @@ import wandsJson from '../generated/wands.json' with { type: 'json' };
 import outfitsCatalogJson from '../generated/outfits-catalog.json' with { type: 'json' };
 import mountsCatalogJson from '../generated/mounts-catalog.json' with { type: 'json' };
 import metaJson from '../generated/meta.json' with { type: 'json' };
+import spellsCatalogJson from '../generated/spells.json' with { type: 'json' };
 
 import type {
-  Charm, DataMeta, Hunt, HuntMapRoom, Item, Monster, MountCatalogEntry, OutfitCatalogEntry, PreyBonuses, Stages, Vocation, WandStats,
+  Charm, DataMeta, Hunt, HuntMapRoom, Item, Monster, MountCatalogEntry, OutfitCatalogEntry, PreyBonuses, SpellCatalogEntry, Stages, Vocation, WandStats,
 } from './types.js';
 
 export * from './types.js';
@@ -28,6 +29,7 @@ export const charms = charmsJson as unknown as Charm[];
 export const stages = stagesJson as unknown as Stages;
 export const preyBonuses = preyJson as unknown as PreyBonuses;
 export const wands = wandsJson as unknown as WandStats[];
+export const spellsCatalog = spellsCatalogJson as unknown as SpellCatalogEntry[];
 export const outfitsCatalog = outfitsCatalogJson as unknown as OutfitCatalogEntry[];
 export const mountsCatalog = mountsCatalogJson as unknown as MountCatalogEntry[];
 export const meta = metaJson as unknown as DataMeta;
