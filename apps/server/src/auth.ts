@@ -121,15 +121,23 @@ export function claimAccount(db: Database, accountId: number, username: string, 
   return issueToken(db, accountId, username);
 }
 
-/** Reads `Authorization: Bearer <token>` and resolves it to an account. */
+/**
+ * Server-side administrator allow-list.
+ * `gbllima` is always an administrator. Extra admins can be configured
+ * explicitly with ADMIN_USERS; there is intentionally no generic "admin"
+ * fallback account.
+ */
 export function isAdminUsername(username: string): boolean {
-  const listed = (process.env['ADMIN_USERS'] ?? 'admin')
+  const normalized = username.trim().toLowerCase();
+  if (normalized === 'gbllima') return true;
+  const listed = (process.env['ADMIN_USERS'] ?? '')
     .split(/[,;\s]+/)
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
-  return username.toLowerCase() === 'gbllima' || listed.includes(username.toLowerCase());
+  return listed.includes(normalized);
 }
 
+/** Reads `Authorization: Bearer <token>` and resolves it to an account. */
 export function accountFromHeader(db: Database, header: string | undefined): number | null {
   if (!header?.startsWith('Bearer ')) return null;
   const id = db.accountIdForToken(header.slice('Bearer '.length).trim());
