@@ -24,7 +24,7 @@ describe('party combat targeting', () => {
     expect(chooseMonsterTargetForAlly(ally, player, monsters)).toEqual(monsters[0]);
   });
 
-  it('lets melee allies strike at contact while ranged allies hit from a safer distance', () => {
+  it('spaces melee, paladin and mage party roles into distinct combat lanes', () => {
     expect(isMeleeVocation(4)).toBe(true);
     expect(desiredCombatRange(4)).toBe(1);
     expect(canAllyStrike({ tileX: 5, tileY: 5 }, { tileX: 6, tileY: 5 }, 4)).toBe(true);
@@ -33,5 +33,9 @@ describe('party combat targeting', () => {
     expect(desiredCombatRange(3)).toBe(3);
     expect(canAllyStrike({ tileX: 5, tileY: 5 }, { tileX: 8, tileY: 5 }, 3)).toBe(true);
     expect(canAllyStrike({ tileX: 5, tileY: 5 }, { tileX: 9, tileY: 5 }, 3)).toBe(false);
+
+    expect(desiredCombatRange(2)).toBe(4);
+    expect(canAllyStrike({ tileX: 5, tileY: 5 }, { tileX: 9, tileY: 5 }, 2)).toBe(true);
+    expect(canAllyStrike({ tileX: 5, tileY: 5 }, { tileX: 10, tileY: 5 }, 2)).toBe(false);
   });
 });
