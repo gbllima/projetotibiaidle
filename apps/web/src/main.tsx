@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { LocaleProvider } from './i18n/Locale.js';
 import './styles.css';
+import './landing.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
