@@ -80,13 +80,26 @@ export function adminAct(
     return n;
   };
 
+  const stopAdministrativeHunt = (targetAccountId: number, characterId: number): void => {
+    if (!db.findCharacter(characterId)) return;
+    if (!db.queuedHunt(characterId) && !db.findCharacter(characterId)?.session) return;
+    try {
+      stopHunt(db, targetAccountId, characterId, now);
+    } catch (error) {
+      // loadCharacter can settle an already-finished stored session before
+      // stopHunt checks it. In that case the desired administrative result is
+      // already achieved, so only ignore the "not hunting" conflict.
+      if (!(error instanceof GameError) || error.status !== 409) throw error;
+    }
+  };
+
   if (type === 'ban' || type === 'unban') {
     const targetId = integer(body.accountId);
     const target = db.findAccountById(targetId);
     if (!target) throw new GameError('Conta não encontrada.', 404);
     if (type === 'ban' && isAdminUsername(target.username)) throw new GameError('Não é possível banir um administrador.', 403);
     if (type === 'ban') {
-      for (const row of db.charactersForAccount(targetId)) if (row.session || db.queuedHunt(row.id)) stopHunt(db, targetId, row.id, now);
+      for (const row of db.charactersForAccount(targetId)) stopAdministrativeHunt(targetId, row.id);
       db.setWorld('ban:' + targetId, JSON.stringify({ reason: String(body.reason ?? 'Banido pelo administrador').slice(0, 500), at: now, by: accountId }));
       db.revokeAccountTokens(targetId);
     } else db.setWorld('ban:' + targetId, '');
@@ -121,13 +134,13 @@ export function adminAct(
   }
 
   if (type === 'grant') {
-    const characterId = Number(body.characterId);
+    const characterId = integer(body.characterId);
     const row = db.findCharacter(characterId);
     if (!row) throw new GameError('No such character.', 404);
     const { loaded } = loadCharacter(db, row.accountId, characterId, now);
-    const gold = Math.max(0, Math.floor(Number(body.gold) || 0));
-    const coins = Math.max(0, Math.floor(Number(body.coins) || 0));
-    const vipDays = Math.max(0, Math.floor(Number(body.vipDays) || 0));
+    const gold = integer(body.gold ?? 0);
+    const coins = integer(body.coins ?? 0);
+    const vipDays = integer(body.vipDays ?? 0, 3650);
     loaded.character.gold += gold;
     loaded.character.coins += coins;
     if (vipDays > 0) {
@@ -139,50 +152,54 @@ export function adminAct(
   }
 
   if (type === 'kick') {
-    const characterId = Number(body.characterId);
+    const characterId = integer(body.characterId);
     const row = db.findCharacter(characterId);
     if (!row) throw new GameError('No such character.', 404);
-    const { loaded } = loadCharacter(db, row.accountId, characterId, now);
-    loaded.session = null;
-    db.saveCharacter(loaded.row.id, JSON.stringify(loaded.character), null, now);
-    db.releaseHunt(characterId);
-    db.dequeueHunt(characterId);
+    stopAdministrativeHunt(row.accountId, characterId);
     return { ok: true };
   }
 
   if (type === 'mute') {
-    const target = Number(body.accountId);
-    const minutes = Math.max(1, Math.floor(Number(body.minutes) || 30));
-    db.muteAccount(target, now + minutes * 60_000, String(body.reason ?? 'mute'));
+    const target = integer(body.accountId);
+    if (!db.findAccountById(target)) throw new GameError('Conta não encontrada.', 404);
+    const minutes = integer(body.minutes ?? 30, 525_600);
+    if (minutes < 1) throw new GameError('Valor numérico inválido.', 422);
+    db.muteAccount(target, now + minutes * 60_000, String(body.reason ?? 'mute').slice(0, 500));
     return { ok: true, until: now + minutes * 60_000 };
   }
 
   if (type === 'unmute') {
-    db.unmuteAccount(Number(body.accountId));
+    const target = integer(body.accountId);
+    if (!db.findAccountById(target)) throw new GameError('Conta não encontrada.', 404);
+    db.unmuteAccount(target);
     return { ok: true };
   }
 
   if (type === 'fulfill') {
-    const order = db.findCoinOrder(Number(body.orderId));
+    const orderId = integer(body.orderId);
+    const order = db.findCoinOrder(orderId);
     if (!order) throw new GameError('Unknown order.', 404);
     if (String(order['status']) !== 'pending') throw new GameError('Order is not pending.', 409);
-    const owner = Number(order['account_id']);
-    const coins = Number(order['coins']);
-    const chars = db.charactersForAccount(owner);
-    const first = chars[0];
-    if (first) {
-      const state = JSON.parse(first.state) as CharacterState;
-      state.coins = (state.coins ?? 0) + coins;
-      db.saveCharacter(first.id, JSON.stringify(state), first.session, now);
-    }
-    db.setCoinOrderStatus(Number(order['id']), 'paid');
+    const owner = integer(order['account_id']);
+    const coins = integer(order['coins']);
+    const first = db.charactersForAccount(owner)[0];
+    if (!first) throw new GameError('A conta ainda não possui personagem para receber as Tibia Coins.', 409);
+    const { loaded } = loadCharacter(db, owner, first.id, now);
+    loaded.character.coins = (loaded.character.coins ?? 0) + coins;
+    db.saveCharacter(loaded.row.id, JSON.stringify(loaded.character), loaded.session ? JSON.stringify(loaded.session) : null, now);
+    db.setCoinOrderStatus(orderId, 'paid');
     return { ok: true, coins };
   }
 
   if (type === 'code') {
     const code = String(body.code ?? '').trim().toUpperCase();
     if (!/^[A-Z0-9-]{4,20}$/.test(code)) throw new GameError('Invalid code.');
-    db.createRedeemCode(code, Math.max(0, Number(body.coins) || 0), Math.max(0, Number(body.gold) || 0), Math.max(0, Number(body.vipDays) || 0));
+    db.createRedeemCode(
+      code,
+      integer(body.coins ?? 0),
+      integer(body.gold ?? 0),
+      integer(body.vipDays ?? 0, 3650),
+    );
     return { ok: true, code };
   }
 
