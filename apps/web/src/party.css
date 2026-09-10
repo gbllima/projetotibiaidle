@@ -1,4 +1,5 @@
 /* Party UI — compact Tibia-inspired panel and formation manager */
+#set { display: none !important; }
 .party-panel { padding: 0 !important; }
 #party-config .dock-head, #party-config .box-head { min-height: 34px; }
 .party-head-button { min-width:30px;height:26px;padding:0 8px;border:1px solid #414141;border-radius:4px;background:linear-gradient(#4a4a47,#343432);color:#d7d7d3;font:700 11px/1 inherit;cursor:pointer; }
