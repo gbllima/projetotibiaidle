@@ -332,6 +332,20 @@ export class Database {
   }
 
   saveCharacter(id: number, state: string, session: string | null, settledAt: number): void {
+    let name: string | null = null;
+    try {
+      const parsed = JSON.parse(state) as { name?: unknown };
+      if (typeof parsed.name === 'string' && parsed.name.trim()) name = parsed.name.trim();
+    } catch {
+      // State validation happens at the game layer; keep legacy behavior if a
+      // malformed blob ever reaches persistence so diagnostics remain possible.
+    }
+    if (name) {
+      this.db
+        .prepare('UPDATE characters SET name = ?, state = ?, session = ?, settled_at = ? WHERE id = ?')
+        .run(name, state, session, settledAt, id);
+      return;
+    }
     this.db
       .prepare('UPDATE characters SET state = ?, session = ?, settled_at = ? WHERE id = ?')
       .run(state, session, settledAt, id);
