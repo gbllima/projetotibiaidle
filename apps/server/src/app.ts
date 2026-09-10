@@ -9,7 +9,7 @@ import { Database } from './db.js';
 import { loadWorldEvent } from './admin.js';
 import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
-import { registerPartyItemRoutes } from './party-items.js';
+import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
 import { registerWebSocket } from './ws.js';
 
 export interface AppOptions {
@@ -27,6 +27,13 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
     try { reconcileHunts(db); } catch (error) { console.error('hunt reconcile timer', error); }
   }, 5 * 60_000);
   reconcileTimer.unref?.();
+
+  // Per-item loot blacklist. The combat simulator still rolls drops normally,
+  // then ignored stacks are discarded from the active loot pouch server-side.
+  const ignoredLootTimer = setInterval(() => {
+    try { sweepIgnoredLoot(db); } catch (error) { console.error('ignored loot sweep', error); }
+  }, 1500);
+  ignoredLootTimer.unref?.();
 
   const app = Fastify({ logger: options.logger ?? false });
   await app.register(cors, { origin: true });
@@ -56,7 +63,10 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
 
   registerWebSocket(app, db);
 
-  app.addHook('onClose', async () => { clearInterval(reconcileTimer); });
+  app.addHook('onClose', async () => {
+    clearInterval(reconcileTimer);
+    clearInterval(ignoredLootTimer);
+  });
 
   if (options.assetsDir && fs.existsSync(options.assetsDir)) {
     await app.register(fastifyStatic, {
