@@ -32,6 +32,8 @@ export const NAV: Array<{ id: OverlayId; label: string; tone: string }> = [
 
 function Glyph({ id }: { id: OverlayId }) {
   switch (id) {
+    case 'guild':
+      return <><path d="M12 2.5 19 5v6.2c0 4.5-2.7 8-7 10.3-4.3-2.3-7-5.8-7-10.3V5l7-2.5Z"/><path d="M12 6.1l1.55 3.14 3.47.5-2.51 2.45.59 3.46L12 14.02l-3.1 1.63.59-3.46-2.51-2.45 3.47-.5L12 6.1Z" fill="#466a47"/></>;
     case 'helper':
       return <path d="M10 3c-2 0-3 1.6-3 3.4 0 2.6 3 6.6 5 8.6 2-2 5-6 5-8.6C17 4.6 16 3 14 3c-1.2 0-2 .7-2 1.6C12 3.7 11.2 3 10 3z" />;
     case 'cyclopedia':
