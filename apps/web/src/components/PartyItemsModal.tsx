@@ -13,11 +13,12 @@ type MenuState = { itemId:number; name:string; count:number; from:ItemSource; sl
 
 type Props = {
   character: CharacterView;
+  controllerCharacterId: number;
   busy?: boolean;
   onClose: () => void;
 };
 
-export function PartyItemsModal({ character, busy = false, onClose }: Props) {
+export function PartyItemsModal({ character, controllerCharacterId, busy = false, onClose }: Props) {
   const [view, setView] = useState(character);
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState('');
@@ -48,23 +49,23 @@ export function PartyItemsModal({ character, busy = false, onClose }: Props) {
   };
 
   const refresh = async () => {
-    const result = await api.character(view.id);
+    const result = await api.partyItemsView(controllerCharacterId, view.id);
     setView(result.character);
     return result.character;
   };
 
-  const runAction = async (work: () => Promise<unknown>) => {
+  const runAction = async (body: Record<string, unknown>) => {
     if (locked) return;
     setMenu(null); setError(''); setActionBusy(true);
-    try { await work(); await refresh(); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Não foi possível concluir a ação.'); }
-    finally { setActionBusy(false); }
+    try {
+      const result = await api.partyItemAct(controllerCharacterId, view.id, body);
+      setView(result.character);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível concluir a ação.');
+      await refresh().catch(() => undefined);
+    } finally { setActionBusy(false); }
   };
 
-  // Item actions always execute as the character whose inventory is open.
-  // This avoids routing through the party leader and makes the backpack/equipment
-  // mutation use the exact same character state that is rendered in this modal.
-  const characterAct = (body: Record<string, unknown>) => api.act(view.id, body);
   const inspect = (itemId: number) => { setMenu(null); setInspectItemId(itemId); };
 
   return <>
@@ -91,7 +92,7 @@ export function PartyItemsModal({ character, busy = false, onClose }: Props) {
 
           <section className="party-items-backpack">
             <div className="party-items-tabs"><button type="button" className="on">Backpack</button><button type="button" disabled>Loot Pouch</button><button type="button" disabled>Store Inbox</button></div>
-            <p>Backpack {backpack.length} / {capacity} — itens guardados pelo personagem.</p>
+            <p>Backpack {backpack.length} / {capacity} — inventário compartilhado da party.</p>
             <div className="party-items-grid">
               {Array.from({ length: Math.max(20, Math.min(40, capacity)) }, (_, index) => {
                 const stack = backpack[index];
@@ -112,14 +113,14 @@ export function PartyItemsModal({ character, busy = false, onClose }: Props) {
         <button type="button" disabled={locked} onClick={() => inspect(menu.itemId)}>⌕ <span>Inspecionar</span></button>
         {menu.from === 'backpack' && menuEquipable && !menuConsumable && <button type="button" disabled={locked || !menuCompatible}
           title={!menuCompatible ? 'Item incompatível com a vocação ou nível deste personagem' : undefined}
-          onClick={() => void runAction(() => characterAct({ type:'equip', itemId:menu.itemId, source:'backpack' }))}>⇧ <span>Equipar</span></button>}
+          onClick={() => void runAction({ type:'equip', itemId:menu.itemId, source:'backpack' })}>⇧ <span>Equipar</span></button>}
         {menu.from === 'worn' && menu.slot && menu.slot !== 'backpack' && <button type="button" disabled={locked}
-          onClick={() => void runAction(() => characterAct({ type:'unequip', slot:menu.slot! }))}>↗ <span>Desequipar</span></button>}
+          onClick={() => void runAction({ type:'unequip', slot:menu.slot! })}>↗ <span>Desequipar</span></button>}
         {menu.from === 'worn' && menu.slot === 'backpack' && backpack.length === 0 && <button type="button" disabled={locked}
-          onClick={() => void runAction(() => characterAct({ type:'unequip', slot:'backpack' }))}>↗ <span>Desequipar</span></button>}
-        <button type="button" className="danger" disabled={locked} onClick={() => void runAction(() => characterAct({
+          onClick={() => void runAction({ type:'unequip', slot:'backpack' })}>↗ <span>Desequipar</span></button>}
+        <button type="button" className="danger" disabled={locked} onClick={() => void runAction({
           type:'destroy-item', itemId:menu.itemId, source:menu.from, count:menu.count, slot:menu.slot,
-        }))}>⌫ <span>Destruir</span></button>
+        })}>⌫ <span>Destruir</span></button>
       </div>}
     </div>
     {inspectItemId !== null && <ItemInspectModal itemId={inspectItemId} onClose={() => setInspectItemId(null)} />}
