@@ -37,6 +37,10 @@ export function DockBox({
     });
   }, [id]);
 
+  // The old standalone SET panel is obsolete: equipment and backpack
+  // management now live inside Party > Itens.
+  if (id === 'set') return null;
+
   return (
     <section className={`box ${open ? '' : 'collapsed'}`}>
       <WindowHead
