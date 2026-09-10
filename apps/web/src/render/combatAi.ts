@@ -24,8 +24,16 @@ export function isMeleeVocation(vocationId: number): boolean {
   return vocationId === 4 || vocationId === 8 || vocationId === 9 || vocationId === 10;
 }
 
+/**
+ * Visual formation distance by vocation. This changes only viewport movement;
+ * the authoritative server combat formulas and damage ranges are untouched.
+ */
 export function desiredCombatRange(vocationId?: number): number {
-  if (isMeleeVocation(vocationId ?? 0)) return 1;
+  const id = vocationId ?? 0;
+  if (isMeleeVocation(id)) return 1;
+  // Paladins keep a mid-range lane while mages stay one tile further back.
+  if (id === 3 || id === 7) return 3;
+  if (id === 1 || id === 2 || id === 5 || id === 6) return 4;
   return 3;
 }
 
