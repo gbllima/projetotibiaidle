@@ -15,7 +15,7 @@ export function HomeScreen({ onPlay }: Props) {
     <main className="landing-page">
       <div className="landing-glow landing-glow-a" aria-hidden /><div className="landing-glow landing-glow-b" aria-hidden />
       <header className="landing-nav">
-        <div className="landing-brand"><span>TI</span> TIBIA IDLE</div>
+        <div className="landing-brand"><span>IK</span> IDLE KNOCK TIBIA</div>
         <nav><a href="#servidor">SERVIDOR</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a></nav>
         <button className="landing-nav-play" onClick={onPlay}>{actionLabel}</button>
       </header>
@@ -26,7 +26,7 @@ export function HomeScreen({ onPlay }: Props) {
           <p>Entre em um mundo inspirado em Tibia, escolha sua vocação, monte sua caçada e continue evoluindo mesmo quando estiver offline.</p>
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
         </div>
-        <div className="landing-hero-art" aria-hidden><div className="landing-sigil">TI</div><div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" /><div className="landing-pixel-particles">✦　·　✧　　·　✦</div></div>
+        <div className="landing-hero-art" aria-hidden><div className="landing-sigil">IK</div><div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" /><div className="landing-pixel-particles">✦　·　✧　　·　✦</div></div>
       </section>
       <section id="servidor" className="landing-stats">
         <Stat label="STATUS" value={stats?.beta === 'open' ? 'ONLINE' : 'OFFLINE'} accent={stats?.beta === 'open'} />
@@ -47,7 +47,7 @@ export function HomeScreen({ onPlay }: Props) {
         <div className="landing-feature-grid"><Feature icon="⚔" title="VOCATIONS" text="Escolha seu estilo de combate e construa seu personagem." /><Feature icon="◉" title="HUNTS" text="Selecione criaturas e deixe sua evolução acontecer." /><Feature icon="◆" title="LOOT & GOLD" text="Colete recursos, venda seu loot e fortaleça seu equipamento." /><Feature icon="♜" title="MUNDO ONLINE" text="Um servidor compartilhado com dados reais dos jogadores." /></div>
       </section>
       <section className="landing-cta"><div><span>PRONTO PARA COMEÇAR?</span><h2>SUA AVENTURA<br /><em>COMEÇA AGORA.</em></h2></div><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button></section>
-      <footer className="landing-footer">TIBIA IDLE <span>•</span> MMORPG IDLE DE NAVEGADOR</footer>
+      <footer className="landing-footer">IDLE KNOCK TIBIA <span>•</span> MMORPG IDLE DE NAVEGADOR</footer>
     </main>
   );
 }
