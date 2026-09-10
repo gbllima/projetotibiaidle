@@ -18,6 +18,8 @@ function monster(uid: number, tileX: number, tileY: number): ActiveMonster {
     maxHealth: 100,
     tileX,
     tileY,
+    attackCooldowns: [],
+    healCooldown: 0,
     paralyzeTicks: 0,
     holdTicks: 0,
   };

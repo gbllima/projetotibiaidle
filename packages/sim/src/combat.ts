@@ -330,7 +330,14 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
 
   const character = session.character;
   let stats = deriveStats(character);
+  // `advance` can be called either once for a whole offline settlement or in
+  // small browser frames. Skills and magic level can increase during combat;
+  // refreshing only at the next call made results depend on that call size.
+  // Keep the derived combat stats in sync on the tick after any relevant level
+  // changes, irrespective of how the caller chunks the simulation.
   let levelAtLastDerive = character.level;
+  let magicLevelAtLastDerive = character.magicLevel;
+  let skillsAtLastDerive = skillLevels(character);
 
   for (let step = 0; step < ticks && session.status === 'active'; step += 1) {
     session.tick += 1;
@@ -361,10 +368,17 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
     refillPack(session, pool, throughput.killsPerHour, spawnRate, rng, emit);
     monsterTurn(session, stats, tuning, rng, emit);
 
-    // Levelling changes every derived stat, so recompute after it happens.
-    if (character.level !== levelAtLastDerive) {
+    // Levelling, skill tries and mana spent can all alter next-tick combat
+    // stats. This must not depend on the outer `advance` call boundary.
+    if (
+      character.level !== levelAtLastDerive
+      || character.magicLevel !== magicLevelAtLastDerive
+      || skillLevelsChanged(character, skillsAtLastDerive)
+    ) {
       stats = deriveStats(character);
       levelAtLastDerive = character.level;
+      magicLevelAtLastDerive = character.magicLevel;
+      skillsAtLastDerive = skillLevels(character);
     }
 
     // Stamina drains one minute per minute of hunting.
@@ -395,6 +409,32 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
 
   session.rngState = rng.getState();
   return events;
+}
+
+function skillLevels(character: CharacterState): number[] {
+  return [
+    character.skills.fist?.level ?? 0,
+    character.skills.club?.level ?? 0,
+    character.skills.sword?.level ?? 0,
+    character.skills.axe?.level ?? 0,
+    character.skills.distance?.level ?? 0,
+    character.skills.shield?.level ?? 0,
+    character.skills.fishing?.level ?? 0,
+  ];
+}
+
+function skillLevelsChanged(character: CharacterState, previous: readonly number[]): boolean {
+  // This sits in the hot tick loop. Avoid building a fresh array for every
+  // tick; a long offline settlement executes this check thousands of times.
+  return (
+    (character.skills.fist?.level ?? 0) !== previous[0]
+    || (character.skills.club?.level ?? 0) !== previous[1]
+    || (character.skills.sword?.level ?? 0) !== previous[2]
+    || (character.skills.axe?.level ?? 0) !== previous[3]
+    || (character.skills.distance?.level ?? 0) !== previous[4]
+    || (character.skills.shield?.level ?? 0) !== previous[5]
+    || (character.skills.fishing?.level ?? 0) !== previous[6]
+  );
 }
 
 function regenSouls(session: HuntSession): void {
