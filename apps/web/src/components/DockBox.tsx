@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { Children, isValidElement, useCallback, useState, type ReactNode } from 'react';
 import { WindowHead } from './WindowHead.js';
 
 const KEY = 'tibia-idle.docks';
@@ -37,9 +37,28 @@ export function DockBox({
     });
   }, [id]);
 
-  // The old standalone SET panel is obsolete: equipment and backpack
-  // management now live inside Party > Itens.
-  if (id === 'set') return null;
+  // The old SET paperdoll is obsolete, but the Backpack remains useful.
+  // Reuse only the existing backpack portion so we keep its live data without
+  // duplicating inventory state or bringing the full SET panel back.
+  if (id === 'set') {
+    const backpack = Children.toArray(children).find((child) =>
+      isValidElement<{ className?: string }>(child)
+      && child.props.className?.split(/\s+/).includes('party-set-backpack'),
+    );
+    if (!backpack) return null;
+
+    return (
+      <section className={`box ${open ? '' : 'collapsed'}`}>
+        <WindowHead
+          title="Backpack"
+          collapsible
+          open={open}
+          onToggle={toggle}
+        />
+        {open ? <div className={bodyClass}>{backpack}</div> : null}
+      </section>
+    );
+  }
 
   return (
     <section className={`box ${open ? '' : 'collapsed'}`}>
