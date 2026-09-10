@@ -9,6 +9,7 @@ import { Database } from './db.js';
 import { loadWorldEvent } from './admin.js';
 import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
+import { registerPartyItemRoutes } from './party-items.js';
 import { registerWebSocket } from './ws.js';
 
 export interface AppOptions {
@@ -32,6 +33,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   await app.register(websocket);
 
   registerRoutes(app, db);
+  registerPartyItemRoutes(app, db);
 
   // Public, read-only server information used by the landing page.
   // No account data, currency balances or private character state is exposed.
