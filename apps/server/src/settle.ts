@@ -3,7 +3,7 @@ import {
   advance, DEFAULT_RATES, defaultSupplies, deriveStats, describeSession, dailyBoostedMonster,
   ensureHuntTask, isBossHunt, isVip, movePouchToWarehouse, packHuntSupplies, parseBossHuntId,
   bossOnCooldown, getBossEncounterForHunt, recordBossKill, pouchSellValue, startSession, suppliesCost, TICK_MS,
-  type CharacterState, type HuntSession, type SimEvent,
+  type CharacterState, type HuntSession, type SimEvent, type AdvanceOptions,
 } from '@tibia-idle/sim';
 
 /**
@@ -98,7 +98,7 @@ export function settle(
   session: HuntSession | null,
   settledAtMs: number,
   nowMs: number,
-  options: { maxEvents?: number } = {},
+  options: { maxEvents?: number; offline?: boolean; awardKillExperience?: AdvanceOptions['awardKillExperience'] } = {},
 ): SettlementResult {
   const elapsedMs = Math.max(0, nowMs - settledAtMs);
   const empty = {
@@ -118,7 +118,7 @@ export function settle(
     return empty;
   }
 
-  const offline = elapsedMs > OFFLINE_GAP_MS;
+  const offline = options.offline ?? elapsedMs > OFFLINE_GAP_MS;
   const capHours = offlineCapHours(session.character, nowMs);
   const capMs = capHours * 60 * 60 * 1000;
   const appliedMs = Math.min(elapsedMs, capMs);
@@ -137,6 +137,7 @@ export function settle(
   const efficiency = offline ? OFFLINE_EFFICIENCY : 1;
   const events = advance(session, ticks, {
     maxEvents: options.maxEvents ?? 0,
+    awardKillExperience: options.awardKillExperience,
     rates: {
       ...DEFAULT_RATES,
       experience: DEFAULT_RATES.experience * efficiency,

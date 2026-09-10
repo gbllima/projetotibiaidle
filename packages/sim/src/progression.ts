@@ -21,6 +21,9 @@ export const VIP_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 export const PREY_LOCK_COINS = 10;
 export const PARTY_SLOT_GOLD = 10_000;
 export const PARTY_SLOT_COINS = 75;
+export function partySlotPrices(unlockedSlots: number): { gold: number; coins: number } {
+  return unlockedSlots < 2 ? { gold: PARTY_SLOT_GOLD, coins: PARTY_SLOT_COINS } : { gold: 100_000, coins: 500 };
+}
 export const GUILD_COST = 50_000;
 export const GOLD_PER_COIN = 10_000;
 export const DAILY_XP_BOOST = 0.1;

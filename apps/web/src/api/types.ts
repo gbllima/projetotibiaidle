@@ -206,6 +206,7 @@ export interface CharacterView {
   unlockedMounts: number[];
   appearance: { outfit: number; head: number; body: number; legs: number; feet: number; aura: number; mount: number; addons?: number };
   partySlots: number;
+  partyMemberIds?: number[];
   partyBonus: number;
   caveParty: Array<{
     id: number;

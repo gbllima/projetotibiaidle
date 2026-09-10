@@ -4,7 +4,7 @@ import { TICK_MS, isBossHunt } from '@tibia-idle/sim';
 import { accountFromHeader, AuthError, claimAccount, isGuestUsername, login, register, registerGuest } from './auth.js';
 import type { Database } from './db.js';
 import {
-  addPartyMember, characterSlotCap, createNewCharacter, describeCharacter, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
+  addPartyMember, configureParty, characterSlotCap, createNewCharacter, describeCharacter, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
   sellPouch, stashPouch, startHunt, stopHunt, upgradeGear,
 } from './game.js';
 import { act, worldSnapshot, type ActBody } from './systems.js';
@@ -196,6 +196,19 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     } catch (error) {
       return fail(reply, error);
     }
+  });
+
+  app.put('/api/characters/:id/party', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const ownerId = Number((request.params as { id: string }).id);
+      const body = (request.body ?? {}) as { memberIds?: unknown; primaryId?: unknown };
+      if (!Array.isArray(body.memberIds) || !body.memberIds.every((id) => typeof id === 'number' && Number.isInteger(id))
+        || typeof body.primaryId !== 'number' || !Number.isInteger(body.primaryId)) throw new GameError('Formação inválida.', 422);
+      const id = configureParty(db, accountId, ownerId, body.memberIds, body.primaryId);
+      const { loaded } = loadCharacter(db, accountId, id);
+      return reply.send({ character: describeCharacter(loaded, db) });
+    } catch (error) { return fail(reply, error); }
   });
 
   app.post('/api/characters/:id/party/members', async (request, reply) => {

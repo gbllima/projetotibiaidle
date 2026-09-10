@@ -195,6 +195,18 @@ export class Database {
     this.db.close();
   }
 
+  transaction<T>(action: () => T): T {
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const result = action();
+      this.db.exec('COMMIT');
+      return result;
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   createAccount(username: string, passwordHash: string, salt: string): AccountRow {
     const now = Date.now();
     this.db

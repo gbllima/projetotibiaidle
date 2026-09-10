@@ -10,9 +10,9 @@ import {
   LOOT_SLOT_DEFAULT, SUPPLY_SLOT_DEFAULT,
   availableExerciseHits,
   partyExperienceShare, isPromoted,
-  expForLevel,
   type CharacterState, type HuntSession, type PartyHunter, type SimEvent,
 } from '@tibia-idle/sim';
+import { settleParty } from './party-settlement.js';
 import { isAdminUsername } from './auth.js';
 import type { CharacterRow, Database } from './db.js';
 import { beginHunt, endHunt, GameError, regenStamina, requiredPartySlots, settle, summarise } from './settle.js';
@@ -124,6 +124,9 @@ export function addPartyMember(db: Database, accountId: number, ownerId: number,
   const ids = storedPartyIds(db, ownerId);
   if (ids.includes(memberId)) return;
   if (ids.length >= (owner.character.partySlots ?? 1)) throw new GameError('A party está cheia.', 409);
+  if (configuredPartyIds(db, accountId, memberId).length > 1 || configuredPartyIds(db, accountId, ownerId)[0] !== ownerId) {
+    throw new GameError('O personagem já pertence a outra party.', 409);
+  }
   const member = loadCharacter(db, accountId, memberId).loaded;
   owner.character.backpackContents ??= [];
   owner.character.warehouse ??= [];
@@ -150,6 +153,53 @@ export function removePartyMember(db: Database, accountId: number, ownerId: numb
   db.setWorld(partyKey(ownerId), JSON.stringify(ids.filter((id) => id !== memberId)));
 }
 
+/** Save formation and leadership together; invalid changes never partially apply. */
+export function configureParty(db: Database, accountId: number, ownerId: number, memberIds: number[], primaryId: number, now = Date.now()): number {
+  const ownerRow = db.findCharacter(ownerId);
+  if (!ownerRow || ownerRow.accountId !== accountId) throw new GameError('Personagem inválido.', 404);
+  const owner = parse(ownerRow);
+  const current = configuredPartyIds(db, accountId, ownerId);
+  if (current[0] !== ownerId) throw new GameError('Configure a party pelo personagem principal.', 409);
+  if (!memberIds.length || memberIds.length > Math.min(3, owner.character.partySlots ?? 1)
+    || new Set(memberIds).size !== memberIds.length || !memberIds.includes(primaryId)) {
+    throw new GameError('Formação inválida ou sem slots disponíveis.', 422);
+  }
+  for (const id of memberIds) {
+    const row = db.findCharacter(id);
+    if (!Number.isInteger(id) || !row || row.accountId !== accountId) throw new GameError('Personagem inválido.', 403);
+    const otherParty = configuredPartyIds(db, accountId, id);
+    if (otherParty.length > 1 && otherParty[0] !== ownerId) throw new GameError('O personagem já participa de outra party.', 409);
+  }
+  return db.transaction(() => {
+    // Settle earnings under the old formation before changing eligibility.
+    for (const id of new Set([...current, ...memberIds])) loadCharacter(db, accountId, id, now);
+    const previous = parse(db.findCharacter(ownerId)!);
+    const primary = primaryId === ownerId ? previous : parse(db.findCharacter(primaryId)!);
+    primary.character.partySlots = Math.max(primary.character.partySlots, previous.character.partySlots);
+    primary.character.backpackContents ??= [];
+    primary.character.warehouse ??= [];
+    for (const id of new Set([...current, ...memberIds])) {
+      db.setWorld(partyKey(id), JSON.stringify([id]));
+      if (id === primaryId || (id !== ownerId && !memberIds.includes(id))) continue;
+      const member = id === ownerId ? previous : parse(db.findCharacter(id)!);
+      for (const stack of member.character.backpackContents ?? []) {
+        if (stack.count <= 0) continue;
+        const destination = primary.character.backpackContents.some((item) => item.itemId === stack.itemId)
+          || primary.character.backpackContents.length < backpackCapacity(primary.character)
+          ? primary.character.backpackContents : primary.character.warehouse;
+        addItemStack(destination, stack.itemId, stack.count);
+      }
+      member.character.backpackContents = [];
+      persist(db, member, now);
+    }
+    persist(db, primary, now);
+    const ordered = [primaryId, ...memberIds.filter((id) => id !== primaryId)];
+    db.setWorld(partyKey(primaryId), JSON.stringify(ordered));
+    db.setWorld('party-xp-cursor:' + primaryId, db.getWorld('party-xp-cursor:' + ownerId) ?? '0');
+    return primaryId;
+  });
+}
+
 function parse(row: CharacterRow): LoadedCharacter {
   const session = row.session ? (JSON.parse(row.session) as HuntSession) : null;
   // While hunting, the session owns the character: the simulation mutates it
@@ -165,6 +215,10 @@ function parse(row: CharacterRow): LoadedCharacter {
 
 function attachCaveParty(db: Database, loaded: LoadedCharacter): void {
   if (!loaded.session) return;
+  if (configuredPartyIds(db, loaded.row.accountId, loaded.row.id).length > 1) {
+    loaded.session.partyMembers = [];
+    return;
+  }
   loaded.session.partyMembers = db
     .listHuntHunters(loaded.session.huntId)
     .filter((hunter) => hunter.id !== loaded.row.id)
@@ -195,7 +249,9 @@ function persistentPartyView(loaded: LoadedCharacter, db: Database): Array<Party
   loaded.character.warehouse ??= [];
   let ownerChanged = false;
   for (const memberId of storedPartyIds(db, loaded.row.id).filter((id) => id !== loaded.row.id)) {
-    const member = loadCharacter(db, loaded.row.accountId, memberId).loaded;
+    const memberRow = db.findCharacter(memberId);
+    if (!memberRow || memberRow.accountId !== loaded.row.accountId) continue;
+    const member = parse(memberRow);
     member.character.backpackContents ??= [];
     let changed = false;
     for (const stack of member.character.backpackContents.filter((entry) => entry.count > 0)) {
@@ -214,16 +270,12 @@ function persistentPartyView(loaded: LoadedCharacter, db: Database): Array<Party
     }
   }
   if (ownerChanged) persist(db, loaded, Date.now());
-  const activeIds = new Set(
-    loaded.session?.status === 'active'
-      ? db.listHuntHunters(loaded.session.huntId).map((hunter) => hunter.id)
-      : [],
-  );
   const sharedBackpack = (loaded.character.backpackContents ?? []).filter((stack) => stack.count > 0);
   const sharedBackpackCapacity = backpackCapacity(loaded.character);
   return storedPartyIds(db, loaded.row.id).flatMap((id) => {
-    const member = id === loaded.row.id ? loaded : loadCharacter(db, loaded.row.accountId, id).loaded;
-    if (!member) return [];
+    const memberRow = db.findCharacter(id);
+    if (!memberRow || memberRow.accountId !== loaded.row.accountId) return [];
+    const member = id === loaded.row.id ? loaded : parse(memberRow);
     const stats = deriveStats(member.character);
     return [{
       id,
@@ -251,8 +303,8 @@ function persistentPartyView(loaded: LoadedCharacter, db: Database): Array<Party
       backpackCapacity: sharedBackpackCapacity,
       active: id === loaded.row.id
         ? loaded.session?.status === 'active'
-        : activeIds.has(id)
-          || (member.session?.status === 'active' && member.session.huntId === loaded.session?.huntId),
+        : loaded.session?.status === 'active' && member.session?.status === 'active'
+          && member.session.huntId === loaded.session.huntId,
       self: id === loaded.row.id,
     }];
   });
@@ -267,66 +319,42 @@ function persist(db: Database, loaded: LoadedCharacter, now: number): void {
   );
 }
 
-interface PartyXpEntry {
-  loaded: LoadedCharacter;
-  beforeExperience: number;
-  beforeSessionExperience: number;
-  events: SimEvent[];
-}
-
-function settleActivePartyMembers(db: Database, ownerId: number, huntId: string, now: number): PartyXpEntry[] {
-  const entries: PartyXpEntry[] = [];
-  for (const memberId of storedPartyIds(db, ownerId).filter((id) => id !== ownerId)) {
-    const row = db.findCharacter(memberId);
-    if (!row) continue;
-    try {
-      const member = parse(row);
-      const beforeExperience = member.character.experience;
-      if (member.session?.status === 'active' && member.session.huntId === huntId) {
-        const beforeSessionExperience = member.session.totals.experience;
-        const settlement = settle(member.session, row.settledAt, now);
-        if (settlement.session.status !== 'active') {
-          endHunt(settlement.session);
-          member.character = settlement.session.character;
-          member.session = null;
-          persist(db, member, now);
-          releaseAndPromote(db, memberId, now);
-        } else {
-          member.character = settlement.session.character;
-          entries.push({
-            loaded: member,
-            beforeExperience,
-            beforeSessionExperience,
-            events: settlement.events,
-          });
-        }
-      } else {
-        entries.push({ loaded: member, beforeExperience, beforeSessionExperience: 0, events: [] });
-      }
-    } catch (error) {
-      console.error('settle party member', memberId, error);
+function configuredPartyIds(db: Database, accountId: number, characterId: number): number[] {
+  for (const row of db.allCharacters()) {
+    if (row.accountId !== accountId) continue;
+    const ids = storedPartyIds(db, row.id);
+    if (ids.length > 1 && ids.includes(characterId)) {
+      return ids.slice(0, 3).filter((id) => db.findCharacter(id)?.accountId === accountId);
     }
   }
-  return entries;
+  return [characterId];
 }
 
-function rebalancePartyExperience(entries: PartyXpEntry[], now: number, db: Database): void {
-  if (entries.length < 2) return;
-  const gained = entries.map((entry) => entry.loaded.character.experience - entry.beforeExperience);
-  const shared = Math.floor(gained.reduce((sum, amount) => sum + amount, 0) / entries.length);
-  entries.forEach((entry) => {
-    const character = entry.loaded.character;
-    character.experience = entry.beforeExperience + shared;
-    while (character.level > 8 && character.experience < expForLevel(character.level)) character.level -= 1;
-    while (character.experience >= expForLevel(character.level + 1)) character.level += 1;
-    if (entry.loaded.session) {
-      entry.loaded.session.totals.experience = entry.beforeSessionExperience + shared;
-    }
-    const stats = deriveStats(character);
-    character.health = Math.min(character.health, stats.maxHealth);
-    character.mana = Math.min(character.mana, stats.maxMana);
-    persist(db, entry.loaded, now);
+function settleConfiguredParty(db: Database, accountId: number, characterId: number, now: number): Map<number, ReturnType<typeof settle>> {
+  const ids = configuredPartyIds(db, accountId, characterId);
+  const results = new Map<number, ReturnType<typeof settle>>();
+  if (ids.length < 2) return results;
+  const members = ids.flatMap((id) => {
+    const row = db.findCharacter(id);
+    if (!row) return [];
+    const loaded = parse(row);
+    return loaded.session?.status === 'active' ? [loaded] : [];
   });
+  const remainderKey = 'party-xp-cursor:' + ids[0];
+  const outcome = settleParty(members.map((member) => ({ id: member.row.id, session: member.session!, settledAt: member.row.settledAt })),
+    now, Number(db.getWorld(remainderKey) ?? 0) || 0);
+  for (const entry of outcome.entries) {
+    const loaded = members.find((member) => member.row.id === entry.id)!;
+    results.set(entry.id, entry.result);
+    if (entry.session.status !== 'active') {
+      endHunt(entry.session);
+      loaded.session = null;
+    }
+    persist(db, loaded, !loaded.session || entry.result.discardedSeconds > 0 ? now : entry.cursor);
+  }
+  for (const member of members) if (!member.session) releaseAndPromote(db, member.row.id, now);
+  db.setWorld(remainderKey, String(outcome.remainderCursor));
+  return results;
 }
 
 /**
@@ -341,21 +369,8 @@ export function reconcileHunts(db: Database, now = Date.now()): { settled: numbe
   for (const row of db.allCharacters()) {
     if (!row.session) continue;
     try {
-      const loaded = parse(row);
-      if (!loaded.session) continue;
-      const settlement = settle(loaded.session, row.settledAt, now);
-      if (settlement.session && settlement.session.status !== 'active') {
-        endHunt(settlement.session);
-        loaded.character = settlement.session.character;
-        loaded.session = null;
-        persist(db, loaded, now);
-        releaseAndPromote(db, row.id, now);
-        settled += 1;
-      } else if (settlement.session && settlement.elapsedSeconds > 0) {
-        loaded.session = settlement.session;
-        loaded.character = settlement.session.character;
-        persist(db, loaded, now);
-      }
+      const { settlement } = loadCharacter(db, row.accountId, row.id, now);
+      if (settlement.stoppedBecause) settled += 1;
     } catch (error) {
       console.error('reconcile settle', row.id, error);
     }
@@ -435,32 +450,20 @@ export function loadCharacter(
   characterId: number,
   now = Date.now(),
 ): { loaded: LoadedCharacter; settlement: ReturnType<typeof settle> } {
-  const row = db.findCharacter(characterId);
+  let row = db.findCharacter(characterId);
   if (!row || row.accountId !== accountId) throw new GameError('No such character.', 404);
+  const partySettlements = settleConfiguredParty(db, accountId, characterId, now);
+  row = db.findCharacter(characterId)!;
 
   const loaded = parse(row);
   attachCaveParty(db, loaded);
-  const settlement = settle(loaded.session, row.settledAt, now);
-  if (loaded.session?.status === 'active') {
-    const partyEntries: PartyXpEntry[] = [];
-    if (settlement.session?.status === 'active' && settlement.elapsedSeconds > 0) {
-      partyEntries.push({
-        loaded,
-        beforeExperience: loaded.character.experience - settlement.delta.experience,
-        beforeSessionExperience: loaded.session.totals.experience - settlement.delta.experience,
-        events: settlement.events,
-      });
-    }
-    partyEntries.push(...settleActivePartyMembers(db, characterId, loaded.session.huntId, now));
-    const targetUid = loaded.session.active[0]?.uid;
-    loaded.partyEvents = partyEntries.flatMap((entry) => entry.events
-      .filter((event) => event.type === 'player_attack' || event.type === 'monster_attack' || event.type === 'condition' || event.type === 'buff')
-      .slice(-24)
-      .map((event) => ({ ...event, actorId: entry.loaded.row.id, uid: targetUid ?? event.uid })));
-    rebalancePartyExperience(partyEntries, now, db);
-  }
+  const settlement = partySettlements.get(characterId) ?? settle(loaded.session, row.settledAt, now);
+  const targetUid = loaded.session?.active[0]?.uid;
+  loaded.partyEvents = [...partySettlements.entries()].flatMap(([id, result]) => result.events
+    .filter((event) => event.type === 'player_attack' || event.type === 'monster_attack' || event.type === 'condition' || event.type === 'buff')
+    .map((event) => ({ ...event, actorId: event.actorId ?? id, uid: targetUid ?? event.uid })));
 
-  if (settlement.session && settlement.session.status !== 'active') {
+  if (!partySettlements.has(characterId) && settlement.session && settlement.session.status !== 'active') {
     // The hunt ended while the player was away: bank the loot so the gold is
     // waiting for them rather than trapped in a dead session.
     endHunt(settlement.session);
@@ -485,7 +488,7 @@ export function loadCharacter(
     trainOffline(loaded.character, now - row.settledAt);
   }
 
-  if (settlement.elapsedSeconds > 0 || loaded.session === null) {
+  if (!partySettlements.has(characterId) && (settlement.elapsedSeconds > 0 || loaded.session === null)) {
     persist(db, loaded, now);
   }
   return { loaded, settlement };
@@ -740,6 +743,7 @@ export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
     unlockedMounts: character.unlockedMounts ?? [],
     appearance: character.appearance,
     partySlots: character.partySlots ?? 1,
+    partyMemberIds: db ? configuredPartyIds(db, loaded.row.accountId, loaded.row.id) : [loaded.row.id],
     partyBonus: Math.round((partyShare - 1) * 100),
     caveParty: db ? persistentPartyView(loaded, db) : cavePartyView(loaded),
     guildId: character.guildId,

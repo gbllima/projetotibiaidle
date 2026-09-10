@@ -97,6 +97,9 @@ export const api = {
   addPartyMember: (ownerId: number, characterId: number) =>
     request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party/members`, { characterId }),
 
+  configureParty: (ownerId: number, memberIds: number[], primaryId: number) =>
+    request<{ character: CharacterView }>('PUT', `/api/characters/${ownerId}/party`, { memberIds, primaryId }),
+
   removePartyMember: (ownerId: number, characterId: number) =>
     request<{ character: CharacterView }>('DELETE', `/api/characters/${ownerId}/party/members/${characterId}`),
 

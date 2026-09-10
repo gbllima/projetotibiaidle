@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   advance, BOSS_HEALTH_MULT, BOSS_REWARD_MULT, createCharacter, deriveStats,
-  describeSession, SPELLS, startSession, WAVE_PACK, waveProgress,
+  describeSession, huntThroughput, SPELLS, startSession, TICKS_PER_HOUR, WAVE_PACK, waveProgress, DEFAULT_TUNING,
 } from '../src/index.js';
 
 const HUNT = 'venore-rotworm-cave';
@@ -47,6 +47,22 @@ describe('fixed wave packs', () => {
     const events = advance(session, 1, { maxEvents: 40 });
     expect(describeSession(session)?.wave).toBe(2);
     expect(session.active.length).toBe(WAVE_PACK[1]);
+    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
+  });
+
+  it('waits for the zone spawn budget before releasing another complete wave', () => {
+    const session = startSession(readyKnight(40), HUNT, 22n);
+    session.totals.kills = WAVE_PACK[0];
+    session.active = [];
+    session.spawnCredits = 0;
+    advance(session, 100, { tuning: { ...DEFAULT_TUNING, spawnRate: 0 } });
+    expect(session.active).toHaveLength(0);
+
+    const requiredTicks = Math.ceil(WAVE_PACK[1]! * TICKS_PER_HOUR / huntThroughput(HUNT).killsPerHour);
+    advance(session, requiredTicks - 1);
+    expect(session.active).toHaveLength(0);
+    const events = advance(session, 1);
+    expect(session.active).toHaveLength(WAVE_PACK[1]);
     expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
   });
 

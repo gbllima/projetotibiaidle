@@ -4291,3 +4291,5 @@ button.compact-row.on { background: #1e2430; box-shadow: inset 0 0 0 1px var(--g
   .dock { border: 0; }
   .voc-grid { grid-template-columns: 1fr 1fr; }
 }
+
+.party-xp-rule{font-size:11px;line-height:1.5;color:var(--muted);margin:0 0 10px}.party-xp-status{font-size:10px;color:var(--muted);margin:4px 0}

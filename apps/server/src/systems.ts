@@ -131,6 +131,21 @@ function creditSeller(db: Database, sellerId: number, gold: number, coins: numbe
 }
 
 export type ActBody = {
+  targetCharacterId?: unknown;
+  convergence?: unknown;
+  target?: unknown;
+  outfit?: unknown;
+  head?: unknown;
+  legs?: unknown;
+  feet?: unknown;
+  addons?: unknown;
+  mount?: unknown;
+  aura?: unknown;
+  kind?: unknown;
+  id?: unknown;
+  buyAll?: unknown;
+  blessIndex?: unknown;
+  elapsedMs?: unknown;
   type?: unknown;
   slot?: unknown;
   charmId?: unknown;
@@ -1440,7 +1455,7 @@ export function act(
     }
 
     case 'roleta-spin': {
-      const rng = new Rng(Date.now() ^ character.id ^ (character.coins ?? 0));
+      const rng = new Rng(now ^ loaded.row.id ^ (character.coins ?? 0));
       const result = spinRoulette(character, rng);
       if (!result.ok) throw new GameError(result.reason, result.reason.includes('Depot') ? 409 : 402);
       persist(db, loaded, now);

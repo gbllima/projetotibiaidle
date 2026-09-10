@@ -110,7 +110,13 @@ export const DEFAULT_TUNING: HuntTuning = {
   spawnRate: 1,
 };
 
+type CombatRates = SimRates & {
+  awardKillExperience?: (session: HuntSession, amount: number, emit: (event: SimEvent) => void) => void;
+};
+
 export interface AdvanceOptions {
+  /** Server party settlement can distribute a kill before combat continues. */
+  awardKillExperience?: CombatRates['awardKillExperience'];
   rates?: SimRates;
   tuning?: HuntTuning;
   /** Cap on returned events. The simulation still runs in full. */
@@ -307,7 +313,7 @@ export const MONSTER_PARALYZE_MS = 4_000;
  * repeats.
  */
 export function advance(session: HuntSession, ticks: number, options: AdvanceOptions = {}): SimEvent[] {
-  const rates = options.rates ?? DEFAULT_RATES;
+  const rates: CombatRates = { ...(options.rates ?? DEFAULT_RATES), awardKillExperience: options.awardKillExperience };
   const tuning = options.tuning ?? DEFAULT_TUNING;
   const maxEvents = options.maxEvents ?? 5000;
   session.creatureFlee = options.creatureFlee === true;
@@ -556,18 +562,6 @@ function applyPolicy(
   }
 }
 
-/** Prime spawn budget so the next pack can fill the floor on the same tick. */
-function primeNextWaveCredit(session: HuntSession): void {
-  if (isBossHunt(session.huntId)) return;
-  if (session.active.length > 0) return;
-
-  const progress = waveProgress(session.totals.kills);
-  const toSpawn = Math.max(0, progress.size - progress.killed);
-  if (toSpawn <= 0) return;
-
-  session.initialPackCredit = toSpawn;
-}
-
 /**
  * Keep each wave pack fixed: spawn only when the floor is empty, filling the
  * entire remaining wave in one shot. Mid-wave drip spawns felt like constant resets.
@@ -575,17 +569,19 @@ function primeNextWaveCredit(session: HuntSession): void {
 function refillPack(
   session: HuntSession,
   pool: Monster[],
-  _killsPerHour: number,
-  _spawnRate: number,
+  killsPerHour: number,
+  spawnRate: number,
   rng: Rng,
   emit: (event: SimEvent) => void,
 ): void {
   if (isBossHunt(session.huntId)) return;
-  if (session.active.length > 0) return;
-
   const progress = waveProgress(session.totals.kills);
+  // Accrue while fighting, but bank at most one wave so idle time cannot fund a burst.
+  session.spawnCredits = Math.min(progress.size, session.spawnCredits + killsPerHour * Math.max(0, spawnRate) / TICKS_PER_HOUR);
+  if (session.active.length > 0) return;
   const toSpawn = Math.max(0, progress.size - progress.killed);
-  if (toSpawn <= 0) return;
+  if (toSpawn <= 0 || session.spawnCredits + 1e-9 < toSpawn) return;
+  session.spawnCredits = Math.max(0, session.spawnCredits - toSpawn);
 
   session.initialPackCredit = 0;
   for (let i = 0; i < toSpawn; i += 1) {
@@ -647,7 +643,7 @@ function setSpellGroupCooldown(session: HuntSession, group: SpellGroup, cooldown
 function playerTurn(
   session: HuntSession,
   stats: DerivedStats,
-  rates: SimRates,
+  rates: CombatRates,
   rng: Rng,
   emit: (event: SimEvent) => void,
   policy = session.character.policy,
@@ -958,7 +954,7 @@ function tickMonsterDots(
   session: HuntSession,
   rng: Rng,
   emit: (event: SimEvent) => void,
-  rates: SimRates,
+  rates: CombatRates,
 ): void {
   const now = sessionNow(session);
   for (const target of session.active) {
@@ -978,7 +974,7 @@ function summonTurn(
   session: HuntSession,
   rng: Rng,
   emit: (event: SimEvent) => void,
-  rates: SimRates,
+  rates: CombatRates,
 ): void {
   const now = sessionNow(session);
   session.summons = (session.summons ?? []).filter((summon) => {
@@ -1007,7 +1003,7 @@ function damageMonster(
   damageType: CombatType,
   rng: Rng,
   emit: (event: SimEvent) => void,
-  rates: SimRates = DEFAULT_RATES,
+  rates: CombatRates = DEFAULT_RATES,
   now = sessionNow(session),
   shoot?: string,
   itemId?: number,
@@ -1188,7 +1184,6 @@ function damageMonster(
     const index = session.active.indexOf(target);
     if (index >= 0) session.active.splice(index, 1);
     emit({ tick: session.tick, type: 'monster_flee', monsterId: monster.id, uid: target.uid });
-    if (session.active.length === 0) primeNextWaveCredit(session);
   }
 }
 
@@ -1198,7 +1193,7 @@ function killMonster(
   monster: Monster,
   rng: Rng,
   emit: (event: SimEvent) => void,
-  rates: SimRates = DEFAULT_RATES,
+  rates: CombatRates = DEFAULT_RATES,
 ): void {
   const carnage = charmCarnageDamage(session.character, monster.id, target.maxHealth, rng);
   if (carnage > 0) {
@@ -1232,7 +1227,6 @@ function killMonster(
   }
   emit({ tick: session.tick, type: 'monster_death', uid: target.uid, monsterId: monster.id });
 
-  if (session.active.length === 0) primeNextWaveCredit(session);
 
   if (bossFight) {
     session.status = 'boss_cleared';
@@ -1259,10 +1253,14 @@ function killMonster(
   const gained = Math.floor(monster.experience * stage * stamina * multi.experience * rates.experience * reward);
 
   session.totals.rawExperience += monster.experience;
-  session.totals.experience += gained;
-  const levelUp = addExperience(character, gained);
-  if (levelUp.levels > 0) {
-    emit({ tick: session.tick, type: 'level_up', level: levelUp.newLevel });
+  if (rates.awardKillExperience) {
+    rates.awardKillExperience(session, gained, emit);
+  } else {
+    session.totals.experience += gained;
+    const levelUp = addExperience(character, gained);
+    if (levelUp.levels > 0) {
+      emit({ tick: session.tick, type: 'level_up', level: levelUp.newLevel });
+    }
   }
 
   if (canReceiveLoot(character.stamina)) {
@@ -1275,7 +1273,7 @@ function rollLoot(
   monster: Monster,
   rng: Rng,
   emit: (event: SimEvent) => void,
-  rates: SimRates = DEFAULT_RATES,
+  rates: CombatRates = DEFAULT_RATES,
   reward = 1,
 ): void {
   const factor = lootFactor(rng);

@@ -210,11 +210,13 @@ export function RightDock({
   return (
     <aside className="dock right">
       <DockBox id="party-config" title="Party Config">
+          <p className="party-xp-rule">A XP de cada monstro derrotado é dividida igualmente entre os membros ativos na mesma caçada. Com 3 ativos, cada um recebe 1/3.</p>
           <div className="party-members">
             {(character.caveParty?.length
               ? character.caveParty
               : [{ id: character.id, name: character.name, level: character.level, vocationId: character.vocation.id, self: true, appearance: character.appearance }]
             ).map((mate) => {
+              const isActive = mate.self ? character.session?.status === 'active' : mate.active === true;
               const mateXp = mate.self ? xp : xpProgress(mate.level, mate.experience ?? 0);
               const health = mate.self ? character.health : mate.health ?? 0;
               const memberMaxHealth = mate.self ? character.maxHealth : mate.maxHealth;
@@ -256,6 +258,7 @@ export function RightDock({
                       </div>
                     )}
                   </div>
+                  <div className="party-xp-status">{isActive ? 'Ativo · participa da divisão de XP' : 'Inativo · sem XP da party'}</div>
                   <div className="party-member-stats">
                     <div className="party-stat-line"><span>HP</span><div className="meter hp"><i style={{ width: `${(health / maxHealth) * 100}%` }} /></div><b>{health}</b></div>
                     <div className="party-stat-line"><span>MP</span><div className="meter mana"><i style={{ width: `${(mana / maxMana) * 100}%` }} /></div><b>{mana}</b></div>

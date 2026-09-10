@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { items } from '@tibia-idle/data';
-import { createCharacter, deriveStats, startSession } from '@tibia-idle/sim';
+import { createCharacter, deriveStats, startSession, type CharacterState } from '@tibia-idle/sim';
 import { createApp } from '../src/app.js';
 import type { Database } from '../src/db.js';
 import { endHunt } from '../src/settle.js';
@@ -43,9 +43,9 @@ async function setup() {
   return { token, character };
 }
 
-function patchState(id: number, mutate: (state: Record<string, unknown>) => void) {
+function patchState(id: number, mutate: (state: CharacterState) => void) {
   const row = db.findCharacter(id)!;
-  const state = JSON.parse(row.state) as Record<string, unknown>;
+  const state = JSON.parse(row.state) as CharacterState;
   mutate(state);
   db.saveCharacter(row.id, JSON.stringify(state), row.session, row.settledAt);
 }
