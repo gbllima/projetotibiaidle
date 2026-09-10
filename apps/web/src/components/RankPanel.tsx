@@ -3,6 +3,7 @@ import { vocationsById, PLAYABLE_VOCATION_IDS } from '@tibia-idle/data';
 import type { WorldView } from '../api/types.js';
 import { PartyPortrait } from './PartyPortrait.js';
 import { formatNumber } from '../format.js';
+import './RankPanel.css';
 
 export function RankPanel({ world, selfId }: { world: WorldView | null; selfId?: number }) {
   const [tab, setTab] = useState<keyof WorldView['ranks']>('level');
