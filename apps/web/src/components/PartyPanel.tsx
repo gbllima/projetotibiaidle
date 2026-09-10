@@ -49,8 +49,13 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
     if (menuBusy) return;
     setMenuBusy(true); setMenuError('');
     try {
-      const result = await api.character(id);
-      if (kind === 'items') setItemsTarget(result.character); else setAppearanceTarget(result.character);
+      if (kind === 'items') {
+        const result = await api.partyItemsView(character.id, id);
+        setItemsTarget(result.character);
+      } else {
+        const result = await api.character(id);
+        setAppearanceTarget(result.character);
+      }
     } catch (reason) {
       setMenuError(reason instanceof Error ? reason.message : 'Não foi possível abrir o menu do personagem.');
     } finally { setMenuBusy(false); }
@@ -84,7 +89,7 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
       {character.partySlots < 3 && <div className="party-locked-member"><div><span aria-hidden>⚔</span> SLOT BLOQUEADO</div><button type="button" disabled={busy||character.gold<prices.gold} onClick={()=>onUnlock('gold')}>Desbloquear por gold — {prices.gold.toLocaleString('pt-BR')}</button><button type="button" disabled={busy||character.coins<prices.coins} onClick={()=>onUnlock('coins')}>Desbloquear na Store — {prices.coins} coins</button></div>}
     </DockBox>
 
-    {itemsTarget && <PartyItemsModal character={itemsTarget} busy={menuBusy} onClose={()=>setItemsTarget(null)} />}
+    {itemsTarget && <PartyItemsModal character={itemsTarget} controllerCharacterId={character.id} busy={menuBusy} onClose={()=>setItemsTarget(null)} />}
 
     {appearanceTarget && <OutfitModal key={`party-outfit-${appearanceTarget.id}-${appearanceTarget.appearance.outfit}`} character={appearanceTarget} busy={menuBusy} onClose={()=>setAppearanceTarget(null)}
       onApply={async(draft)=>{setMenuBusy(true);setMenuError('');try{const result=await api.act(appearanceTarget.id,{type:'appearance',...draft});setAppearanceTarget(result.character);}finally{setMenuBusy(false);}}}
