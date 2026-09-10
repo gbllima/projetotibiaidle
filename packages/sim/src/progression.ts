@@ -19,13 +19,15 @@ export {
 } from './prey.js';
 export const VIP_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 export const PREY_LOCK_COINS = 10;
-export const PARTY_SLOT_GOLD = 10_000;
-export const PARTY_SLOT_COINS = 75;
+export const PARTY_SLOT_GOLD = 25_000;
+/** Kept for API compatibility; party unlocks are gameplay/gold-only. */
+export const PARTY_SLOT_COINS = 0;
 export function partySlotPrices(unlockedSlots: number): { gold: number; coins: number } {
-  return unlockedSlots < 2 ? { gold: PARTY_SLOT_GOLD, coins: PARTY_SLOT_COINS } : { gold: 100_000, coins: 500 };
+  return unlockedSlots < 2 ? { gold: PARTY_SLOT_GOLD, coins: 0 } : { gold: 150_000, coins: 0 };
 }
 export const GUILD_COST = 50_000;
-export const GOLD_PER_COIN = 10_000;
+/** @deprecated Premium currency is no longer minted from gold. */
+export const GOLD_PER_COIN = 100_000;
 export const DAILY_XP_BOOST = 0.1;
 export const DAILY_XP_BOOST_MS = 2 * 60 * 60 * 1000;
 export const TUTORIAL_HUNT_ID = 'venore-rotworm-cave';
@@ -41,28 +43,29 @@ export const POUCH_SLOTS_PER_PAGE = 20;
 export const DEPOT_SLOTS_PER_PAGE = 20;
 export const DEPOT_PAGE_COUNT = 10;
 export const DEPOT_SLOT_CAP = DEPOT_SLOTS_PER_PAGE * DEPOT_PAGE_COUNT;
-export const LOOT_SLOT_COIN = 10;
-export const SUPPLY_SLOT_COIN = 10;
+/** Legacy display value only; pouch expansion is gold-only at the server boundary. */
+export const LOOT_SLOT_COIN = 0;
+export const SUPPLY_SLOT_COIN = 0;
 export const PRESET_CAP = 3;
 
-/** Gold for the next loot-pouch slot; doubles after each purchase from the base. */
+/** Gold for the next loot-pouch slot; grows 40% per purchase. */
 export function lootSlotUpgradeCost(slots: number): number {
   const purchased = Math.max(0, slots - LOOT_SLOT_DEFAULT);
-  return LOOT_SLOT_GOLD * (2 ** purchased);
+  return Math.round(LOOT_SLOT_GOLD * (1.4 ** purchased));
 }
 
-/** Tibia Coins for the next loot-pouch slot; flat rate regardless of gold purchases. */
+/** Premium-currency pouch upgrades are disabled. */
 export function lootSlotCoinCost(_slots?: number): number {
   return LOOT_SLOT_COIN;
 }
 
-/** Gold for the next supply-pouch slot; doubles after each purchase from the base. */
+/** Gold for the next supply-pouch slot; grows 40% per purchase. */
 export function supplySlotUpgradeCost(slots: number): number {
   const purchased = Math.max(0, slots - SUPPLY_SLOT_DEFAULT);
-  return SUPPLY_SLOT_GOLD * (2 ** purchased);
+  return Math.round(SUPPLY_SLOT_GOLD * (1.4 ** purchased));
 }
 
-/** Tibia Coins for the next supply-pouch slot; flat rate regardless of gold purchases. */
+/** Premium-currency pouch upgrades are disabled. */
 export function supplySlotCoinCost(_slots?: number): number {
   return SUPPLY_SLOT_COIN;
 }
@@ -228,7 +231,7 @@ const MOUNT_SHOP: ShopOffer[] = mountsCatalog.map((entry) => {
   };
 });
 
-/** Durable exercise weapons (500 charges) — sold for Tibia Coins. */
+/** Durable exercise weapons (500 charges) — sold for premium Coins. */
 const EXERCISE_SHOP: ShopOffer[] = [
   { id: 'ex_sword', name: 'Exercise Sword', description: '500 cargas · +7 tries de sword por uso no dummy', coins: 25, kind: 'exercise', category: 'exercise', itemId: 28552, itemCount: 500 },
   { id: 'ex_axe', name: 'Exercise Axe', description: '500 cargas · +7 tries de axe por uso', coins: 25, kind: 'exercise', category: 'exercise', itemId: 28553, itemCount: 500 },
@@ -244,21 +247,23 @@ const EXERCISE_SHOP: ShopOffer[] = [
 ];
 
 export const SHOP: ShopOffer[] = [
-  { id: 'vip7', name: 'Premium 7 dias', description: 'Premium Account por 7 dias · +5% XP · 4º Prey · stamina 1.5×', coins: 250, kind: 'vip', category: 'vip', vipDays: 7 },
-  { id: 'vip30', name: 'Premium 30 dias', description: 'Premium Account por 30 dias · +5% XP · 4º Prey · stamina 1.5×', coins: 900, kind: 'vip', category: 'vip', vipDays: 30 },
-  { id: 'xp_boost_1h', name: 'XP Boost 1h', description: '+25% experiência de hunt por 1 hora', coins: 15, kind: 'xp_boost', category: 'boosts', boostPercent: 25, boostDurationMs: 60 * 60 * 1000 },
-  { id: 'xp_boost_4h', name: 'XP Boost 4h', description: '+25% experiência de hunt por 4 horas', coins: 45, kind: 'xp_boost', category: 'boosts', boostPercent: 25, boostDurationMs: 4 * 60 * 60 * 1000 },
-  { id: 'loot_boost_1h', name: 'Loot Boost 1h', description: '+20% loot por 1 hora', coins: 15, kind: 'loot_boost', category: 'boosts', boostPercent: 20, boostDurationMs: 60 * 60 * 1000 },
-  { id: 'loot_boost_4h', name: 'Loot Boost 4h', description: '+20% loot por 4 horas', coins: 45, kind: 'loot_boost', category: 'boosts', boostPercent: 20, boostDurationMs: 4 * 60 * 60 * 1000 },
-  { id: 'gold_boost_1h', name: 'Gold Boost 1h', description: '+20% gold (moedas) do loot por 1 hora', coins: 15, kind: 'gold_boost', category: 'boosts', boostPercent: 20, boostDurationMs: 60 * 60 * 1000 },
-  { id: 'gold_boost_4h', name: 'Gold Boost 4h', description: '+20% gold (moedas) do loot por 4 horas', coins: 45, kind: 'gold_boost', category: 'boosts', boostPercent: 20, boostDurationMs: 4 * 60 * 60 * 1000 },
+  { id: 'vip7', name: 'Premium 7 dias', description: 'Premium da conta por 7 dias · +5% XP · 4º Prey · stamina 1.5×', coins: 150, kind: 'vip', category: 'vip', vipDays: 7 },
+  { id: 'vip30', name: 'Premium 30 dias', description: 'Premium da conta por 30 dias · +5% XP · 4º Prey · stamina 1.5×', coins: 500, kind: 'vip', category: 'vip', vipDays: 30 },
+  { id: 'vip90', name: 'Premium 90 dias', description: 'Premium da conta por 90 dias · +5% XP · 4º Prey · stamina 1.5×', coins: 1350, kind: 'vip', category: 'vip', vipDays: 90 },
+  { id: 'vip365', name: 'Premium 365 dias', description: 'Premium da conta por 365 dias · +5% XP · 4º Prey · stamina 1.5×', coins: 4500, kind: 'vip', category: 'vip', vipDays: 365 },
+  { id: 'xp_boost_1h', name: 'XP Boost 1h', description: '+25% experiência de hunt por 1 hora', coins: 25, kind: 'xp_boost', category: 'boosts', boostPercent: 25, boostDurationMs: 60 * 60 * 1000 },
+  { id: 'xp_boost_4h', name: 'XP Boost 4h', description: '+25% experiência de hunt por 4 horas', coins: 75, kind: 'xp_boost', category: 'boosts', boostPercent: 25, boostDurationMs: 4 * 60 * 60 * 1000 },
+  { id: 'loot_boost_1h', name: 'Loot Boost 1h', description: '+20% loot por 1 hora', coins: 25, kind: 'loot_boost', category: 'boosts', boostPercent: 20, boostDurationMs: 60 * 60 * 1000 },
+  { id: 'loot_boost_4h', name: 'Loot Boost 4h', description: '+20% loot por 4 horas', coins: 75, kind: 'loot_boost', category: 'boosts', boostPercent: 20, boostDurationMs: 4 * 60 * 60 * 1000 },
+  { id: 'gold_boost_1h', name: 'Gold Boost 1h', description: '+10% gold (moedas) do loot por 1 hora', coins: 25, kind: 'gold_boost', category: 'boosts', boostPercent: 10, boostDurationMs: 60 * 60 * 1000 },
+  { id: 'gold_boost_4h', name: 'Gold Boost 4h', description: '+10% gold (moedas) do loot por 4 horas', coins: 75, kind: 'gold_boost', category: 'boosts', boostPercent: 10, boostDurationMs: 4 * 60 * 60 * 1000 },
   ...OUTFIT_SHOP,
   ...MOUNT_SHOP,
   ...EXERCISE_SHOP,
   { id: 'rerolls5', name: '5 rerolls de Prey', description: '5 rerolls instantâneos de Prey', coins: 20, kind: 'reroll', category: 'services' },
   { id: 'rename', name: 'Trocar nickname', description: 'Altera o nome do personagem', coins: 100, kind: 'rename', category: 'services' },
   { id: 'colors', name: 'Randomizar cores', description: 'Novas cores aleatórias do outfit', coins: 10, kind: 'colors', category: 'services' },
-  { id: 'char_slot', name: 'Slot de personagem', description: 'Desbloqueia +1 slot na conta', coins: 150, kind: 'slot', category: 'services' },
+  { id: 'char_slot', name: 'Slot de personagem', description: 'Desbloqueia +1 slot na conta', coins: 200, kind: 'slot', category: 'services' },
   { id: 'aura_gold', name: 'Aura dourada', description: 'Aura dourada no personagem', coins: 120, kind: 'aura', category: 'services', aura: 1 },
   { id: 'aura_red', name: 'Aura vermelha', description: 'Aura vermelha no personagem', coins: 120, kind: 'aura', category: 'services', aura: 2 },
 ];
@@ -280,7 +285,6 @@ export function outfitMatchesGender(lookType: number, gender: 'm' | 'f'): boolea
       if (entry.female === lookType && entry.male !== lookType) return false;
     }
   }
-  // Unknown lookTypes (not in catalog) stay allowed.
   return matchedOwn || !outfitsCatalog.some((entry) => entry.male === lookType || entry.female === lookType);
 }
 
@@ -379,12 +383,6 @@ export function charmPointsLeft(character: CharacterState): number {
 
 export type BestiaryStage = 'unknown' | 'observed' | 'proficient' | 'adept' | 'mastered';
 
-/**
- * CipSoft bestiary proficiency.
- *
- * firstUnlock / secondUnlock / toKill come from the monster's own table.
- * Combat already applies +2% damage, +2% loot and +3% XP at those gates.
- */
 export function bestiaryStage(kills: number, firstUnlock: number, secondUnlock: number, toKill: number): BestiaryStage {
   if (kills <= 0) return 'unknown';
   if (toKill > 0 && kills >= toKill) return 'mastered';
@@ -393,7 +391,6 @@ export function bestiaryStage(kills: number, firstUnlock: number, secondUnlock: 
   return 'observed';
 }
 
-/** Multipliers applied in combat. 1.13 means +13%. */
 export function huntMultipliers(
   character: CharacterState,
   monsterId: string,
@@ -404,9 +401,7 @@ export function huntMultipliers(
   damage: number;
   defense: number;
   experience: number;
-  /** Non-money loot value (items). Store loot boost applies here. */
   loot: number;
-  /** Money drops (gold/platinum/crystal). Store gold boost applies here. */
   gold: number;
 } {
   let damage = 1;
@@ -472,7 +467,6 @@ export function huntMultipliers(
   experience *= charm.experience;
   loot *= charm.loot;
 
-  // Store boosts are channel-specific: loot items vs money drops.
   let gold = loot;
   if ((character.storeLootBoostUntil ?? 0) > now) loot *= 1 + (character.storeLootBoostBonus ?? 0);
   if ((character.storeGoldBoostUntil ?? 0) > now) gold *= 1 + (character.storeGoldBoostBonus ?? 0);
