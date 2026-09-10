@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react';
 import {
   ROULETTE_MAX_LEVEL,
   ROULETTE_MIN_LEVEL,
-  ROULETTE_SPIN_COST,
   equipLevelRequired,
   roulettePool,
 } from '@tibia-idle/sim';
@@ -32,8 +31,8 @@ function blockReason(character: CharacterView, poolSize: number, busy: boolean, 
   if (spinning) return null;
   if (busy) return 'Aguarde a ação anterior terminar.';
   if (poolSize <= 0) return 'Nenhum item disponível para sua vocação.';
-  if ((character.coins ?? 0) < ROULETTE_SPIN_COST) {
-    return `Precisa de ${ROULETTE_SPIN_COST} TC (saldo: ${character.coins ?? 0}).`;
+  if ((character.rouletteTickets ?? 0) < 1) {
+    return 'Precisa de 1 Ticket de Roleta. Ganhe um ao completar o 7º Daily.';
   }
   return null;
 }
@@ -132,7 +131,7 @@ export function RoulettePanel({
         {ROULETTE_MIN_LEVEL} a {ROULETTE_MAX_LEVEL}. Prêmio vai direto pro <strong>Depot</strong>.
       </p>
       <p className="roleta-meta">
-        {pool.length.toLocaleString('pt-BR')} itens elegíveis · saldo {character.coins} TC
+        {pool.length.toLocaleString('pt-BR')} itens elegíveis · {character.rouletteTickets ?? 0} ticket(s)
       </p>
 
       <div className="roleta-stage">
@@ -167,7 +166,7 @@ export function RoulettePanel({
 
       <div className="roleta-actions">
         <button type="button" className="btn gold roleta-spin-btn" disabled={!canSpin} onClick={() => void spin()}>
-          {spinning ? 'Girando…' : `Girar · ${ROULETTE_SPIN_COST} TC`}
+          {spinning ? 'Girando…' : 'Girar · 1 Ticket'}
         </button>
       </div>
 
