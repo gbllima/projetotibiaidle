@@ -1,13 +1,5 @@
 import type { AccountView, BossView, CharacterView, HuntView, LobbyPlayer, Settlement, WorldView } from './types.js';
 
-/**
- * Thin wrapper over the REST API.
- *
- * The token lives in localStorage rather than a cookie: the API is stateless
- * bearer auth and the client may be served from a different origin than the
- * server during development.
- */
-
 const TOKEN_KEY = 'tibia-idle.token';
 
 export class ApiError extends Error {
@@ -40,11 +32,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   const text = await response.text();
   let payload: Record<string, unknown> = {};
   if (text) {
-    try {
-      payload = JSON.parse(text) as Record<string, unknown>;
-    } catch {
-      payload = {};
-    }
+    try { payload = JSON.parse(text) as Record<string, unknown>; } catch { payload = {}; }
   }
   if (!response.ok) {
     const raw = String(payload['error'] ?? '');
@@ -67,98 +55,56 @@ export interface HealthView {
   beta: 'open' | 'closed';
 }
 
+async function startConfiguredPartyHunt(id: number, huntId: string, hours?: number): Promise<{ character: CharacterView }> {
+  const started = await request<{ character: CharacterView }>('POST', `/api/characters/${id}/hunt`, { huntId, hours });
+  const ids = started.character.partyMemberIds ?? [id];
+  if (ids[0] !== id || ids.length <= 1) return started;
+
+  for (const memberId of ids.slice(1)) {
+    try {
+      await request<{ character: CharacterView }>('POST', `/api/characters/${memberId}/hunt`, { huntId, hours });
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 409) throw error;
+    }
+  }
+
+  return request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`)
+    .then(({ character }) => ({ character }));
+}
+
 export const api = {
   health: () => request<HealthView>('GET', '/api/health'),
-
-  register: (username: string, password: string, invite?: string) =>
-    request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/register', { username, password, invite }),
-
-  guest: () =>
-    request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/guest'),
-
-  claim: (username: string, password: string) =>
-    request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/claim', { username, password }),
-
-  login: (username: string, password: string) =>
-    request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/login', { username, password }),
-
+  register: (username: string, password: string, invite?: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/register', { username, password, invite }),
+  guest: () => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/guest'),
+  claim: (username: string, password: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/claim', { username, password }),
+  login: (username: string, password: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/login', { username, password }),
   logout: () => request<{ ok: boolean }>('POST', '/api/logout'),
-
   characters: () => request<{ characters: CharacterView[]; account: AccountView }>('GET', '/api/characters'),
-
   lobby: () => request<{ players: LobbyPlayer[] }>('GET', '/api/lobby'),
-
-  createCharacter: (name: string, vocationId: number, extras?: { gender?: 'm' | 'f'; weapon?: string }) =>
-    request<{ character: CharacterView }>('POST', '/api/characters', { name, vocationId, ...extras }),
-
-  character: (id: number) =>
-    request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`),
-
-  addPartyMember: (ownerId: number, characterId: number) =>
-    request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party/members`, { characterId }),
-
-  configureParty: (ownerId: number, memberIds: number[], primaryId: number) =>
-    request<{ character: CharacterView }>('PUT', `/api/characters/${ownerId}/party`, { memberIds, primaryId }),
-
-  removePartyMember: (ownerId: number, characterId: number) =>
-    request<{ character: CharacterView }>('DELETE', `/api/characters/${ownerId}/party/members/${characterId}`),
-
+  createCharacter: (name: string, vocationId: number, extras?: { gender?: 'm' | 'f'; weapon?: string }) => request<{ character: CharacterView }>('POST', '/api/characters', { name, vocationId, ...extras }),
+  character: (id: number) => request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`),
+  addPartyMember: (ownerId: number, characterId: number) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party/members`, { characterId }),
+  configureParty: (ownerId: number, memberIds: number[], primaryId: number) => request<{ character: CharacterView }>('PUT', `/api/characters/${ownerId}/party`, { memberIds, primaryId }),
+  removePartyMember: (ownerId: number, characterId: number) => request<{ character: CharacterView }>('DELETE', `/api/characters/${ownerId}/party/members/${characterId}`),
   hunts: (id: number) => request<{ hunts: HuntView[] }>('GET', `/api/characters/${id}/hunts`),
-
   bosses: (id: number) => request<{ bosses: BossView[] }>('GET', `/api/characters/${id}/bosses`),
-
-  startHunt: (id: number, huntId: string, hours?: number) =>
-    request<{ character: CharacterView }>('POST', `/api/characters/${id}/hunt`, { huntId, hours }),
-
-  stopHunt: (id: number) =>
-    request<{ character: CharacterView; goldBanked: number; supplyRefund: number }>(
-      'DELETE',
-      `/api/characters/${id}/hunt`,
-    ),
-
-  upgradeGear: (id: number) =>
-    request<{ character: CharacterView; spent: number }>('POST', `/api/characters/${id}/gear`),
-
-  sellPouch: (id: number) =>
-    request<{ character: CharacterView; gold: number }>('POST', `/api/characters/${id}/sell`),
-
-  stashPouch: (id: number) =>
-    request<{ character: CharacterView; items: number }>('POST', `/api/characters/${id}/stash`),
-
-  act: (id: number, body: Record<string, unknown>) =>
-    request<{ character: CharacterView; targetCharacter?: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body),
-
+  startHunt: startConfiguredPartyHunt,
+  stopHunt: (id: number) => request<{ character: CharacterView; goldBanked: number; supplyRefund: number }>('DELETE', `/api/characters/${id}/hunt`),
+  upgradeGear: (id: number) => request<{ character: CharacterView; spent: number }>('POST', `/api/characters/${id}/gear`),
+  sellPouch: (id: number) => request<{ character: CharacterView; gold: number }>('POST', `/api/characters/${id}/sell`),
+  stashPouch: (id: number) => request<{ character: CharacterView; items: number }>('POST', `/api/characters/${id}/stash`),
+  act: (id: number, body: Record<string, unknown>) => request<{ character: CharacterView; targetCharacter?: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body),
   world: (channel = 'geral') => request<WorldView>('GET', `/api/world?channel=${encodeURIComponent(channel)}`),
-
   admin: () => request<{
     accounts: Array<{ id: number; username: string; admin: boolean; characters: Array<{ id: number; name: string; level: number; gold: number; coins: number }> }>;
     orders: Array<{ id: number; accountId: number; packId: string; coins: number; brl: number; status: string; createdAt: number }>;
     event: { name: string; experience: number; loot: number };
-    metrics: {
-      accounts: number;
-      characters: number;
-      hunting: number;
-      queued: number;
-      gold: number;
-      coins: number;
-      beta: string;
-      last24h: { dau: number; registers: number; huntsStarted: number; huntsStopped: number; goldFromHunts: number };
-      retention: { d1Cohort: number; d1Returned: number; d1: number | null };
-      topHunts: Array<{ huntId: string; n: number }>;
-    };
+    metrics: { accounts: number; characters: number; hunting: number; queued: number; gold: number; coins: number; beta: string; last24h: { dau: number; registers: number; huntsStarted: number; huntsStopped: number; goldFromHunts: number }; retention: { d1Cohort: number; d1Returned: number; d1: number | null }; topHunts: Array<{ huntId: string; n: number }> };
     invites: Array<{ code: string; usedBy: number | null }>;
   }>('GET', '/api/admin'),
-
   adminAct: (body: Record<string, unknown>) => request<Record<string, unknown>>('POST', '/api/admin', body),
 };
 
-/**
- * Live state feed.
- *
- * Reconnects with a backoff instead of giving up: an idle game is left open for
- * hours, and a laptop that sleeps should pick the session back up on wake
- * rather than showing a frozen screen.
- */
 export class LiveSocket {
   private socket: WebSocket | null = null;
   private retry = 0;
@@ -169,39 +115,23 @@ export class LiveSocket {
     private readonly characterId: number,
     private readonly onState: (character: CharacterView, settlement: Settlement) => void,
     private readonly onStatus: (status: 'connecting' | 'open' | 'closed') => void,
-  ) {
-    this.connect();
-  }
+  ) { this.connect(); }
 
   private connect(): void {
     if (this.closed) return;
     this.onStatus('connecting');
-
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(`${protocol}//${location.host}/ws`);
     this.socket = socket;
-
     socket.addEventListener('open', () => {
       this.retry = 0;
       this.onStatus('open');
-      socket.send(JSON.stringify({
-        type: 'subscribe',
-        token: storedToken(),
-        characterId: this.characterId,
-      }));
+      socket.send(JSON.stringify({ type: 'subscribe', token: storedToken(), characterId: this.characterId }));
     });
-
     socket.addEventListener('message', (event) => {
-      const message = JSON.parse(String(event.data)) as {
-        type: string;
-        character?: CharacterView;
-        settlement?: Settlement;
-      };
-      if (message.type === 'state' && message.character) {
-        this.onState(message.character, message.settlement ?? { elapsedSeconds: 0, stoppedBecause: null });
-      }
+      const message = JSON.parse(String(event.data)) as { type: string; character?: CharacterView; settlement?: Settlement };
+      if (message.type === 'state' && message.character) this.onState(message.character, message.settlement ?? { elapsedSeconds: 0, stoppedBecause: null });
     });
-
     socket.addEventListener('close', () => {
       this.onStatus('closed');
       if (this.closed) return;
