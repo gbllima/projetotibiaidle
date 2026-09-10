@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { Database } from './db.js';
-import { describeCharacter, loadCharacter } from './game.js';
+import { loadCharacter } from './game.js';
+import { economyCharacterView, syncAccountEconomy } from './economy.js';
 import { markOffline, markOnline } from './presence.js';
 import { publicSettlement } from './settle.js';
 
@@ -43,9 +44,13 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
       if (!subscription) return;
       try {
         const { loaded, settlement } = loadCharacter(db, subscription.accountId, subscription.characterId);
+        syncAccountEconomy(db, subscription.accountId, loaded);
         send({
           type: 'state',
-          character: { ...describeCharacter(loaded, db), partyEvents: loaded.partyEvents ?? [] },
+          character: {
+            ...economyCharacterView(db, subscription.accountId, loaded),
+            partyEvents: loaded.partyEvents ?? [],
+          },
           settlement: publicSettlement(settlement),
         });
       } catch (error) {
