@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hunts, recommendedLevelFor } from '@tibia-idle/data';
+import { calibratedLevelFor, hunts } from '@tibia-idle/data';
 import {
   advance, defaultSupplies, expectedExperiencePerHour, hourlyRates,
   huntThroughput, referenceCharacter, SPELLS, startSession, TICKS_PER_HOUR,
@@ -54,11 +54,11 @@ describe('experience throughput', () => {
   });
 
   it('reaches the official rate at the derived recommended level', () => {
-    const sample = hunts.filter((h) => recommendedLevelFor(h.id, 4) !== null).slice(0, 12);
+    const sample = hunts.filter((h) => calibratedLevelFor(h.id, 4) !== null).slice(0, 12);
     expect(sample.length).toBeGreaterThan(0);
 
     for (const hunt of sample) {
-      const level = recommendedLevelFor(hunt.id, 4)!;
+      const level = calibratedLevelFor(hunt.id, 4)!;
       const session = simulate(hunt.id, 4, level, TICKS_PER_HOUR / 4);
       const hours = session.totals.ticks / TICKS_PER_HOUR;
       const ratio = session.totals.rawExperience / Math.max(hours, 1e-6) / expectedExperiencePerHour(hunt.id);
@@ -67,9 +67,9 @@ describe('experience throughput', () => {
   });
 
   it('gives a character too weak for a zone much less experience', () => {
-    const hunt = hunts.find((h) => (recommendedLevelFor(h.id, 4) ?? 0) > 200);
+    const hunt = hunts.find((h) => (calibratedLevelFor(h.id, 4) ?? 0) > 200);
     expect(hunt).toBeDefined();
-    const level = recommendedLevelFor(hunt!.id, 4)!;
+    const level = calibratedLevelFor(hunt!.id, 4)!;
 
     const strong = simulate(hunt!.id, 4, level, TICKS_PER_HOUR / 4);
     const weak = simulate(hunt!.id, 4, Math.round(level / 4), TICKS_PER_HOUR / 4);
@@ -93,7 +93,7 @@ describe('hunt data', () => {
   });
 
   it('has a recommended level for the large majority of zones', () => {
-    const covered = hunts.filter((h) => recommendedLevelFor(h.id) !== null).length;
+    const covered = hunts.filter((h) => calibratedLevelFor(h.id) !== null).length;
     expect(covered / hunts.length).toBeGreaterThan(0.85);
   });
 });
@@ -101,12 +101,12 @@ describe('hunt data', () => {
 describe('economy', () => {
   it('leaves a profit at a well matched zone', () => {
     const hunt = hunts.find((h) => {
-      const level = recommendedLevelFor(h.id, 4);
+      const level = calibratedLevelFor(h.id, 4);
       return level !== null && level >= 20 && level <= 120;
     });
     expect(hunt).toBeDefined();
 
-    const session = simulate(hunt!.id, 4, recommendedLevelFor(hunt!.id, 4)!);
+    const session = simulate(hunt!.id, 4, calibratedLevelFor(hunt!.id, 4)!);
     const rates = hourlyRates(session);
     expect(rates.lootPerHour).toBeGreaterThan(0);
     expect(rates.profitPerHour).toBeGreaterThan(0);
