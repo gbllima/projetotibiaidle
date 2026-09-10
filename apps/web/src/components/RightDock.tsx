@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { itemsById, vocationsById } from '@tibia-idle/data';
+import { itemsById } from '@tibia-idle/data';
 import { allMainBlessings, blessingCount, canEquipFor, isConsumableItem, isEquipableItem, LOOT_SLOT_CAP, LOOT_SLOT_DEFAULT, POUCH_SLOTS_PER_PAGE, SUPPLY_SLOT_CAP } from '@tibia-idle/sim';
 import type { CharacterView, EquippedItem } from '../api/types.js';
-import { itemRarity, itemValue, formatNumber, xpProgress } from '../format.js';
+import { api } from '../api/client.js';
+import { itemRarity, itemValue, formatNumber } from '../format.js';
 import { itemTooltipLines } from '../itemFormat.js';
 import { useLocale } from '../i18n/Locale.js';
 import { BlessingModal } from './BlessingModal.js';
@@ -10,6 +11,8 @@ import { BackpackModal } from './BackpackModal.js';
 import { DockBox } from './DockBox.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSlot } from './ItemSlot.js';
+import { PartyManagerModal } from './PartyManagerModal.js';
+import { PartyPanel } from './PartyPanel.js';
 import { blessingSetButtonIcon } from '../render/blessingIcon.js';
 import { PAPERDOLL_SLOTS } from '../ui/paperdollSlots.js';
 
@@ -117,7 +120,9 @@ export function RightDock({
   const { t } = useLocale();
   const [rare, setRare] = useState(false);
   const [backpackOpen, setBackpackOpen] = useState(false);
-  const [partyInventoryId, setPartyInventoryId] = useState<number | null>(null);
+  const [partyManagerOpen, setPartyManagerOpen] = useState(false);
+  const [partyView, setPartyView] = useState(character);
+  const [partyBusy, setPartyBusy] = useState(false);
   const [setMemberId, setSetMemberId] = useState(character.id);
   const [blessOpen, setBlessOpen] = useState(false);
   const [lootPage, setLootPage] = useState(0);
@@ -125,7 +130,6 @@ export function RightDock({
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [inspectItemId, setInspectItemId] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const xp = xpProgress(character.level, character.experience);
   const lootSlots = character.lootSlots ?? LOOT_SLOT_DEFAULT;
   const supplySlots = character.supplySlots ?? 20;
   const lootSlotCost = character.lootSlotCost ?? 10_000;
@@ -137,7 +141,7 @@ export function RightDock({
   const supplyAll = pad(byValue(character.supplies.filter((stack) => stack.count > 0), rare), supplySlots, empty);
   const lootPaged = paginateSlots(lootAll, lootSlots, lootPage, empty);
   const supplyPaged = paginateSlots(supplyAll, supplySlots, supplyPage, empty);
-  const activeParty = (character.caveParty ?? []).filter((mate) => mate.self || mate.active);
+  const activeParty = (partyView.caveParty ?? []).filter((mate) => mate.self || mate.active);
   const selectedSetMember = activeParty.find((mate) => mate.id === setMemberId);
   const viewingOwnSet = !selectedSetMember || selectedSetMember.id === character.id;
   const setEquipment = viewingOwnSet ? character.equipment : selectedSetMember.equipment ?? {};
@@ -149,6 +153,10 @@ export function RightDock({
     () => blessingSetButtonIcon(blessFull ? 'gold' : 'grey', 20),
     [blessFull],
   );
+
+  useEffect(() => {
+    setPartyView(character);
+  }, [character]);
 
   useEffect(() => {
     if (lootPage !== lootPaged.safePage) setLootPage(lootPaged.safePage);
@@ -200,6 +208,32 @@ export function RightDock({
     setInspectItemId(itemId);
   };
 
+  const selectPartyItems = (id: number) => {
+    setSetMemberId(id);
+    window.setTimeout(() => document.getElementById('set')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
+  };
+
+  const refreshParty = async (preferredId = character.id) => {
+    try {
+      const result = await api.character(preferredId);
+      setPartyView(result.character);
+    } catch {
+      const result = await api.character(character.id);
+      setPartyView(result.character);
+    }
+  };
+
+  const unlockPartySlot = async (_currency: 'gold' | 'coins') => {
+    if (partyBusy || busy) return;
+    setPartyBusy(true);
+    try {
+      onParty();
+      window.setTimeout(() => void refreshParty(), 250);
+    } finally {
+      window.setTimeout(() => setPartyBusy(false), 300);
+    }
+  };
+
   const def = menu ? itemsById.get(menu.itemId) : null;
   const consumable = def ? isConsumableItem(def) : false;
   const equipable = def ? isEquipableItem(def) : false;
@@ -209,92 +243,19 @@ export function RightDock({
 
   return (
     <aside className="dock right">
-      <DockBox id="party-config" title="Party Config">
-          <p className="party-xp-rule">A XP de cada monstro derrotado é dividida igualmente entre os membros ativos na mesma caçada. Com 3 ativos, cada um recebe 1/3.</p>
-          <div className="party-members">
-            {(character.caveParty?.length
-              ? character.caveParty
-              : [{ id: character.id, name: character.name, level: character.level, vocationId: character.vocation.id, self: true, appearance: character.appearance }]
-            ).map((mate) => {
-              const isActive = mate.self ? character.session?.status === 'active' : mate.active === true;
-              const mateXp = mate.self ? xp : xpProgress(mate.level, mate.experience ?? 0);
-              const health = mate.self ? character.health : mate.health ?? 0;
-              const memberMaxHealth = mate.self ? character.maxHealth : mate.maxHealth;
-              const maxHealth = memberMaxHealth ?? Math.max(1, health);
-              const mana = mate.self ? character.mana : mate.mana ?? 0;
-              const memberMaxMana = mate.self ? character.maxMana : mate.maxMana;
-              const maxMana = memberMaxMana ?? Math.max(1, mana);
-              const backpack = mate.backpackContents ?? [];
-              return (
-                <div key={`${mate.id}-${mate.name}`} className={`party-member-wrap ${mate.self ? 'self' : ''}`}>
-                  <div className="party-member">
-                    <div className="party-member-info">
-                      <div className="party-name">{mate.self ? character.name : mate.name}</div>
-                      <div className="party-sub">
-                        {mate.self
-                          ? `${character.vocation.name} - lvl ${character.level}`
-                          : `${vocationsById.get(mate.vocationId)?.name ?? 'Classe desconhecida'} - lvl ${mate.level}`}
-                      </div>
-                    </div>
-                    {mate.self ? (
-                      <button type="button" className="btn gold party-outfit-btn" disabled={busy} onClick={onOutfit}>
-                        Outfit
-                      </button>
-                    ) : (
-                      <div className="party-member-actions">
-                        <button type="button" className="btn" onClick={() => setPartyInventoryId(partyInventoryId === mate.id ? null : mate.id)} title="Ver inventário" aria-label={`Ver inventário de ${mate.name}`}>
-                          Bag
-                        </button>
-                        <button
-                          type="button"
-                          className="btn danger party-remove-btn"
-                          disabled={busy}
-                          onClick={() => onRemoveParty(mate.id)}
-                          title="Remover da party"
-                          aria-label={`Remover ${mate.name} da party`}
-                        >
-                          −
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="party-xp-status">{isActive ? 'Ativo · participa da divisão de XP' : 'Inativo · sem XP da party'}</div>
-                  <div className="party-member-stats">
-                    <div className="party-stat-line"><span>HP</span><div className="meter hp"><i style={{ width: `${(health / maxHealth) * 100}%` }} /></div><b>{health}</b></div>
-                    <div className="party-stat-line"><span>MP</span><div className="meter mana"><i style={{ width: `${(mana / maxMana) * 100}%` }} /></div><b>{mana}</b></div>
-                    <div className="party-stat-line"><span>XP</span><div className="meter xp"><i style={{ width: `${mateXp.percent}%` }} /></div><b>{Math.round(mateXp.percent)}%</b></div>
-                  </div>
-                  {partyInventoryId === mate.id && (
-                    <div className="party-member-inventory">
-                      <span>Inventário · {backpack.length}/{mate.backpackCapacity ?? backpack.length}</span>
-                      <div className="party-inventory-slots">
-                        {backpack.map((item) => <ItemSlot key={`${mate.id}-${item.itemId}`} itemId={item.itemId} count={item.count} label={item.name} compact />)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {character.partySlots < 2 && (
-            <div className="locked-slot">
-              SLOT BLOQUEADO
-              <button className="btn" disabled={busy} onClick={onParty}>desbloquear 10.000 gold</button>
-            </div>
-          )}
-          {character.partySlots < 3 && (
-            <div className="locked-slot">
-              SLOT BLOQUEADO
-              <button className="btn" disabled={busy || character.partySlots < 2} onClick={onParty}>desbloquear 75 coins</button>
-            </div>
-          )}
-          {character.partySlots > 1 && (
-            <div className="party-sub">
-              Party {character.partySlots}/3 · compartilha XP com até {character.partySlots - 1} caçador{character.partySlots > 2 ? 'es' : ''} na cave
-              {character.partyBonus > 0 ? ` · +${character.partyBonus}% agora` : ''}
-            </div>
-          )}
-      </DockBox>
+      <PartyPanel
+        character={partyView}
+        busy={busy || partyBusy}
+        onConfig={() => setPartyManagerOpen(true)}
+        onItems={selectPartyItems}
+        onOutfit={(id) => {
+          if (id === character.id) onOutfit();
+          else selectPartyItems(id);
+        }}
+        onToggle={() => undefined}
+        onUnlock={(currency) => void unlockPartySlot(currency)}
+        onBlessings={() => setBlessOpen(true)}
+      />
 
       <DockBox id="set" title={t('setTitle')} extra={<span>{setWorn} / 10</span>}>
           {activeParty.length > 1 && (
@@ -561,6 +522,18 @@ export function RightDock({
           onClose={() => setBlessOpen(false)}
           onBuy={(index) => void onBlessing({ blessIndex: index })}
           onBuyAll={() => void onBlessing({ buyAll: true }).then(() => setBlessOpen(false))}
+        />
+      )}
+
+      {partyManagerOpen && (
+        <PartyManagerModal
+          character={partyView}
+          onClose={() => setPartyManagerOpen(false)}
+          onSaved={(next) => {
+            setPartyView(next);
+            setSetMemberId(next.id);
+            void refreshParty(next.id);
+          }}
         />
       )}
     </aside>
