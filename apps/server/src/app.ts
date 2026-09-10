@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import websocket from '@fastify/websocket';
+import { meta } from '@tibia-idle/data';
 import { Database } from './db.js';
 import { loadWorldEvent } from './admin.js';
 import { reconcileHunts } from './game.js';
@@ -12,9 +13,7 @@ import { registerWebSocket } from './ws.js';
 
 export interface AppOptions {
   databaseFile: string;
-  /** Directory of extracted sprite atlases, served to the browser. */
   assetsDir?: string;
-  /** Built web client, served in production. */
   webDir?: string;
   logger?: boolean;
 }
@@ -22,59 +21,55 @@ export interface AppOptions {
 export async function createApp(options: AppOptions): Promise<{ app: FastifyInstance; db: Database }> {
   const db = new Database(options.databaseFile);
   loadWorldEvent(db);
-  // Drop ghost hunters left behind by restarts / abandoned test characters.
   reconcileHunts(db);
   const reconcileTimer = setInterval(() => {
-    try {
-      reconcileHunts(db);
-    } catch (error) {
-      console.error('hunt reconcile timer', error);
-    }
+    try { reconcileHunts(db); } catch (error) { console.error('hunt reconcile timer', error); }
   }, 5 * 60_000);
   reconcileTimer.unref?.();
 
   const app = Fastify({ logger: options.logger ?? false });
-
   await app.register(cors, { origin: true });
   await app.register(websocket);
 
   registerRoutes(app, db);
-  registerWebSocket(app, db);
 
-  app.addHook('onClose', async () => {
-    clearInterval(reconcileTimer);
+  // Public, read-only server information used by the landing page.
+  // No account data, currency balances or private character state is exposed.
+  app.get('/api/public-stats', async () => {
+    const characters = db.allCharacters();
+    let hunting = 0;
+    for (const character of characters) if (character.session) hunting += 1;
+    return {
+      beta: db.getWorld('beta') !== 'closed' ? 'open' : 'closed',
+      accounts: db.countAccounts(),
+      characters: characters.length,
+      hunting,
+      monsters: Number(meta.counts['monsters'] ?? 0),
+      items: Number(meta.counts['items'] ?? 0),
+      vocations: Number(meta.counts['vocations'] ?? 0),
+      hunts: Number(meta.counts['hunts'] ?? 0),
+      generatedAt: meta.generatedAt,
+    };
   });
 
-  // Atlases are large and immutable once generated, so they get a long cache
-  // lifetime; their filenames change when the extractor reruns.
+  registerWebSocket(app, db);
+
+  app.addHook('onClose', async () => { clearInterval(reconcileTimer); });
+
   if (options.assetsDir && fs.existsSync(options.assetsDir)) {
     await app.register(fastifyStatic, {
-      root: path.resolve(options.assetsDir),
-      prefix: '/assets/',
-      cacheControl: true,
-      maxAge: '30d',
-      decorateReply: false,
+      root: path.resolve(options.assetsDir), prefix: '/assets/', cacheControl: true, maxAge: '30d', decorateReply: false,
     });
   }
 
   if (options.webDir && fs.existsSync(options.webDir)) {
-    await app.register(fastifyStatic, {
-      root: path.resolve(options.webDir),
-      prefix: '/',
-      decorateReply: false,
-    });
-    // Client-side routing: anything not matched above returns the shell.
+    await app.register(fastifyStatic, { root: path.resolve(options.webDir), prefix: '/', decorateReply: false });
     app.setNotFoundHandler((request, reply) => {
-      if (request.url.startsWith('/api') || request.url.startsWith('/ws')) {
-        return reply.status(404).send({ error: 'Not found.' });
-      }
+      if (request.url.startsWith('/api') || request.url.startsWith('/ws')) return reply.status(404).send({ error: 'Not found.' });
       return reply.type('text/html').send(fs.readFileSync(path.join(options.webDir!, 'index.html')));
     });
   }
 
-  app.addHook('onClose', async () => {
-    db.close();
-  });
-
+  app.addHook('onClose', async () => { db.close(); });
   return { app, db };
 }
