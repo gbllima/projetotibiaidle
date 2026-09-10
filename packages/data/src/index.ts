@@ -68,7 +68,7 @@ export function huntVocationKey(vocationId: number): number {
   return promoted[vocationId] ?? vocationId;
 }
 
-/** Lowest efficient/recommended level any vocation can run a hunt at. */
+/** Lowest efficient/recommended level any vocation can run a hunt at, or null if none can. */
 export function recommendedLevelFor(huntId: string, vocationId?: number): number | null {
   const entry = huntLevels[huntId];
   if (!entry) return null;
@@ -81,11 +81,8 @@ export function recommendedLevelFor(huntId: string, vocationId?: number): number
 
 /**
  * Level used to lock/unlock a hunt in the game.
- *
- * Starter zones keep their source minimum (level 8) so a new character always
- * has valid content and the tutorial can start. Past the starter tier, access
- * follows the vocation-specific calibrated requirement shown by the game. This
- * keeps advanced maps such as Hive Surface locked until their displayed level.
+ * Starter level-8 zones remain available to new characters; after that tier,
+ * the vocation-specific calibrated level is the actual access requirement.
  */
 export function accessLevelFor(huntId: string, vocationId: number): number | null {
   const hunt = huntsById.get(huntId);
@@ -121,7 +118,10 @@ export const wandsById: ReadonlyMap<number, WandStats> = new Map(wands.map((wand
 export const outfitsCatalogById: ReadonlyMap<string, OutfitCatalogEntry> = new Map(
   outfitsCatalog.map((entry) => [entry.id, entry]),
 );
-export const mountsCatalogById: ReadonlyMap<number, MountCatalogEntry> = new Map(
+export const mountsCatalogById: ReadonlyMap<string, MountCatalogEntry> = new Map(
+  mountsCatalog.map((entry) => [entry.id, entry]),
+);
+export const mountsByServerId: ReadonlyMap<number, MountCatalogEntry> = new Map(
   mountsCatalog.map((entry) => [entry.mount, entry]),
 );
 
