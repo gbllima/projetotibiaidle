@@ -346,7 +346,6 @@ function paintOtbmRoom(parent: Container, tiles: Atlas, room: HuntMapRoom, huntI
     }
   }
 
-  // If almost no OTBM tiles rendered, add a themed border so the room still reads.
   if (paintedOtbm < 20) {
     const kit = KITS[themeForHunt(huntId)];
     const lastX = SCENE_COLS - 1;
@@ -421,15 +420,65 @@ export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string):
   paintProceduralRoom(parent, tiles, huntId);
 }
 
-/** Real Tibia city cut used as the shared lobby background. */
+/** A compact Thais/Depot-inspired city square built from the game's real tile atlas. */
 export function paintCityScene(parent: Container, tiles: Atlas): void {
-  const cityHunt = 'yalahar-arena';
-  const room = huntMaps[cityHunt];
-  if (room && room.filled >= 40) {
-    paintOtbmRoom(parent, tiles, room, cityHunt);
-    return;
+  const floor = new Container();
+  const props = new Container();
+  const overlay = new Graphics();
+  parent.addChild(floor);
+  parent.addChild(props);
+
+  const cityFloor = [405, 486, 499, 529].find((id) => canPaint(tiles, id)) ?? 486;
+  const carpet = canPaint(tiles, 104) ? 104 : cityFloor;
+  const kit = KITS.city;
+
+  for (let y = 0; y < SCENE_ROWS; y += 1) {
+    for (let x = 0; x < SCENE_COLS; x += 1) {
+      const edge = x === 0 || y === 0 || x === SCENE_COLS - 1 || y === SCENE_ROWS - 1;
+      const serviceWing = (x <= 2 && y >= 2 && y <= 8) || (x >= 10 && y >= 2 && y <= 8);
+      const tile = edge || serviceWing ? cityFloor : ((x + y) % 7 === 0 && canPaint(tiles, 499) ? 499 : cityFloor);
+      placeGround(floor, tiles, tile, x, y);
+    }
   }
-  paintProceduralRoom(parent, tiles, 'training-dojo');
+
+  // Main central carpet path through the depot square.
+  for (let y = 1; y <= 9; y += 1) placeGround(floor, tiles, carpet, 6, y);
+  for (let x = 4; x <= 8; x += 1) placeGround(floor, tiles, carpet, x, 5);
+
+  // Perimeter walls and compact service wings, keeping the plaza open for players.
+  for (let x = 1; x < SCENE_COLS - 1; x += 1) {
+    placeProp(props, tiles, kit.wallN, x, 0);
+    placeProp(props, tiles, kit.wallS, x, SCENE_ROWS - 1);
+  }
+  for (let y = 1; y < SCENE_ROWS - 1; y += 1) {
+    placeProp(props, tiles, kit.wallW, 0, y);
+    placeProp(props, tiles, kit.wallE, SCENE_COLS - 1, y);
+  }
+  placeProp(props, tiles, kit.wallNW, 0, 0);
+  placeProp(props, tiles, kit.wallNE, SCENE_COLS - 1, 0);
+  placeProp(props, tiles, kit.wallSW, 0, SCENE_ROWS - 1);
+  placeProp(props, tiles, kit.wallSE, SCENE_COLS - 1, SCENE_ROWS - 1);
+
+  // Decorative anchors using real atlas props when available.
+  const decorations = [
+    { id: 2921, x: 1, y: 2 }, { id: 2921, x: 11, y: 2 },
+    { id: 2920, x: 1, y: 8 }, { id: 2920, x: 11, y: 8 },
+    { id: 34300, x: 5, y: 1 }, { id: 34300, x: 7, y: 1 },
+    { id: 1781, x: 2, y: 3 }, { id: 1781, x: 10, y: 3 },
+    { id: 3116, x: 2, y: 8 }, { id: 3115, x: 10, y: 8 },
+  ];
+  for (const deco of decorations) placeProp(props, tiles, deco.id, deco.x, deco.y);
+
+  // Pixel-art fountain drawn inside Pixi, so it belongs to the map rather than a CSS overlay.
+  overlay.circle(6 * SCENE_TILE + 16, 8 * SCENE_TILE + 16, 24);
+  overlay.fill({ color: 0x6d716b });
+  overlay.circle(6 * SCENE_TILE + 16, 8 * SCENE_TILE + 16, 18);
+  overlay.fill({ color: 0x1d6684 });
+  overlay.circle(6 * SCENE_TILE + 16, 8 * SCENE_TILE + 16, 10);
+  overlay.fill({ color: 0x48b8db });
+  overlay.circle(6 * SCENE_TILE + 16, 8 * SCENE_TILE + 14, 3);
+  overlay.fill({ color: 0xc7f3ff });
+  parent.addChild(overlay);
 }
 
 const HOUSE_DECO: Record<string, Array<{ id: number; x: number; y: number; ground?: boolean }>> = {
