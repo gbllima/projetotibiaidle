@@ -1,6 +1,7 @@
 /* Party UI — compact Tibia-inspired panel and formation manager */
 #set { display: none !important; }
 .party-panel { padding: 0 !important; }
+.backpack-dock-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;max-height:285px;overflow:auto;padding:2px;scrollbar-width:thin}.backpack-dock-grid .cell,.backpack-dock-grid .item-slot{width:100%!important;aspect-ratio:1/1;min-width:0!important;min-height:38px!important}.backpack-ignore-count{display:flex;align-items:center;justify-content:center;min-height:28px;flex:1;border:1px solid #4a3b34;border-radius:4px;background:rgba(96,49,35,.18);color:#d8ad96;font-size:9px}.party-inline-error{margin:4px 0 7px;padding:6px 7px;border:1px solid #7a4343;border-radius:3px;background:rgba(120,45,45,.2);color:#efb0b0;font-size:10px}
 #party-config .dock-head, #party-config .box-head { min-height: 34px; }
 .party-head-button { min-width:30px;height:26px;padding:0 8px;border:1px solid #414141;border-radius:4px;background:linear-gradient(#4a4a47,#343432);color:#d7d7d3;font:700 11px/1 inherit;cursor:pointer; }
 .party-head-button:hover { border-color:#666;color:#fff; }.party-config-button{margin-left:4px}
