@@ -31,16 +31,7 @@ function HoodIcon() {
 
 function draftFrom(character: CharacterView): OutfitDraft {
   const a = character.appearance;
-  return {
-    outfit: a.outfit,
-    head: a.head,
-    body: a.body,
-    legs: a.legs,
-    feet: a.feet,
-    addons: a.addons ?? 0,
-    mount: a.mount ?? 0,
-    aura: a.aura ?? 0,
-  };
+  return { outfit:a.outfit, head:a.head, body:a.body, legs:a.legs, feet:a.feet, addons:a.addons ?? 0, mount:a.mount ?? 0, aura:a.aura ?? 0 };
 }
 
 export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBlessings }: Props) {
@@ -56,24 +47,16 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
 
   const openMemberMenu = async (id: number, kind: 'items' | 'appearance') => {
     if (menuBusy) return;
-    setMenuBusy(true);
-    setMenuError('');
+    setMenuBusy(true); setMenuError('');
     try {
       const result = await api.character(id);
-      if (kind === 'items') setItemsTarget(result.character);
-      else setAppearanceTarget(result.character);
+      if (kind === 'items') setItemsTarget(result.character); else setAppearanceTarget(result.character);
     } catch (reason) {
       setMenuError(reason instanceof Error ? reason.message : 'Não foi possível abrir o menu do personagem.');
-    } finally {
-      setMenuBusy(false);
-    }
+    } finally { setMenuBusy(false); }
   };
 
-  const refreshAppearanceTarget = async (id: number) => {
-    const result = await api.character(id);
-    setAppearanceTarget(result.character);
-    return result.character;
-  };
+  const refreshAppearanceTarget = async (id: number) => { const result = await api.character(id); setAppearanceTarget(result.character); return result.character; };
 
   return <>
     <DockBox id="party-config" title="Party" bodyClass="body party-panel" extra={<>
@@ -86,81 +69,26 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
         const health = member.health ?? 0, maxHealth = member.maxHealth ?? 1;
         const mana = member.mana ?? 0, maxMana = member.maxMana ?? 1;
         const vocation = vocationsById.get(member.vocationId);
-        const role = [2, 6].includes(member.vocationId) ? 'SUP' : [4, 8].includes(member.vocationId) ? 'TANK' : 'DPS';
+        const role = [2,6].includes(member.vocationId) ? 'SUP' : [4,8].includes(member.vocationId) ? 'TANK' : 'DPS';
         return <article className={'party-compact-member' + (member.id === character.id ? ' primary' : '')} key={member.id}>
-          <div className="party-compact-top">
-            <div className="party-compact-details">
-              <div className="party-compact-name"><span className={'party-role ' + role.toLowerCase()}>{role}</span><strong title={member.name}>{member.name}</strong></div>
-              <div className="party-compact-vocation">{vocation?.name ?? 'Aventureiro'} · lvl {member.level}</div>
-              <div className="party-compact-bars">
-                {([{ kind: 'hp', icon: '♥', label: 'Vida', value: health, max: maxHealth }, { kind: 'mana', icon: '♦', label: 'Mana', value: mana, max: maxMana }, { kind: 'xp', icon: 'XP', label: 'Experiência', value: xp, max: 100 }] as const).map((bar) => <div className={'party-compact-bar ' + bar.kind} key={bar.kind}>
-                  <span aria-hidden>{bar.icon}</span><div role="progressbar" aria-label={bar.label + ' de ' + member.name} aria-valuemin={0} aria-valuemax={bar.max} aria-valuenow={Math.min(bar.max, Math.max(0, bar.value))}>
-                    <i style={{ width: Math.min(100, Math.max(0, bar.value / Math.max(1, bar.max) * 100)) + '%' }} />
-                    <b>{bar.kind === 'xp' ? Math.round(xp) + '%' : Math.round(bar.value) + '/' + bar.max}</b>
-                  </div>
-                </div>)}
-              </div>
-            </div>
-            <div className="party-mini-set" aria-label={'Equipamento de ' + member.name}>
-              {PAPERDOLL_SLOTS.map((slot) => <div className={'paper-slot ' + slot.area} key={slot.id}>
-                <ItemSlot itemId={member.equipment?.[slot.id]?.id} compact emptyLabel={slot.id === 'ring' ? 'Anel' : slot.id === 'necklace' ? 'Amuleto' : slot.id === 'ammo' ? 'Berloque' : undefined} onClick={() => void openMemberMenu(member.id, 'items')} />
-              </div>)}
-            </div>
-          </div>
-          <div className="party-compact-actions">
-            <button type="button" disabled={busy || menuBusy} onClick={() => void openMemberMenu(member.id, 'items')}><BackpackIcon /> Itens</button>
-            <button type="button" disabled={busy || menuBusy} onClick={() => void openMemberMenu(member.id, 'appearance')}><HoodIcon /> Aparência</button>
-          </div>
-          <button type="button" className={'party-activity ' + (member.active ? 'active' : '')} disabled={busy || (member.id !== character.id && !member.active && character.session?.status !== 'active')}
-            title={member.active ? 'Parar a caçada deste personagem' : 'Entrar na caçada do principal'} onClick={() => onToggle(member.id, !!member.active)}>
-            <i />{member.active ? 'Ativo · recebendo XP da party' : 'Inativo · sem XP da party'}
-          </button>
+          <div className="party-compact-top"><div className="party-compact-details">
+            <div className="party-compact-name"><span className={'party-role '+role.toLowerCase()}>{role}</span><strong title={member.name}>{member.name}</strong></div>
+            <div className="party-compact-vocation">{vocation?.name ?? 'Aventureiro'} · lvl {member.level}</div>
+            <div className="party-compact-bars">{([{kind:'hp',icon:'♥',label:'Vida',value:health,max:maxHealth},{kind:'mana',icon:'♦',label:'Mana',value:mana,max:maxMana},{kind:'xp',icon:'XP',label:'Experiência',value:xp,max:100}] as const).map((bar)=><div className={'party-compact-bar '+bar.kind} key={bar.kind}><span aria-hidden>{bar.icon}</span><div role="progressbar" aria-label={bar.label+' de '+member.name} aria-valuemin={0} aria-valuemax={bar.max} aria-valuenow={Math.min(bar.max,Math.max(0,bar.value))}><i style={{width:Math.min(100,Math.max(0,bar.value/Math.max(1,bar.max)*100))+'%'}}/><b>{bar.kind==='xp'?Math.round(xp)+'%':Math.round(bar.value)+'/'+bar.max}</b></div></div>)}</div>
+          </div><div className="party-mini-set" aria-label={'Equipamento de '+member.name}>{PAPERDOLL_SLOTS.map((slot)=><div className={'paper-slot '+slot.area} key={slot.id}><ItemSlot itemId={member.equipment?.[slot.id]?.id} compact emptyLabel={slot.id==='ring'?'Anel':slot.id==='necklace'?'Amuleto':slot.id==='ammo'?'Berloque':undefined} onClick={()=>void openMemberMenu(member.id,'items')}/></div>)}</div></div>
+          <div className="party-compact-actions"><button type="button" disabled={busy||menuBusy} onClick={()=>void openMemberMenu(member.id,'items')}><BackpackIcon /> Itens</button><button type="button" disabled={busy||menuBusy} onClick={()=>void openMemberMenu(member.id,'appearance')}><HoodIcon /> Aparência</button></div>
+          <button type="button" className={'party-activity '+(member.active?'active':'')} disabled={busy||(member.id!==character.id&&!member.active&&character.session?.status!=='active')} title={member.active?'Parar a caçada deste personagem':'Entrar na caçada do principal'} onClick={()=>onToggle(member.id,!!member.active)}><i />{member.active?'Ativo · recebendo XP da party':'Inativo · sem XP da party'}</button>
         </article>;
       })}
       {members.length < character.partySlots && <button type="button" className="party-empty-member" onClick={onConfig}>＋ Adicionar personagem à formação</button>}
-      {character.partySlots < 3 && <div className="party-locked-member">
-        <div><span aria-hidden>⚔</span> SLOT BLOQUEADO</div>
-        <button type="button" disabled={busy || character.gold < prices.gold} onClick={() => onUnlock('gold')}>Desbloquear por gold — {prices.gold.toLocaleString('pt-BR')}</button>
-        <button type="button" disabled={busy || character.coins < prices.coins} onClick={() => onUnlock('coins')}>Desbloquear na Store — {prices.coins} coins</button>
-      </div>}
+      {character.partySlots < 3 && <div className="party-locked-member"><div><span aria-hidden>⚔</span> SLOT BLOQUEADO</div><button type="button" disabled={busy||character.gold<prices.gold} onClick={()=>onUnlock('gold')}>Desbloquear por gold — {prices.gold.toLocaleString('pt-BR')}</button><button type="button" disabled={busy||character.coins<prices.coins} onClick={()=>onUnlock('coins')}>Desbloquear na Store — {prices.coins} coins</button></div>}
     </DockBox>
 
-    {itemsTarget && <PartyItemsModal character={itemsTarget} busy={menuBusy} onClose={() => setItemsTarget(null)} />}
+    {itemsTarget && <PartyItemsModal character={itemsTarget} controllerCharacterId={character.id} busy={menuBusy} onClose={()=>setItemsTarget(null)} />}
 
-    {appearanceTarget && <OutfitModal
-      key={`party-outfit-${appearanceTarget.id}-${appearanceTarget.appearance.outfit}`}
-      character={appearanceTarget}
-      busy={menuBusy}
-      onClose={() => setAppearanceTarget(null)}
-      onApply={async (draft) => {
-        setMenuBusy(true);
-        setMenuError('');
-        try {
-          const result = await api.act(appearanceTarget.id, { type: 'appearance', ...draft });
-          setAppearanceTarget(result.character);
-        } finally {
-          setMenuBusy(false);
-        }
-      }}
-      onPresetSave={async (slot) => {
-        setMenuBusy(true);
-        try {
-          await api.act(appearanceTarget.id, { type: 'preset-save', slot });
-          await refreshAppearanceTarget(appearanceTarget.id);
-        } finally {
-          setMenuBusy(false);
-        }
-      }}
-      onPresetLoad={async (slot) => {
-        setMenuBusy(true);
-        try {
-          const result = await api.act(appearanceTarget.id, { type: 'preset-load', slot });
-          setAppearanceTarget(result.character);
-          return draftFrom(result.character);
-        } finally {
-          setMenuBusy(false);
-        }
-      }}
-    />}
+    {appearanceTarget && <OutfitModal key={`party-outfit-${appearanceTarget.id}-${appearanceTarget.appearance.outfit}`} character={appearanceTarget} busy={menuBusy} onClose={()=>setAppearanceTarget(null)}
+      onApply={async(draft)=>{setMenuBusy(true);setMenuError('');try{const result=await api.act(appearanceTarget.id,{type:'appearance',...draft});setAppearanceTarget(result.character);}finally{setMenuBusy(false);}}}
+      onPresetSave={async(slot)=>{setMenuBusy(true);try{await api.act(appearanceTarget.id,{type:'preset-save',slot});await refreshAppearanceTarget(appearanceTarget.id);}finally{setMenuBusy(false);}}}
+      onPresetLoad={async(slot)=>{setMenuBusy(true);try{const result=await api.act(appearanceTarget.id,{type:'preset-load',slot});setAppearanceTarget(result.character);return draftFrom(result.character);}finally{setMenuBusy(false);}}}/>} 
   </>;
 }
