@@ -13,6 +13,7 @@
     "datagen": "pnpm --filter @tibia-idle/datagen start",
     "icons:patch": "python tools/extractor/patch_item_icons.py",
     "mapcut": "node tools/mapcut/cut-hunts.mjs",
+    "mapcut:thais": "node tools/mapcut/prepare-thais-target.mjs && node tools/mapcut/cut-hunts.mjs",
     "attack:pack": "python tools/scripts/pack-attack-effects.py",
     "dev": "pnpm --parallel --filter \"./apps/**\" dev"
   },
