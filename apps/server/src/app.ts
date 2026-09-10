@@ -39,7 +39,13 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   }, 1500);
   ignoredLootTimer.unref?.();
 
-  const app = Fastify({ logger: options.logger ?? false });
+  // Only trust X-Forwarded-For when the deployment explicitly says it is
+  // behind a trusted reverse proxy/CDN. Leaving this false prevents clients
+  // from spoofing their IP on directly exposed servers.
+  const app = Fastify({
+    logger: options.logger ?? false,
+    trustProxy: process.env['TRUST_PROXY'] === 'true',
+  });
 
   const configuredOrigins = (process.env['CORS_ORIGIN'] ?? '')
     .split(',')
@@ -57,6 +63,14 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   });
 
   const authHits = new Map<string, { count: number; resetAt: number }>();
+  const authRateCleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of authHits) {
+      if (value.resetAt <= now) authHits.delete(key);
+    }
+  }, AUTH_RATE_WINDOW_MS);
+  authRateCleanupTimer.unref?.();
+
   app.addHook('onRequest', async (request, reply) => {
     if (!AUTH_PATHS.has(request.url.split('?')[0] ?? '')) return;
     const now = Date.now();
@@ -102,6 +116,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   app.addHook('onClose', async () => {
     clearInterval(reconcileTimer);
     clearInterval(ignoredLootTimer);
+    clearInterval(authRateCleanupTimer);
     authHits.clear();
   });
 
