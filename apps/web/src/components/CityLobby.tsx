@@ -1,5 +1,6 @@
 import type { LobbyPlayer } from '../api/types.js';
 import type { ReactNode } from 'react';
+import './CityLobby.css';
 
 const VOCATION_NAMES: Record<number, string> = {
   1: 'Sorcerer',
