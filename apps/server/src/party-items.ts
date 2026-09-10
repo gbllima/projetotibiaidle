@@ -1,9 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { addItemStack, backpackCapacity, removeWorn, wearItem, type EquipSlot } from '@tibia-idle/sim';
+import { addItemStack, backpackCapacity, removeWorn, wearItem, type CharacterState, type EquipSlot } from '@tibia-idle/sim';
 import { accountFromHeader, AuthError } from './auth.js';
 import type { Database } from './db.js';
 import { describeCharacter, loadCharacter, type LoadedCharacter } from './game.js';
 import { GameError } from './settle.js';
+
+type LootPrefsCharacter = CharacterState & { lootIgnoredItemIds?: number[] };
 
 function requireAccount(db: Database, request: FastifyRequest): number {
   const accountId = accountFromHeader(db, request.headers.authorization);
@@ -63,6 +65,52 @@ function mergedMemberView(owner: LoadedCharacter, member: LoadedCharacter, db: D
   memberView.backpackContents = ownerView.backpackContents ?? [];
   memberView.backpackCapacity = ownerView.backpackCapacity ?? backpackCapacity(owner.character);
   return memberView;
+}
+
+function ignoredLootIds(character: CharacterState): number[] {
+  const raw = (character as LootPrefsCharacter).lootIgnoredItemIds ?? [];
+  return [...new Set(raw.filter((id) => Number.isInteger(id) && id > 0))];
+}
+
+function setIgnoredLootIds(character: CharacterState, ids: number[]): void {
+  (character as LootPrefsCharacter).lootIgnoredItemIds = [...new Set(ids.filter((id) => Number.isInteger(id) && id > 0))];
+}
+
+function syncIgnoredLootToSession(loaded: LoadedCharacter): void {
+  if (!loaded.session) return;
+  setIgnoredLootIds(loaded.session.character, ignoredLootIds(loaded.character));
+}
+
+function pouchDistinctStacks(loaded: LoadedCharacter): number {
+  if (!loaded.session) return 0;
+  return Object.values(loaded.session.totals.lootByItem ?? {}).filter((count) => count > 0).length;
+}
+
+export function sweepIgnoredLoot(db: Database): void {
+  const now = Date.now();
+  for (const row of db.allCharacters()) {
+    if (!row.session) continue;
+    try {
+      const character = JSON.parse(row.state) as CharacterState;
+      const ignored = ignoredLootIds(character);
+      if (ignored.length === 0) continue;
+      const session = JSON.parse(row.session) as any;
+      const lootByItem = session?.totals?.lootByItem as Record<number, number> | undefined;
+      if (!lootByItem) continue;
+      let changed = false;
+      for (const itemId of ignored) {
+        if ((lootByItem[itemId] ?? 0) > 0) {
+          delete lootByItem[itemId];
+          changed = true;
+        }
+      }
+      if (!changed) continue;
+      if (session.character) setIgnoredLootIds(session.character, ignored);
+      db.saveCharacter(row.id, row.state, JSON.stringify(session), now);
+    } catch {
+      // A malformed legacy row should never stop the sweep for everyone else.
+    }
+  }
 }
 
 export function registerPartyItemRoutes(app: FastifyInstance, db: Database): void {
@@ -141,6 +189,67 @@ export function registerPartyItemRoutes(app: FastifyInstance, db: Database): voi
       persist(db, owner, now);
       if (target !== owner) persist(db, target, now);
       return reply.send({ character: mergedMemberView(owner, target, db) });
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
+  app.get('/api/characters/:id/loot-preferences', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      const { loaded } = loadCharacter(db, accountId, id);
+      return reply.send({ ignoredItemIds: ignoredLootIds(loaded.character) });
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
+  app.post('/api/characters/:id/backpack-to-loot', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      const body = (request.body ?? {}) as { itemId?: unknown; count?: unknown };
+      const itemId = Number(body.itemId);
+      const count = Math.max(1, Math.floor(Number(body.count) || 1));
+      const { loaded } = loadCharacter(db, accountId, id);
+      if (!loaded.session || loaded.session.status !== 'active') throw new GameError('Entre em uma hunt para usar o Loot Pouch.', 409);
+      if (!Number.isInteger(itemId) || itemId <= 0) throw new GameError('Unknown item.', 400);
+      if (ignoredLootIds(loaded.character).includes(itemId)) throw new GameError('Este item está marcado como não coletar.', 409);
+
+      loaded.character.backpackContents ??= [];
+      const alreadyInPouch = (loaded.session.totals.lootByItem[itemId] ?? 0) > 0;
+      const cap = loaded.character.lootSlots ?? 8;
+      if (!alreadyInPouch && pouchDistinctStacks(loaded) >= cap) throw new GameError('Loot Pouch cheio.', 409);
+
+      takeStack(loaded.character.backpackContents, itemId, count);
+      loaded.session.totals.lootByItem[itemId] = (loaded.session.totals.lootByItem[itemId] ?? 0) + count;
+      loaded.session.character.backpackContents = loaded.character.backpackContents;
+      syncIgnoredLootToSession(loaded);
+      persist(db, loaded);
+      return reply.send({ character: describeCharacter(loaded, db), ignoredItemIds: ignoredLootIds(loaded.character) });
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
+  app.post('/api/characters/:id/loot-ignore', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      const body = (request.body ?? {}) as { itemId?: unknown; ignored?: unknown };
+      const itemId = Number(body.itemId);
+      const ignored = body.ignored !== false;
+      if (!Number.isInteger(itemId) || itemId <= 0) throw new GameError('Unknown item.', 400);
+      const { loaded } = loadCharacter(db, accountId, id);
+      const set = new Set(ignoredLootIds(loaded.character));
+      if (ignored) set.add(itemId);
+      else set.delete(itemId);
+      setIgnoredLootIds(loaded.character, [...set]);
+      syncIgnoredLootToSession(loaded);
+      if (ignored && loaded.session) delete loaded.session.totals.lootByItem[itemId];
+      persist(db, loaded);
+      return reply.send({ character: describeCharacter(loaded, db), ignoredItemIds: [...set] });
     } catch (error) {
       return fail(reply, error);
     }
