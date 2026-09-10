@@ -170,6 +170,8 @@ export interface CharacterView {
   live?: HuntSession | null;
   bestiary: Record<string, number>;
   coins: number;
+  /** Earned only; never purchased with money. */
+  rouletteTickets?: number;
   vipUntil: number;
   gender: 'm' | 'f';
   warehouse: SupplyView[];
