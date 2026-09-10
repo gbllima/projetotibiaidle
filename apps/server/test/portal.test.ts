@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { hunts } from '@tibia-idle/data';
+import { hunts, recommendedLevelFor } from '@tibia-idle/data';
 import { createCharacter, type CharacterState } from '@tibia-idle/sim';
 import { Database } from '../src/db.js';
 import { adminAct, adminSnapshot } from '../src/admin.js';
@@ -48,10 +48,20 @@ describe('gradual content access', () => {
     db.setWorld('party:' + principal.row.id, JSON.stringify([principal.row.id, companion.row.id]));
     expect(listHunts(principal.state).find((entry) => entry.id === hunt.id)?.unlocked).toBe(false);
     expect(() => startHunt(db, ownerId, companion.row.id, hunt.id, NOW)).toThrow();
-    principal.state.level = hunt.level;
-    expect(listHunts(principal.state).find((entry) => entry.id === hunt.id)?.unlocked).toBe(true);
-    expect(() => beginHunt(companion.state, hunt.id, 1n, { restock: false, principal: principal.state })).not.toThrow();
   });
+
+  it('blocks Hive Surface for a level 88 Knight principal until level 115', () => {
+    const principal = create('Principal', 88);
+    const companion = create('Companion', 800);
+    db.setWorld('party:' + principal.row.id, JSON.stringify([principal.row.id, companion.row.id]));
+    expect(recommendedLevelFor('hive-surface', principal.state.vocationId)).toBe(115);
+    expect(() => startHunt(db, ownerId, principal.row.id, 'hive-surface', NOW)).toThrow('nível 115');
+    expect(() => startHunt(db, ownerId, companion.row.id, 'hive-surface', NOW)).toThrow('nível 115');
+    expect(() => beginHunt(companion.state, 'hive-surface', 1n, { restock: false, principal: principal.state })).toThrow('nível 115');
+    principal.state.level = 115;
+    expect(() => beginHunt(companion.state, 'hive-surface', 1n, { restock: false, principal: principal.state })).not.toThrow();
+  });
+
   it('keeps starting content available to a new level 8 character', () => {
     const newbie = createCharacter('Newbie', 4);
     expect(listHunts(newbie).some((entry) => entry.unlocked && !entry.partyLocked)).toBe(true);
