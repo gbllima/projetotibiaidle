@@ -4,7 +4,7 @@ import { storedToken } from '../api/client.js';
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
 type Props = { onPlay: () => void };
 
-const SWORD_HOME = '/swordhome.gif';
+const SWORD_HOME = 'https://raw.githubusercontent.com/gbllima/projetotibiaidle/main/swordhome.gif';
 
 export function HomeScreen({ onPlay }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
