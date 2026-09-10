@@ -153,7 +153,6 @@ export function playerDefense(
   if (defenseValue <= 0) return 0;
 
   const scaling = hasShield ? 0.16 : weaponDefense > 0 ? 0.146 : 0.15;
-  // Fight mode is removed in this fork, so the defense factor is always 1.
   return (shieldSkill / 4 + 2.23) * defenseValue * 1 * scaling * vocation.defense;
 }
 
@@ -229,14 +228,14 @@ export function monsterMitigation(mitigation: number): number {
   return Math.min(45, mitigation * 1.5);
 }
 
-/** Tries needed for the next skill level. `Vocation::getReqSkillTries` (vocation.cpp:376). */
+/** Tries needed for the next skill level. `Vocation::getReqSkillTries`. */
 export function reqSkillTries(skillIndex: number, level: number, multiplier: number): number {
   if (level <= MIN_SKILL_LEVEL) return 0;
   const base = SKILL_BASE[skillIndex] ?? 50;
   return Math.floor(base * multiplier ** (level - (MIN_SKILL_LEVEL + 1)));
 }
 
-/** Mana needed for the next magic level. `Vocation::getReqMana` (vocation.cpp:406). */
+/** Mana needed for the next magic level. `Vocation::getReqMana`. */
 export function reqMana(magicLevel: number, manaMultiplier: number): number {
   if (magicLevel === 0) return 0;
   return Math.floor(1600 * manaMultiplier ** (magicLevel - 1));
@@ -251,17 +250,6 @@ export const SCHEDULE_LOOT_RATE = 100;
 /**
  * One loot roll. `getLootRandom` (data/libs/functions/functions.lua:68) feeding
  * `MonsterType:generateLootRoll` (monstertype.lua:98).
- *
- *   multi     = rateLoot * SCHEDULE_LOOT_RATE
- *   randValue = random(0, 100000) * 100 / max(1, multi)
- *   drops when randValue < chance * factor
- *
- * At the default rates `multi` is 100, so the `* 100` cancels out and the roll
- * is a plain `random(0, 100000)` against the chance. Dropping the schedule rate
- * makes every roll 100x too large and loot effectively never drops.
- *
- * Returns the roll when the item drops (the engine reuses it to pick the stack
- * size) and null otherwise.
  */
 export function rollLootEntry(chance: number, factor: number, lootRate: number, rng: Rng): number | null {
   const multi = lootRate * SCHEDULE_LOOT_RATE;
@@ -269,30 +257,18 @@ export function rollLootEntry(chance: number, factor: number, lootRate: number, 
   return randValue < chance * factor ? randValue : null;
 }
 
-/**
- * Stack size for a dropped item. `monstertype.lua:108`:
- *
- *   count = max(0, randValue % (maxCount - minCount + 1)) + minCount
- *
- * Reusing the roll is what makes rare drops usually arrive in small stacks.
- */
+/** Stack size for a dropped item. */
 export function lootCount(randValue: number, minCount: number, maxCount: number): number {
   if (maxCount <= minCount) return Math.max(1, minCount);
   return Math.max(0, Math.floor(randValue) % (maxCount - minCount + 1)) + minCount;
 }
 
-/**
- * Random per-kill loot factor. `MonsterType:generateLootRoll`
- * (monstertype.lua:89) jitters by +/-5%.
- */
+/** Random per-kill loot factor. */
 export function lootFactor(rng: Rng, base = 1): number {
   return base * (rng.uniform(95, 105) / 100);
 }
 
-/**
- * Stamina multiplier on experience.
- * `getFinalBonusStamina` (data/libs/functions/player.lua:434).
- */
+/** Stamina multiplier on experience. */
 export function staminaMultiplier(staminaMinutes: number, premium: boolean): number {
   if (staminaMinutes <= 0) return 0;
   if (staminaMinutes > 2340 && premium) return 1.5;
@@ -300,12 +276,16 @@ export function staminaMultiplier(staminaMinutes: number, premium: boolean): num
   return 0.5;
 }
 
-/** Loot is withheld below this stamina. `Player::canReceiveLoot` (player_functions.cpp:4222). */
+/**
+ * Idle Knock Tibia rule: loot is available for the whole remaining stamina bar.
+ * The original Crystal/Tibia 14-hour cutoff is intentionally not used here,
+ * because it made long idle hunts appear broken while stamina was still ticking.
+ */
 export function canReceiveLoot(staminaMinutes: number): boolean {
-  return staminaMinutes > 840;
+  return staminaMinutes > 0;
 }
 
-/** Multiplier for the stage table covering this level. `data/stages.lua`. */
+/** Multiplier for the stage table covering this level. */
 export function stageMultiplier(stages: readonly Stage[], level: number): number {
   for (const stage of stages) {
     if (level < stage.minLevel) continue;
@@ -315,12 +295,12 @@ export function stageMultiplier(stages: readonly Stage[], level: number): number
   return 1;
 }
 
-/** Hit points, mana and capacity granted per level. `vocations.xml`. */
+/** Hit points, mana and capacity granted per level. */
 export function levelGains(vocation: Vocation): { hp: number; mana: number; cap: number } {
   return { hp: vocation.gainHp, mana: vocation.gainMana, cap: vocation.gainCap * 100 };
 }
 
-/** Progress toward the next level, 0-100 with two decimals. `Player::getPercentLevel` (player.cpp:3802). */
+/** Progress toward the next level, 0-100 with two decimals. */
 export function percentLevel(count: number, nextLevelCount: number): number {
   if (nextLevelCount <= 0) return 0;
   return Math.min(100, Math.round(((count * 100) / nextLevelCount) * 100) / 100);
