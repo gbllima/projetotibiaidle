@@ -1,26 +1,14 @@
 import { getHunt, getMonster, hunts, type Hunt, type Monster } from '@tibia-idle/data';
 import { bossEncounterThroughput, getBossEncounterForHunt, isBossHunt } from './bossEncounters.js';
 
-/**
- * How fast a hunting zone can hand out monsters.
- *
- * `killsPerHour` is intentionally a very high spawn budget for normal hunts so
- * clearing a wave immediately opens the next one. Balance calculations continue
- * to use `balanceKillsPerHour`, which preserves the official/inferred XP pacing
- * used everywhere else in the game.
- */
 export interface HuntThroughput {
-  /** Mean experience of one monster in the zone. */
   averageExperience: number;
   /** Spawn budget consumed by the combat loop. */
   killsPerHour: number;
-  /** Official/inferred rate used for XP and DPS balance calculations. */
-  balanceKillsPerHour: number;
-  /** Mean health, used to estimate whether a character can keep up. */
+  /** Official/inferred rate used for balance calculations. Boss helpers may omit it. */
+  balanceKillsPerHour?: number;
   averageHealth: number;
-  /** How many monsters are engaged at once. */
   packSize: number;
-  /** True when the zone ships no official rate and we inferred one. */
   estimated: boolean;
   monsters: Monster[];
 }
@@ -59,24 +47,19 @@ export function huntThroughput(huntId: string): HuntThroughput {
     const encounter = getBossEncounterForHunt(huntId);
     if (!encounter) throw new Error(`unknown boss hunt: ${huntId}`);
     const base = bossEncounterThroughput(encounter);
-    const throughput: HuntThroughput = {
-      ...base,
-      balanceKillsPerHour: base.killsPerHour,
-    };
+    const throughput: HuntThroughput = { ...base, balanceKillsPerHour: base.killsPerHour };
     cache.set(huntId, throughput);
     return throughput;
   }
 
   const hunt: Hunt = getHunt(huntId);
   const monsters = hunt.monsters.map(getMonster).filter((m) => m.experience > 0);
-
   const averageExperience = monsters.length
     ? monsters.reduce((sum, m) => sum + m.experience, 0) / monsters.length
     : 1;
   const averageHealth = monsters.length
     ? monsters.reduce((sum, m) => sum + m.health, 0) / monsters.length
     : 1;
-
   const estimated = hunt.expectedXpPerHour <= 0;
   const balanceKillsPerHour = estimated
     ? medianKillsPerHour
@@ -95,16 +78,14 @@ export function huntThroughput(huntId: string): HuntThroughput {
   return throughput;
 }
 
-/** Experience per hour a zone is worth, official or inferred. */
 export function expectedExperiencePerHour(huntId: string): number {
-  const { balanceKillsPerHour, averageExperience } = huntThroughput(huntId);
-  return Math.round(balanceKillsPerHour * averageExperience);
+  const throughput = huntThroughput(huntId);
+  return Math.round((throughput.balanceKillsPerHour ?? throughput.killsPerHour) * throughput.averageExperience);
 }
 
-/** Sustained damage per second needed to keep up with a zone's intended balance. */
 export function requiredDamagePerSecond(huntId: string): number {
-  const { balanceKillsPerHour, averageHealth } = huntThroughput(huntId);
-  return (balanceKillsPerHour * averageHealth) / 3600;
+  const throughput = huntThroughput(huntId);
+  return ((throughput.balanceKillsPerHour ?? throughput.killsPerHour) * throughput.averageHealth) / 3600;
 }
 
 export function throughputFit(huntId: string, damagePerSecond: number): number {
