@@ -532,7 +532,7 @@ function HuntRow({
             {hunt.premium ? <span className="hunt-badge premium">Premium</span> : null}
           </div>
           <div className="meta hunt-row-meta">
-            {hunt.location || 'Tibia'} · lvl {hunt.statedLevel}
+            {hunt.location || 'Tibia'} · lvl {hunt.recommendedLevel ?? hunt.statedLevel}
             {partyTag(hunt.partySizes, t)}
             {hunt.unlocked ? '' : ` · ${t('blocked')}`}
             {hunt.partyLocked ? ` · ${t('partyNeed')}` : ''}
