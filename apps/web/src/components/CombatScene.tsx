@@ -4,6 +4,73 @@ import type { ActiveMonsterView } from '../api/types.js';
 import { acquireCombatScene, releaseCombatScene, type PlayerView } from '../render/combat.js';
 
 const PENDING_CAP = 80;
+const RENDER_CAP = 40;
+const ATTACK_WINDOW_TICKS = 3;
+const CAST_WINDOW_TICKS = 8;
+
+/**
+ * Compact only the renderer feed. Combat, XP, loot and the combat log still use
+ * every server event. This keeps party hunts readable without nerfing damage.
+ */
+function compactVisualEvents(events: SimEvent[]): SimEvent[] {
+  const output: SimEvent[] = [];
+  const buckets = new Map<string, number>();
+
+  const addOrMerge = (key: string, event: SimEvent) => {
+    const index = buckets.get(key);
+    if (index === undefined) {
+      buckets.set(key, output.length);
+      output.push({ ...event });
+      return;
+    }
+    const previous = output[index]!;
+    output[index] = {
+      ...previous,
+      amount: (previous.amount ?? 0) + (event.amount ?? 0),
+      critical: previous.critical || event.critical,
+      fatal: previous.fatal || event.fatal,
+      leech: (previous.leech ?? 0) + (event.leech ?? 0) || undefined,
+    };
+  };
+
+  for (const event of events) {
+    const actor = event.actorId ?? 0;
+
+    if (event.type === 'player_attack') {
+      // Spell words are useful once, but three party members can otherwise cover
+      // the viewport with repeated incantations during the same cast window.
+      if (event.words && event.uid === undefined && (event.amount ?? 0) <= 0) {
+        const key = `cast:${actor}:${event.words}:${Math.floor(event.tick / CAST_WINDOW_TICKS)}`;
+        if (!buckets.has(key)) {
+          buckets.set(key, output.length);
+          output.push({ ...event });
+        }
+        continue;
+      }
+
+      if ((event.amount ?? 0) > 0) {
+        const window = Math.floor(event.tick / ATTACK_WINDOW_TICKS);
+        // One visual number for an AoE cast instead of one number per creature.
+        // The summed number is presentation-only; monster HP still receives all hits.
+        const key = event.area
+          ? `aoe:${actor}:${event.damageType ?? ''}:${window}`
+          : `hit:${actor}:${event.uid ?? 0}:${event.damageType ?? ''}:${window}`;
+        addOrMerge(key, event);
+        continue;
+      }
+    }
+
+    if (event.type === 'monster_attack' && (event.amount ?? 0) > 0) {
+      const key = `monster:${event.monsterId ?? event.uid ?? 0}:${Math.floor(event.tick / ATTACK_WINDOW_TICKS)}`;
+      addOrMerge(key, event);
+      continue;
+    }
+
+    output.push(event);
+  }
+
+  return output.slice(-RENDER_CAP);
+}
 
 export function CombatScene({
   characterId,
@@ -42,7 +109,8 @@ export function CombatScene({
     if (booted.current && queued.length) {
       try {
         const withoutSpawn = queued.filter((event) => event.type !== 'monster_spawn');
-        if (withoutSpawn.length) renderer.play(withoutSpawn);
+        const visualEvents = compactVisualEvents(withoutSpawn);
+        if (visualEvents.length) renderer.play(visualEvents);
       } catch (error) {
         console.error('combat play', error);
       }
