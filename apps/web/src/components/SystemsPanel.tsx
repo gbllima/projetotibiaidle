@@ -739,10 +739,14 @@ function Vip({ character, busy, onAct }: { character: CharacterView; busy: boole
         <li>+5% XP</li>
         <li>Stamina 1.5× acima de 39h</li>
       </ul>
-      <p>Saldo: {character.coins} TC</p>
-      <button className="btn gold" disabled={busy} onClick={() => void onAct({ type: 'shop', sku: 'vip7' })}>7 dias · 250 TC</button>
-      <button className="btn gold" style={{ marginLeft: 8 }} disabled={busy} onClick={() => void onAct({ type: 'shop', sku: 'vip30' })}>30 dias · 900 TC</button>
-      <p className="lede" style={{ textAlign: 'left', marginTop: 12 }}>Veja também a aba Store → Premium / VIP na Loja.</p>
+      <p>Saldo: {character.coins} Knock Coins</p>
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn gold" disabled={busy || character.coins < 150} onClick={() => void onAct({ type: 'shop', sku: 'vip7' })}>7 dias · 150 KC</button>
+        <button className="btn gold" disabled={busy || character.coins < 500} onClick={() => void onAct({ type: 'shop', sku: 'vip30' })}>30 dias · 500 KC</button>
+        <button className="btn gold" disabled={busy || character.coins < 1_350} onClick={() => void onAct({ type: 'shop', sku: 'vip90' })}>90 dias · 1.350 KC</button>
+        <button className="btn gold" disabled={busy || character.coins < 4_500} onClick={() => void onAct({ type: 'shop', sku: 'vip365' })}>365 dias · 4.500 KC</button>
+      </div>
+      <p className="lede" style={{ textAlign: 'left', marginTop: 12 }}>O VIP é da conta e vale para todos os personagens. Veja também Loja → Premium / VIP.</p>
     </div>
   );
 }

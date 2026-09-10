@@ -50,6 +50,24 @@ describe('admin edge cases', () => {
     expect(String(db.findCoinOrder(orderId)?.['status'])).toBe('pending');
   });
 
+  it('grants VIP to the whole account, including active hunt sessions', () => {
+    const firstId = createActiveHunter();
+    const second = createCharacter('Altvip', 1);
+    const secondRow = db.createCharacter(playerId, second.name, second.vocationId, JSON.stringify(second));
+
+    adminAct(db, adminId, { type: 'grant', characterId: firstId, vipDays: 7 }, NOW);
+
+    const expectedUntil = NOW + 7 * 86_400_000;
+    const firstRow = db.findCharacter(firstId)!;
+    const firstSession = JSON.parse(firstRow.session!) as HuntSession;
+    const secondState = JSON.parse(db.findCharacter(secondRow.id)!.state) as CharacterState;
+    expect(firstSession.character.premium).toBe(true);
+    expect(firstSession.character.vipUntil).toBe(expectedUntil);
+    expect(secondState.premium).toBe(true);
+    expect(secondState.vipUntil).toBe(expectedUntil);
+    expect(Number(db.getWorld(`vip:${playerId}`))).toBe(expectedUntil);
+  });
+
   it('rejects non-finite or excessive numeric admin mutations', () => {
     const characterId = createActiveHunter();
     expect(() => adminAct(db, adminId, { type: 'grant', characterId, gold: Infinity }, NOW)).toThrow('Valor numérico inválido');

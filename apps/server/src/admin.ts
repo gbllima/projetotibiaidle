@@ -4,6 +4,7 @@ import { isAdminUsername } from './auth.js';
 import type { Database } from './db.js';
 import { createNewCharacter, describeCharacter, loadCharacter, stopHunt } from './game.js';
 import { metricsSnapshot } from './metrics.js';
+import { grantAccountVipDays } from './economy.js';
 import { GameError } from './settle.js';
 
 export { isAdminUsername };
@@ -143,11 +144,12 @@ export function adminAct(
     const vipDays = integer(body.vipDays ?? 0, 3650);
     loaded.character.gold += gold;
     loaded.character.coins += coins;
-    if (vipDays > 0) {
-      loaded.character.premium = true;
-      loaded.character.vipUntil = Math.max(loaded.character.vipUntil ?? 0, now) + vipDays * 86_400_000;
-    }
     db.saveCharacter(loaded.row.id, JSON.stringify(loaded.character), loaded.session ? JSON.stringify(loaded.session) : null, now);
+    if (vipDays > 0) {
+      grantAccountVipDays(db, row.accountId, vipDays, now);
+      const refreshed = loadCharacter(db, row.accountId, characterId, now).loaded;
+      return { character: describeCharacter(refreshed, db) };
+    }
     return { character: describeCharacter(loaded, db) };
   }
 

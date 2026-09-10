@@ -116,6 +116,20 @@ function propagateVip(db: Database, accountId: number, vipUntil: number, now: nu
   }
 }
 
+export function grantAccountVipDays(
+  db: Database,
+  accountId: number,
+  vipDays: number,
+  now = Date.now(),
+): number {
+  if (!Number.isSafeInteger(vipDays) || vipDays < 1 || vipDays > 3650) {
+    throw new GameError('Valor de VIP inválido.', 422);
+  }
+  const vipUntil = Math.max(accountVipUntil(db, accountId), now) + vipDays * 86_400_000;
+  propagateVip(db, accountId, vipUntil, now);
+  return vipUntil;
+}
+
 export function economyCharacterSlotCap(db: Database, accountId: number): number {
   const boughtRaw = Number(db.getWorld(SLOT_KEY(accountId)) ?? 0);
   const bought = Number.isFinite(boughtRaw) ? Math.max(0, Math.floor(boughtRaw)) : 0;
