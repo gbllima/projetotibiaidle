@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { itemsById } from '@tibia-idle/data';
+import { canEquipFor, isConsumableItem, isEquipableItem } from '@tibia-idle/sim';
 import { api } from '../api/client.js';
 import type { CharacterView } from '../api/types.js';
 import { PAPERDOLL_SLOTS } from '../ui/paperdollSlots.js';
@@ -54,12 +55,16 @@ export function PartyItemsModal({ character, busy = false, onClose }: Props) {
   const backpack = view.backpackContents ?? [];
   const capacity = view.backpackCapacity ?? backpack.length;
   const locked = busy || actionBusy;
+  const menuDef = menu ? itemsById.get(menu.itemId) : undefined;
+  const menuConsumable = menuDef ? isConsumableItem(menuDef) : false;
+  const menuEquipable = menuDef ? isEquipableItem(menuDef) : false;
+  const menuCompatible = menuDef ? canEquipFor(menuDef, view.vocation.id, view.level) : false;
 
   const openMenu = (event: ReactMouseEvent, next: Omit<MenuState, 'x' | 'y'>) => {
     event.preventDefault();
     event.stopPropagation();
     const x = Math.min(event.clientX, window.innerWidth - 190);
-    const y = Math.min(event.clientY, window.innerHeight - 170);
+    const y = Math.min(event.clientY, window.innerHeight - 200);
     setMenu({ ...next, x: Math.max(8, x), y: Math.max(8, y) });
   };
 
@@ -178,6 +183,18 @@ export function PartyItemsModal({ character, busy = false, onClose }: Props) {
       >
         <div className="party-item-context-title">{menu.name}</div>
         <button type="button" disabled={locked} onClick={() => inspect(menu.itemId)}>⌕ <span>Inspecionar</span></button>
+        {menu.from === 'backpack' && menuEquipable && !menuConsumable && (
+          <button
+            type="button"
+            disabled={locked || !menuCompatible}
+            title={!menuCompatible ? 'Item incompatível com a vocação ou nível deste personagem' : undefined}
+            onClick={() => void runAction(() => api.act(view.id, {
+              type: 'equip',
+              itemId: menu.itemId,
+              source: 'backpack',
+            }))}
+          >⇧ <span>Equipar</span></button>
+        )}
         {menu.from === 'worn' && menu.slot && menu.slot !== 'backpack' && (
           <button type="button" disabled={locked} onClick={() => void runAction(() => api.act(view.id, { type: 'unequip', slot: menu.slot! }))}>↗ <span>Desequipar</span></button>
         )}
