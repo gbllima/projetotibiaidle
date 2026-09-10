@@ -35,11 +35,8 @@ export const mountsCatalog = mountsCatalogJson as unknown as MountCatalogEntry[]
 export const meta = metaJson as unknown as DataMeta;
 
 /**
- * Recommended level per hunt, keyed by hunt id then vocation id.
- *
- * Produced by simulation rather than taken from the source data, because the
- * `Level` field in hunting_places.json is a minimum. Regenerate with
- * `pnpm --filter @tibia-idle/sim derive-levels`.
+ * Calibrated efficient level per hunt, keyed by hunt id then vocation id.
+ * Produced by simulation rather than taken from the source data.
  */
 export const huntLevels = huntLevelsJson as unknown as Record<string, Record<string, number>>;
 
@@ -68,8 +65,8 @@ export function huntVocationKey(vocationId: number): number {
   return promoted[vocationId] ?? vocationId;
 }
 
-/** Lowest efficient/recommended level any vocation can run a hunt at, or null if none can. */
-export function recommendedLevelFor(huntId: string, vocationId?: number): number | null {
+/** Raw simulation-derived efficiency level, without starter-zone access rules. */
+export function calibratedLevelFor(huntId: string, vocationId?: number): number | null {
   const entry = huntLevels[huntId];
   if (!entry) return null;
   if (vocationId !== undefined) {
@@ -80,16 +77,19 @@ export function recommendedLevelFor(huntId: string, vocationId?: number): number
 }
 
 /**
- * Level used to lock/unlock a hunt in the game.
- * Starter level-8 zones remain available to new characters; after that tier,
- * the vocation-specific calibrated level is the actual access requirement.
+ * Level shown and enforced by the game. Starter level-8 zones remain available
+ * immediately; later zones use the vocation-specific calibrated requirement.
  */
-export function accessLevelFor(huntId: string, vocationId: number): number | null {
+export function recommendedLevelFor(huntId: string, vocationId?: number): number | null {
+  const calibrated = calibratedLevelFor(huntId, vocationId);
+  if (calibrated === null) return null;
   const hunt = huntsById.get(huntId);
-  if (!hunt) return null;
-  const recommended = recommendedLevelFor(huntId, vocationId);
-  if (recommended === null) return null;
-  return hunt.level <= 8 ? hunt.level : recommended;
+  return hunt?.level !== undefined && hunt.level <= 8 ? hunt.level : calibrated;
+}
+
+/** Explicit alias for code that deals with access rather than calibration. */
+export function accessLevelFor(huntId: string, vocationId: number): number | null {
+  return recommendedLevelFor(huntId, vocationId);
 }
 
 export const monstersById: ReadonlyMap<string, Monster> = new Map(monsters.map((m) => [m.id, m]));
