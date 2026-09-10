@@ -42,12 +42,20 @@ describe('party formation', () => {
 });
 
 describe('gradual content access', () => {
-  it('requires the minimum content level exactly, and uses the principal for companions', () => {
-    const hunt = hunts.find((entry) => entry.level > 51 && entry.partySizes.includes('solo'))!;
-    const principal = create('Principal', hunt.level - 1), companion = create('Companion', 800);
+  it('uses the exact vocation requirement and the party principal', () => {
+    const hunt = hunts.find((entry) => {
+      const required = recommendedLevelFor(entry.id, 4);
+      return required !== null && required > 51 && entry.partySizes.includes('solo');
+    })!;
+    const required = recommendedLevelFor(hunt.id, 4)!;
+    const principal = create('Principal', required - 1), companion = create('Companion', 800);
     db.setWorld('party:' + principal.row.id, JSON.stringify([principal.row.id, companion.row.id]));
+    expect(listHunts(principal.state).find((entry) => entry.id === hunt.id)?.recommendedLevel).toBe(required);
     expect(listHunts(principal.state).find((entry) => entry.id === hunt.id)?.unlocked).toBe(false);
     expect(() => startHunt(db, ownerId, companion.row.id, hunt.id, NOW)).toThrow();
+    principal.state.level = required;
+    expect(listHunts(principal.state).find((entry) => entry.id === hunt.id)?.unlocked).toBe(true);
+    expect(() => beginHunt(companion.state, hunt.id, 1n, { restock: false, principal: principal.state })).not.toThrow();
   });
 
   it('blocks Hive Surface for a level 88 Knight principal until level 115', () => {
@@ -55,10 +63,12 @@ describe('gradual content access', () => {
     const companion = create('Companion', 800);
     db.setWorld('party:' + principal.row.id, JSON.stringify([principal.row.id, companion.row.id]));
     expect(recommendedLevelFor('hive-surface', principal.state.vocationId)).toBe(115);
-    expect(() => startHunt(db, ownerId, principal.row.id, 'hive-surface', NOW)).toThrow('nível 115');
-    expect(() => startHunt(db, ownerId, companion.row.id, 'hive-surface', NOW)).toThrow('nível 115');
+    expect(listHunts(principal.state).find((entry) => entry.id === 'hive-surface')?.unlocked).toBe(false);
+    expect(() => startHunt(db, ownerId, principal.row.id, 'hive-surface', NOW)).toThrow();
+    expect(() => startHunt(db, ownerId, companion.row.id, 'hive-surface', NOW)).toThrow();
     expect(() => beginHunt(companion.state, 'hive-surface', 1n, { restock: false, principal: principal.state })).toThrow('nível 115');
     principal.state.level = 115;
+    expect(listHunts(principal.state).find((entry) => entry.id === 'hive-surface')?.unlocked).toBe(true);
     expect(() => beginHunt(companion.state, 'hive-surface', 1n, { restock: false, principal: principal.state })).not.toThrow();
   });
 
@@ -88,9 +98,20 @@ describe('stamina in the city', () => {
   });
 });
 
+describe('character persistence', () => {
+  it('keeps the indexed character name synchronized after a rename', () => {
+    const player = create('Old Name');
+    player.state.name = 'New Name';
+    db.saveCharacter(player.row.id, JSON.stringify(player.state), null, NOW);
+    expect(db.findCharacterByName('Old Name')).toBeNull();
+    expect(db.findCharacterByName('New Name')?.id).toBe(player.row.id);
+  });
+});
+
 describe('account administration', () => {
-  it('grants gbllima access and rejects regular accounts', () => {
+  it('grants gbllima access and rejects regular or generic admin accounts', () => {
     expect(isAdminUsername('gbllima')).toBe(true);
+    expect(isAdminUsername('admin')).toBe(false);
     expect(() => adminAct(db, ownerId, { type: 'set-gold', characterId: 1, gold: 500 })).toThrow('Admin only');
   });
   it('edits character gold and depot items and creates characters for a chosen account', () => {
