@@ -16,6 +16,7 @@ import { PartyPanel } from './PartyPanel.js';
 type ItemSource = 'pouch' | 'supply' | 'backpack';
 type SlotCurrency = 'gold' | 'coins';
 type StackView = { itemId: number; name: string; count: number };
+type PartyEquipTarget = { id: number; name: string; level: number; vocationId: number };
 
 type MenuState = {
   itemId: number;
@@ -154,6 +155,13 @@ export function RightDock({
   })), rare);
   const backpackSlots = pad(backpackItems, backpackCapacity, empty);
 
+  const partyIds = partyView.partyMemberIds ?? [partyView.id];
+  const partyEquipTargets: PartyEquipTarget[] = partyIds.map((id) => {
+    if (id === view.id) return { id: view.id, name: view.name, level: view.level, vocationId: view.vocation.id };
+    const mate = partyView.caveParty.find((entry) => entry.id === id);
+    return mate ? { id: mate.id, name: mate.name, level: mate.level, vocationId: mate.vocationId } : null;
+  }).filter((entry): entry is PartyEquipTarget => entry !== null);
+
   useEffect(() => {
     if (lootPage !== lootPaged.safePage) setLootPage(lootPaged.safePage);
   }, [lootPage, lootPaged.safePage]);
@@ -167,8 +175,8 @@ export function RightDock({
     setLootActionError('');
     setMenu({
       ...next,
-      x: Math.max(8, Math.min(event.clientX, window.innerWidth - 205)),
-      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 310)),
+      x: Math.max(8, Math.min(event.clientX, window.innerWidth - 225)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 360)),
     });
   };
 
@@ -220,6 +228,23 @@ export function RightDock({
     }
   };
 
+  const equipBackpackOnPartyMember = async (itemId: number, targetId: number) => {
+    if (lootActionBusy) return;
+    setLootActionBusy(true);
+    setLootActionError('');
+    try {
+      await api.partyItemAct(character.id, targetId, { type: 'equip', itemId, source: 'backpack' });
+      const owner = await api.character(character.id);
+      setView(owner.character);
+      setPartyView(owner.character);
+      setMenu(null);
+    } catch (error) {
+      setLootActionError(error instanceof Error ? error.message : 'Não foi possível equipar o item neste personagem.');
+    } finally {
+      setLootActionBusy(false);
+    }
+  };
+
   const setItemIgnored = async (itemId: number, ignored: boolean) => {
     if (lootActionBusy) return;
     setLootActionBusy(true);
@@ -240,10 +265,13 @@ export function RightDock({
   const def = menu ? itemsById.get(menu.itemId) : null;
   const consumable = def ? isConsumableItem(def) : false;
   const equipable = def ? isEquipableItem(def) : false;
-  const compatible = def ? canEquipFor(def, view.vocation.id, view.level) : false;
   const sellable = Boolean(def?.sellPrice);
   const unit = menu ? itemValue(menu.itemId) : 0;
   const menuIgnored = menu ? ignoredItemIds.includes(menu.itemId) : false;
+  const compatiblePartyTargets = menu && def && menu.from === 'backpack' && equipable && !consumable
+    ? partyEquipTargets.filter((target) => canEquipFor(def, target.vocationId, target.level))
+    : [];
+  const lootEnabledByStamina = view.stamina > 840;
 
   return <aside className="dock right">
     <PartyPanel
@@ -277,6 +305,8 @@ export function RightDock({
     </DockBox>
 
     <DockBox id="loot-pouch" title="Loot Pouch" extra={<span>Slots {lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots}</span>}>
+      {!lootEnabledByStamina && <div className="loot-status-warning">Loot desativado: sua stamina está em 14h ou menos. Acima de 14h os monstros voltam a gerar loot.</div>}
+      {lootEnabledByStamina && view.policy.lootMinValue > 0 && <div className="loot-status-note">Auto-venda ativa: itens abaixo de {view.policy.lootMinValue} gold viram gold e não aparecem no pouch.</div>}
       <div className="grid8 supply-grid">
         {lootPaged.visible.map((item, index) => <ItemSlot
           key={`loot-${lootPaged.safePage}-${index}-${item.itemId}`}
@@ -324,7 +354,11 @@ export function RightDock({
         <div className="item-ctx-stats">{itemTooltipLines(menu.itemId).map((line) => <span key={line}>{line}</span>)}</div>
       </div>
       <button type="button" disabled={busy || lootActionBusy} onClick={() => inspect(menu.itemId)}>Inspecionar</button>
-      {menu.from === 'backpack' && equipable && !consumable && <button type="button" disabled={busy || lootActionBusy || !compatible} title={!compatible ? 'Item incompatível com sua classe ou nível' : undefined} onClick={() => run(() => onEquip(menu.itemId, 'backpack'))}>Equipar</button>}
+      {menu.from === 'backpack' && equipable && !consumable && <>
+        <div className="item-ctx-section">Equipar em</div>
+        {compatiblePartyTargets.map((target) => <button key={`equip-${target.id}`} type="button" disabled={busy || lootActionBusy} onClick={() => void equipBackpackOnPartyMember(menu.itemId, target.id)}>Equipar em {target.name}</button>)}
+        {compatiblePartyTargets.length === 0 && <button type="button" disabled>Nenhum membro compatível</button>}
+      </>}
       {consumable && <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onUseItem(menu.itemId, menu.from))}>Usar</button>}
       {menu.from === 'backpack' && <button type="button" disabled={busy || lootActionBusy || view.session?.status !== 'active' || menuIgnored} title={view.session?.status !== 'active' ? 'Entre em uma hunt para usar o Loot Pouch' : menuIgnored ? 'Volte a coletar este item antes de enviá-lo ao pouch' : undefined} onClick={() => void moveBackpackToLoot(menu.itemId, menu.count)}>Enviar para Loot Pouch</button>}
       {menu.from === 'backpack' && <button type="button" className={menuIgnored ? '' : 'danger'} disabled={busy || lootActionBusy} onClick={() => void setItemIgnored(menu.itemId, !menuIgnored)}>{menuIgnored ? 'Voltar a coletar este item' : 'Não coletar este item'}</button>}
