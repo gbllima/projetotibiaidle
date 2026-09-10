@@ -6,7 +6,11 @@ import {
   SUPPLY_SLOT_CAP,
   SUPPLY_SLOT_DEFAULT,
   SUPPLY_SLOT_STEP,
+  bestLoadout,
+  createCharacter,
+  deriveStats,
   emptyPreySlot,
+  loadoutCost,
   spinRoulette,
   type CharacterState,
   type HuntSession,
@@ -21,9 +25,16 @@ const PARTY_GOLD_COSTS = [25_000, 150_000] as const;
 const POUCH_BASE_GOLD = 10_000;
 const POUCH_GROWTH = 1.4;
 const ROULETTE_TICKET_COST = 1;
+const PREMIUM_CHARACTER_SLOT_COST = 200;
+const FREE_CHARACTER_SLOTS = 4;
+const MAX_CHARACTER_SLOTS = 8;
+const PLAYABLE_VOCATIONS = new Set([4, 3, 1, 2, 9]);
+const STARTING_GOLD = 10_000;
+const STARTING_GEAR_BUDGET = 3_000;
 const ROULETTE_TICKET_KEY = (accountId: number) => `roulette-tickets:${accountId}`;
 const DAILY_KEY = (accountId: number) => `daily:${accountId}`;
 const VIP_KEY = (accountId: number) => `vip:${accountId}`;
+const SLOT_KEY = (accountId: number) => `slots:${accountId}`;
 
 type EconomyActResult = {
   loaded: LoadedCharacter;
@@ -76,12 +87,17 @@ function accountVipUntil(db: Database, accountId: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
-function applyVipToCharacter(character: CharacterState, vipUntil: number, now: number): void {
+function applyVipToCharacter(character: CharacterState, vipUntil: number, now: number): boolean {
+  let changed = character.vipUntil !== vipUntil || character.premium !== (vipUntil > now);
   character.vipUntil = vipUntil;
   character.premium = vipUntil > now;
   if (character.premium) {
-    while (character.prey.length < 4) character.prey.push(emptyPreySlot(now));
+    while (character.prey.length < 4) {
+      character.prey.push(emptyPreySlot(now));
+      changed = true;
+    }
   }
+  return changed;
 }
 
 function propagateVip(db: Database, accountId: number, vipUntil: number, now: number): void {
@@ -100,6 +116,51 @@ function propagateVip(db: Database, accountId: number, vipUntil: number, now: nu
   }
 }
 
+export function economyCharacterSlotCap(db: Database, accountId: number): number {
+  const boughtRaw = Number(db.getWorld(SLOT_KEY(accountId)) ?? 0);
+  const bought = Number.isFinite(boughtRaw) ? Math.max(0, Math.floor(boughtRaw)) : 0;
+  const configured = Math.min(MAX_CHARACTER_SLOTS, FREE_CHARACTER_SLOTS + bought);
+  // Grandfather existing accounts that already used the previous fifth free slot.
+  const existing = Math.min(MAX_CHARACTER_SLOTS, db.charactersForAccount(accountId).length);
+  return Math.max(configured, existing);
+}
+
+export function economyCreateNewCharacter(
+  db: Database,
+  accountId: number,
+  name: string,
+  vocationId: number,
+  options: { gender?: 'm' | 'f'; weapon?: 'axe' | 'sword' | 'club' } = {},
+  now = Date.now(),
+): LoadedCharacter {
+  if (!/^[a-zA-Z][a-zA-Z ']{2,19}$/.test(name)) {
+    throw new GameError('Names are 3-20 characters and start with a letter.');
+  }
+  if (!PLAYABLE_VOCATIONS.has(vocationId)) throw new GameError('Pick one of the five starting vocations.');
+  if (db.findCharacterByName(name)) throw new GameError('That name is taken.', 409);
+  if (db.charactersForAccount(accountId).length >= economyCharacterSlotCap(db, accountId)) {
+    throw new GameError(`An account holds at most ${economyCharacterSlotCap(db, accountId)} characters.`, 409);
+  }
+
+  const character = createCharacter(name, vocationId);
+  // Premium currency is never minted by character creation.
+  character.coins = 0;
+  character.gender = options.gender === 'f' ? 'f' : 'm';
+  character.startWeapon = options.weapon === 'axe' || options.weapon === 'club' ? options.weapon : 'sword';
+  if (vocationId === 4) character.skills[character.startWeapon].level = 12;
+  character.gold = STARTING_GOLD;
+  character.equipment = bestLoadout(character, STARTING_GEAR_BUDGET);
+  character.gold -= loadoutCost(character.equipment);
+  const stats = deriveStats(character);
+  character.health = stats.maxHealth;
+  character.mana = stats.maxMana;
+  const vipUntil = accountVipUntil(db, accountId);
+  if (vipUntil > 0) applyVipToCharacter(character, vipUntil, now);
+
+  const row = db.createCharacter(accountId, name, vocationId, JSON.stringify(character));
+  return { row, character, session: null };
+}
+
 export function finalizeNewCharacterEconomy(
   db: Database,
   accountId: number,
@@ -113,9 +174,21 @@ export function finalizeNewCharacterEconomy(
   return loaded;
 }
 
+function legacyAccountDaily(db: Database, accountId: number): { day: string; streak: number } {
+  let best = { day: '', streak: 0 };
+  for (const row of db.charactersForAccount(accountId)) {
+    const parsed = parseAuthoritative(row);
+    if (!parsed) continue;
+    const day = parsed.character.dailyClaim ?? '';
+    const streak = Math.max(0, Math.min(7, Math.floor(parsed.character.dailyStreak ?? 0)));
+    if (day > best.day || (day === best.day && streak > best.streak)) best = { day, streak };
+  }
+  return best;
+}
+
 function accountDaily(db: Database, accountId: number): { day: string; streak: number } {
   const raw = db.getWorld(DAILY_KEY(accountId));
-  if (!raw) return { day: '', streak: 0 };
+  if (!raw) return legacyAccountDaily(db, accountId);
   try {
     const parsed = JSON.parse(raw) as { day?: unknown; streak?: unknown };
     return {
@@ -123,7 +196,7 @@ function accountDaily(db: Database, accountId: number): { day: string; streak: n
       streak: Math.max(0, Math.min(7, Math.floor(Number(parsed.streak) || 0))),
     };
   } catch {
-    return { day: '', streak: 0 };
+    return legacyAccountDaily(db, accountId);
   }
 }
 
@@ -137,14 +210,6 @@ function claimAccountDaily(
   const day = new Date(now).toISOString().slice(0, 10);
   const yesterday = new Date(now - 86_400_000).toISOString().slice(0, 10);
   const previous = accountDaily(db, accountId);
-
-  if (!previous.day) {
-    const row = db.findCharacter(characterId);
-    const parsed = parseAuthoritative(row);
-    if (parsed?.character.dailyClaim === day) {
-      throw new GameError('Daily already claimed on this account today.', 409);
-    }
-  }
   if (previous.day === day) throw new GameError('Daily already claimed on this account today.', 409);
 
   const streak = previous.day === yesterday
@@ -155,7 +220,6 @@ function claimAccountDaily(
   const result = rawAct(db, accountId, characterId, body, now);
   const rawGold = Number(result.extra?.gold ?? 0);
   const rawCoins = Number(result.extra?.coins ?? 0);
-
   result.loaded.character.gold += desiredGold - rawGold;
   result.loaded.character.coins = Math.max(0, result.loaded.character.coins - rawCoins);
   result.loaded.character.dailyClaim = day;
@@ -241,6 +305,20 @@ function unlockPouchSlot(
   return { loaded, extra: { cost, currency: 'gold' } };
 }
 
+function buyCharacterSlot(db: Database, accountId: number, characterId: number, now: number): EconomyActResult {
+  const { loaded } = loadCharacter(db, accountId, characterId, now);
+  const currentCap = economyCharacterSlotCap(db, accountId);
+  if (currentCap >= MAX_CHARACTER_SLOTS) throw new GameError('Character slots are already maxed.', 409);
+  if (loaded.character.coins < PREMIUM_CHARACTER_SLOT_COST) {
+    throw new GameError(`Need ${PREMIUM_CHARACTER_SLOT_COST} Knock Coins.`, 402);
+  }
+  loaded.character.coins -= PREMIUM_CHARACTER_SLOT_COST;
+  const nextCap = currentCap + 1;
+  db.setWorld(SLOT_KEY(accountId), String(nextCap - FREE_CHARACTER_SLOTS));
+  saveLoaded(db, loaded, now);
+  return { loaded, extra: { slots: nextCap, cost: PREMIUM_CHARACTER_SLOT_COST } };
+}
+
 export function economyAct(
   db: Database,
   accountId: number,
@@ -253,12 +331,12 @@ export function economyAct(
   if (type === 'convert') {
     throw new GameError('A conversão de gold em Knock Coins foi desativada para proteger a economia do servidor.', 409);
   }
-
   if (type === 'daily') return claimAccountDaily(db, accountId, characterId, body, now);
   if (type === 'roleta-spin') return spinWithTicket(db, accountId, characterId, now);
   if (type === 'party-unlock') return unlockPartyWithGold(db, accountId, characterId, now);
   if (type === 'loot-slot') return unlockPouchSlot(db, accountId, characterId, 'loot', now);
   if (type === 'supply-slot') return unlockPouchSlot(db, accountId, characterId, 'supply', now);
+  if (type === 'shop' && String(body.sku ?? '') === 'char_slot') return buyCharacterSlot(db, accountId, characterId, now);
 
   if (type === 'transfer') {
     const target = db.findCharacterByName(String(body.name ?? '').trim());
@@ -312,20 +390,26 @@ export function economyAct(
 }
 
 export function syncAccountEconomy(db: Database, accountId: number, loaded: LoadedCharacter, now = Date.now()): LoadedCharacter {
+  let changed = false;
+  const vipKeyExists = db.getWorld(VIP_KEY(accountId)) !== null;
   const vipUntil = accountVipUntil(db, accountId);
-  if (vipUntil > 0 || db.getWorld(VIP_KEY(accountId)) !== null) {
-    applyVipToCharacter(loaded.character, vipUntil, now);
-    if (loaded.session) applyVipToCharacter(loaded.session.character, vipUntil, now);
+  if (vipUntil > 0 || vipKeyExists) {
+    changed = applyVipToCharacter(loaded.character, vipUntil, now) || changed;
+    if (loaded.session && loaded.session.character !== loaded.character) {
+      changed = applyVipToCharacter(loaded.session.character, vipUntil, now) || changed;
+    }
   } else if ((loaded.character.vipUntil ?? 0) > now) {
     propagateVip(db, accountId, loaded.character.vipUntil, now);
+    return loaded;
   }
 
   const daily = accountDaily(db, accountId);
-  if (daily.day) {
+  if (daily.day && (loaded.character.dailyClaim !== daily.day || loaded.character.dailyStreak !== daily.streak)) {
     loaded.character.dailyClaim = daily.day;
     loaded.character.dailyStreak = daily.streak;
+    changed = true;
   }
-  saveLoaded(db, loaded, now);
+  if (changed) saveLoaded(db, loaded, now);
   return loaded;
 }
 
