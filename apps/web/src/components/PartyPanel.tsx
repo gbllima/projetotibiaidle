@@ -1,3 +1,4 @@
+import './party.css';
 import { useState } from 'react';
 import { vocationsById } from '@tibia-idle/data';
 import { partySlotPrices } from '@tibia-idle/sim';

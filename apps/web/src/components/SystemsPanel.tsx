@@ -1,3 +1,4 @@
+import { RankPanel } from './RankPanel.js';
 import { useEffect, useMemo, useState } from 'react';
 import { charms, hunts, items, itemsById, monsters, monstersById, type Item, type Monster } from '@tibia-idle/data';
 import { BLESSING_CAP, bestiaryStage, blessingCount, ITEM_MARKET_CATEGORIES, PROMOTION_GOLD, PROMOTION_LEVEL, isPromoted, slotFor, DEPOT_SLOT_CAP } from '@tibia-idle/sim';
@@ -48,7 +49,8 @@ export function SystemsPanel({
     market: 'Mercado',
     loja: 'Loja',
     vip: 'VIP',
-    rank: 'Rank',
+    rank: 'Ranking',
+    guild: 'Guild',
     build: 'Build',
     progressao: progressaoTitle,
     roleta: 'Roleta',
@@ -81,7 +83,8 @@ export function SystemsPanel({
         {overlay === 'loja' && <StorePanel character={character} world={world} busy={busy} onAct={onAct} />}
         {overlay === 'market' && <GoldMercado character={character} world={world} busy={busy} onAct={onAct} />}
         {overlay === 'vip' && <Vip character={character} busy={busy} onAct={onAct} />}
-        {overlay === 'rank' && <Rank world={world} />}
+        {overlay === 'rank' && <RankPanel world={world} selfId={character.id} />}
+        {overlay === 'guild' && <Guild character={character} world={world} busy={busy} onAct={async (body) => { const result = await onAct(body); setWorld(await api.world('geral')); return result; }} />}
         </div>
       </div>
     </div>

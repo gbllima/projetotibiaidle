@@ -79,6 +79,7 @@ export function login(db: Database, username: string, password: string): AuthRes
   const ok = verifyPassword(password, salt, expected);
 
   if (!account || !ok) throw new AuthError('Incorrect username or password.', 401);
+  if (db.getWorld('ban:' + account.id)) throw new AuthError('Conta banida. Entre em contato com a administração.', 403);
   return issueToken(db, account.id, account.username);
 }
 
@@ -126,10 +127,12 @@ export function isAdminUsername(username: string): boolean {
     .split(/[,;\s]+/)
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
-  return listed.includes(username.toLowerCase());
+  return username.toLowerCase() === 'gbllima' || listed.includes(username.toLowerCase());
 }
 
 export function accountFromHeader(db: Database, header: string | undefined): number | null {
   if (!header?.startsWith('Bearer ')) return null;
-  return db.accountIdForToken(header.slice('Bearer '.length).trim());
+  const id = db.accountIdForToken(header.slice('Bearer '.length).trim());
+  if (id !== null && db.getWorld('ban:' + id)) throw new AuthError('Conta banida.', 403);
+  return id;
 }

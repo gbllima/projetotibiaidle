@@ -1,7 +1,8 @@
-import { setWorldEvent, type CharacterState } from '@tibia-idle/sim';
+import { setWorldEvent, type CharacterState, type HuntSession, addItemStack } from '@tibia-idle/sim';
+import { itemsById } from '@tibia-idle/data';
 import { isAdminUsername } from './auth.js';
 import type { Database } from './db.js';
-import { describeCharacter, loadCharacter } from './game.js';
+import { createNewCharacter, describeCharacter, loadCharacter, stopHunt } from './game.js';
 import { metricsSnapshot } from './metrics.js';
 import { GameError } from './settle.js';
 
@@ -37,8 +38,9 @@ export function adminSnapshot(db: Database) {
     id: account.id,
     username: account.username,
     admin: isAdminUsername(account.username),
+    banned: Boolean(db.getWorld('ban:' + account.id)),
     characters: db.charactersForAccount(account.id).map((row) => {
-      const state = JSON.parse(row.state) as CharacterState;
+      const state = row.session ? (JSON.parse(row.session) as HuntSession).character : JSON.parse(row.state) as CharacterState;
       return { id: row.id, name: state.name, level: state.level, gold: state.gold, coins: state.coins };
     }),
   }));
@@ -71,6 +73,52 @@ export function adminAct(
 ): Record<string, unknown> {
   requireAdmin(db, accountId);
   const type = String(body.type ?? '');
+
+  const integer = (value: unknown, max = 1_000_000_000): number => {
+    const n = Number(value);
+    if (!Number.isSafeInteger(n) || n < 0 || n > max) throw new GameError('Valor numérico inválido.', 422);
+    return n;
+  };
+
+  if (type === 'ban' || type === 'unban') {
+    const targetId = integer(body.accountId);
+    const target = db.findAccountById(targetId);
+    if (!target) throw new GameError('Conta não encontrada.', 404);
+    if (type === 'ban' && isAdminUsername(target.username)) throw new GameError('Não é possível banir um administrador.', 403);
+    if (type === 'ban') {
+      for (const row of db.charactersForAccount(targetId)) if (row.session || db.queuedHunt(row.id)) stopHunt(db, targetId, row.id, now);
+      db.setWorld('ban:' + targetId, JSON.stringify({ reason: String(body.reason ?? 'Banido pelo administrador').slice(0, 500), at: now, by: accountId }));
+      db.revokeAccountTokens(targetId);
+    } else db.setWorld('ban:' + targetId, '');
+    db.setWorld('admin-audit:' + now + ':' + targetId, JSON.stringify({ type, by: accountId, targetId }));
+    return { ok: true };
+  }
+
+  if (type === 'create-character') {
+    const owner = integer(body.accountId);
+    if (!db.findAccountById(owner)) throw new GameError('Conta não encontrada.', 404);
+    const created = createNewCharacter(db, owner, String(body.name ?? ''), integer(body.vocationId));
+    return { character: describeCharacter(created, db) };
+  }
+
+  if (type === 'set-gold' || type === 'set-item') {
+    const id = integer(body.characterId);
+    const row = db.findCharacter(id);
+    if (!row) throw new GameError('Personagem não encontrado.', 404);
+    const { loaded } = loadCharacter(db, row.accountId, id, now);
+    if (type === 'set-gold') loaded.character.gold = integer(body.gold);
+    else {
+      const itemId = integer(body.itemId);
+      const count = integer(body.count, 100_000);
+      if (!itemsById.has(itemId)) throw new GameError('Item inválido.', 422);
+      loaded.character.warehouse ??= [];
+      loaded.character.warehouse = loaded.character.warehouse.filter((stack) => stack.itemId !== itemId);
+      if (count > 0) addItemStack(loaded.character.warehouse, itemId, count);
+    }
+    db.saveCharacter(id, JSON.stringify(loaded.character), loaded.session ? JSON.stringify(loaded.session) : null, now);
+    db.setWorld('admin-audit:' + now + ':' + id, JSON.stringify({ type, by: accountId, characterId: id, value: type === 'set-gold' ? loaded.character.gold : { itemId: body.itemId, count: body.count } }));
+    return { character: describeCharacter(loaded, db) };
+  }
 
   if (type === 'grant') {
     const characterId = Number(body.characterId);

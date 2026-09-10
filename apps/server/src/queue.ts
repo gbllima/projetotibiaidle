@@ -1,8 +1,10 @@
+import { partyPrincipal } from './party-access.js';
 import { randomBytes } from 'node:crypto';
-import { beginHunt, DEFAULT_HUNT_HOURS } from './settle.js';
+import { beginHunt, DEFAULT_HUNT_HOURS, GameError } from './settle.js';
+import { getHunt } from '@tibia-idle/data';
 import type { Database } from './db.js';
 import type { CharacterState, HuntSession } from '@tibia-idle/sim';
-import { isBossHunt } from '@tibia-idle/sim';
+import { isBossHunt, getBossEncounterForHunt } from '@tibia-idle/sim';
 
 interface Loaded {
   row: { id: number };
@@ -32,6 +34,11 @@ export function tryStartOrQueue(
   now: number,
   hours?: number,
 ): 'started' | 'queued' {
+  const row = db.findCharacter(loaded.row.id);
+  if (!row) throw new GameError('Personagem não encontrado.', 404);
+  const principal = partyPrincipal(db, row);
+  const minimum = isBossHunt(huntId) ? getBossEncounterForHunt(huntId)?.minLevel : getHunt(huntId).level;
+  if (minimum === undefined || principal.level < minimum) throw new GameError('Nível do principal insuficiente para este conteúdo.', 422);
   db.dequeueHunt(loaded.row.id);
   if (!isBossHunt(huntId) && db.huntOccupancy(huntId) >= HUNT_CAP) {
     db.enqueueHunt(huntId, loaded.row.id);
@@ -39,7 +46,7 @@ export function tryStartOrQueue(
     return 'queued';
   }
   const seed = BigInt(`0x${randomBytes(8).toString('hex')}`);
-  loaded.session = beginHunt(loaded.character, huntId, seed, { hours: hours ?? DEFAULT_HUNT_HOURS });
+  loaded.session = beginHunt(loaded.character, huntId, seed, { hours: hours ?? DEFAULT_HUNT_HOURS, principal: partyPrincipal(db, db.findCharacter(loaded.row.id)!) });
   if (!isBossHunt(huntId)) db.occupyHunt(huntId, loaded.row.id);
   persist(db, loaded, now);
   return 'started';
@@ -66,7 +73,7 @@ export function promoteHunt(db: Database, huntId: string, now: number): void {
     try {
       const character = JSON.parse(row.state);
       const seed = BigInt(`0x${randomBytes(8).toString('hex')}`);
-      const started = beginHunt(character, huntId, seed, { hours: DEFAULT_HUNT_HOURS });
+      const started = beginHunt(character, huntId, seed, { hours: DEFAULT_HUNT_HOURS, principal: partyPrincipal(db, row) });
       db.occupyHunt(huntId, nextId);
       db.saveCharacter(nextId, JSON.stringify(started.character), JSON.stringify(started), now);
     } catch {

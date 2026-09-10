@@ -6,7 +6,7 @@ import {
   emptyPreySlot, estimateDamagePerSecond, getWorldEvent, GOLD_PER_COIN, GUILD_COST, IMBUEMENTS,
   imbueReagentsFor, IMBUEMENT_DURATION_MS, itemImbuementSlots, nextImbueIndex,
   LOOT_SLOT_CAP, LOOT_SLOT_DEFAULT, LOOT_SLOT_STEP, lootSlotUpgradeCost, lootSlotCoinCost,
-  SUPPLY_SLOT_CAP, SUPPLY_SLOT_STEP, supplySlotUpgradeCost, supplySlotCoinCost, MARKET_CATALOG, isMarketItem, marketBuyPrice, PARTY_SLOT_COINS, PARTY_SLOT_GOLD,
+  SUPPLY_SLOT_CAP, SUPPLY_SLOT_STEP, supplySlotUpgradeCost, supplySlotCoinCost, MARKET_CATALOG, isMarketItem, marketBuyPrice, PARTY_SLOT_COINS, PARTY_SLOT_GOLD, partySlotPrices,
   PRESET_CAP, PREY_DURATION_MS, PREY_WILDCARD_AUTO_BONUS, PREY_WILDCARD_LOCK, PREY_WILDCARD_PICK,
   activatePreyMonster, ensurePreySlots, isPreyActive, isPreySelecting, preyListRerollGold, preyPool,
   preySlotCount, preyWildcards, rerollPreyList, rollPreyBonusReroll, syncPreyWildcards,
@@ -559,7 +559,7 @@ export function act(
       } else if (source === 'supply') {
         takeStack(character.supplies, itemId, 1);
       } else if (source === 'backpack') {
-        takeStack(character.backpackContents ?? [], itemId, 1);
+        takeStack(loaded.character.backpackContents ?? [], itemId, 1);
       } else {
         takeStack(character.warehouse, itemId, 1);
       }
@@ -570,12 +570,13 @@ export function act(
         } else if (source === 'supply') {
           addStack(character.supplies, itemId, 1);
         } else if (source === 'backpack') {
-          addStack(character.backpackContents ?? [], itemId, 1);
+          addStack(loaded.character.backpackContents ?? [], itemId, 1);
         } else {
           addStack(character.warehouse, itemId, 1);
         }
         throw new GameError(worn.reason, 400);
       }
+      if (targetLoaded !== loaded) persist(db, loaded, now);
       persist(db, targetLoaded, now);
       return { loaded, targetLoaded: targetLoaded === loaded ? undefined : targetLoaded, extra: { slot: worn.slot } };
     }
@@ -1089,15 +1090,11 @@ export function act(
 
     case 'party-unlock': {
       if (character.partySlots >= 3) throw new GameError('Party is full.', 409);
-      if (character.partySlots === 1) {
-        if (character.gold < PARTY_SLOT_GOLD) throw new GameError(`Need ${PARTY_SLOT_GOLD} gold.`, 402);
-        character.gold -= PARTY_SLOT_GOLD;
-        character.partySlots = 2;
-      } else {
-        if (character.coins < PARTY_SLOT_COINS) throw new GameError(`Need ${PARTY_SLOT_COINS} coins.`, 402);
-        character.coins -= PARTY_SLOT_COINS;
-        character.partySlots = 3;
-      }
+      const currency = body.currency === 'coins' ? 'coins' : body.currency === 'gold' ? 'gold' : character.partySlots === 1 ? 'gold' : 'coins';
+      const cost = partySlotPrices(character.partySlots)[currency];
+      if (character[currency] < cost) throw new GameError('Saldo insuficiente: ' + cost + ' ' + currency + '.', 402);
+      character[currency] -= cost;
+      character.partySlots += 1;
       persist(db, loaded, now);
       return { loaded };
     }
@@ -1552,14 +1549,14 @@ export function worldSnapshot(db: Database, channel = 'geral') {
   });
 
   const ranks = {
-    level: [...parsed].sort((a, b) => b.state.level - a.state.level || b.state.experience - a.state.experience).slice(0, 20)
-      .map((entry) => ({ id: entry.row.id, name: entry.state.name, value: entry.state.level, extra: entry.state.experience })),
-    gold: [...parsed].sort((a, b) => b.state.gold - a.state.gold).slice(0, 20)
-      .map((entry) => ({ id: entry.row.id, name: entry.state.name, value: entry.state.gold })),
-    bestiary: [...parsed].sort((a, b) => charmPointsEarned(b.state) - charmPointsEarned(a.state)).slice(0, 20)
-      .map((entry) => ({ id: entry.row.id, name: entry.state.name, value: charmPointsEarned(entry.state) })),
-    skill: [...parsed].sort((a, b) => combatSkill(b.state) - combatSkill(a.state) || b.state.level - a.state.level).slice(0, 20)
-      .map((entry) => ({ id: entry.row.id, name: entry.state.name, value: combatSkill(entry.state), extra: entry.state.level })),
+    level: [...parsed].sort((a, b) => b.state.level - a.state.level || b.state.experience - a.state.experience).slice(0, 100)
+      .map((entry) => ({ id: entry.row.id, name: entry.state.name, vocationId: entry.state.vocationId, level: entry.state.level, appearance: entry.state.appearance, value: entry.state.level, extra: entry.state.experience })),
+    gold: [...parsed].sort((a, b) => b.state.gold - a.state.gold).slice(0, 100)
+      .map((entry) => ({ id: entry.row.id, name: entry.state.name, vocationId: entry.state.vocationId, level: entry.state.level, appearance: entry.state.appearance, value: entry.state.gold })),
+    bestiary: [...parsed].sort((a, b) => charmPointsEarned(b.state) - charmPointsEarned(a.state)).slice(0, 100)
+      .map((entry) => ({ id: entry.row.id, name: entry.state.name, vocationId: entry.state.vocationId, level: entry.state.level, appearance: entry.state.appearance, value: charmPointsEarned(entry.state) })),
+    skill: [...parsed].sort((a, b) => combatSkill(b.state) - combatSkill(a.state) || b.state.level - a.state.level).slice(0, 100)
+      .map((entry) => ({ id: entry.row.id, name: entry.state.name, vocationId: entry.state.vocationId, level: entry.state.level, appearance: entry.state.appearance, value: combatSkill(entry.state), extra: entry.state.level })),
   };
 
   const market = db.listMarket().map((listing) => ({

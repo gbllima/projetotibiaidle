@@ -54,8 +54,12 @@ export function publicSettlement(settlement: SettlementResult) {
  * 3:1 below 39h and 6:1 for the green 39-42h band.
  */
 export function regenStamina(character: CharacterState, idleMs: number): number {
-  if (character.stamina >= STAMINA_MAX || idleMs <= STAMINA_REGEN_DELAY_MS) return 0;
-  let availableMs = Math.max(0, idleMs - STAMINA_REGEN_DELAY_MS);
+  if (idleMs <= 0) return 0;
+  const previousRest = character.staminaRestMs ?? 0;
+  const rest = previousRest + idleMs;
+  character.staminaRestMs = Math.min(STAMINA_REGEN_DELAY_MS, rest);
+  let availableMs = (character.staminaRegenCreditMs ?? 0)
+    + Math.max(0, rest - STAMINA_REGEN_DELAY_MS) - Math.max(0, previousRest - STAMINA_REGEN_DELAY_MS);
   const before = character.stamina;
 
   if (character.stamina < STAMINA_GREEN_START && availableMs >= STAMINA_REGEN_NORMAL_MS) {
@@ -69,9 +73,11 @@ export function regenStamina(character: CharacterState, idleMs: number): number 
     const missingGreen = STAMINA_MAX - character.stamina;
     const greenGain = Math.min(missingGreen, Math.floor(availableMs / STAMINA_REGEN_GREEN_MS));
     character.stamina += greenGain;
+    availableMs -= greenGain * STAMINA_REGEN_GREEN_MS;
   }
 
   character.stamina = Math.min(STAMINA_MAX, character.stamina);
+  character.staminaRegenCreditMs = character.stamina >= STAMINA_MAX ? 0 : availableMs;
   return character.stamina - before;
 }
 
@@ -93,31 +99,34 @@ export function settle(session: HuntSession | null, settledAtMs: number, nowMs: 
 }
 
 export class GameError extends Error { constructor(message: string, readonly status = 400) { super(message); this.name = 'GameError'; } }
-export function beginHunt(character: CharacterState, huntId: string, seed: bigint, options: { restock?: boolean; hours?: number } = {}): HuntSession {
+export function beginHunt(character: CharacterState, huntId: string, seed: bigint, options: { restock?: boolean; hours?: number; principal?: CharacterState } = {}): HuntSession {
+  const principal = options.principal ?? character;
   if (isBossHunt(huntId)) {
     const encounter = getBossEncounterForHunt(huntId);
     if (!encounter) throw new GameError('Unknown boss.', 404);
     if (bossOnCooldown(character, encounter.id)) throw new GameError('This boss is on cooldown. You can fight again 20 hours after a kill.', 422);
-    if (character.level < Math.floor(encounter.minLevel / 2)) throw new GameError(`This boss needs about level ${encounter.minLevel}. You are level ${character.level}.`, 422);
+    if (principal.level < encounter.minLevel) throw new GameError(`This boss needs about level ${encounter.minLevel}. You are level ${character.level}.`, 422);
     if (options.restock !== false) {
       const { supplies, cost } = packHuntSupplies(character, BOSS_TRIP_HOURS);
       if (supplies.length === 0 || cost > character.gold) { const hourly = suppliesCost(defaultSupplies(character, 1)); throw new GameError(hourly > 0 ? `You cannot afford enough supplies for this boss. Around ${Math.ceil(hourly * MIN_SUPPLY_HOURS).toLocaleString()} gold buys a short trip.` : 'You cannot afford enough supplies for this boss.', 402); }
       character.gold -= cost; character.supplies = supplies;
     }
     character.lastHuntId = huntId; const stats = deriveStats(character); character.health = stats.maxHealth; character.mana = stats.maxMana;
-    const session = startSession(character, huntId, seed); session.boostedMonsterId = dailyBoostedMonster()?.id; session.startedAt = Date.now(); return session;
+    character.staminaRestMs = 0; character.staminaRegenCreditMs = 0;
+  const session = startSession(character, huntId, seed); session.boostedMonsterId = dailyBoostedMonster()?.id; session.startedAt = Date.now(); return session;
   }
-  const required = recommendedLevelFor(huntId, character.vocationId);
+  const required = getHunt(huntId).level;
   if (required === null) throw new GameError('No vocation can sustain that hunt yet.', 422);
-  if (character.level < Math.floor(required / 2)) throw new GameError(`That hunt needs about level ${required}. You are level ${character.level}.`, 422);
+  if (principal.level < required) throw new GameError(`That hunt needs about level ${required}. You are level ${character.level}.`, 422);
   const partyNeed = requiredPartySlots(getHunt(huntId).partySizes);
-  if ((character.partySlots ?? 1) < partyNeed) throw new GameError(`That hunt needs a party of ${partyNeed}. Unlock more party slots first.`, 422);
+  if ((principal.partySlots ?? 1) < partyNeed) throw new GameError(`That hunt needs a party of ${partyNeed}. Unlock more party slots first.`, 422);
   if (options.restock !== false) {
     const tripHours = options.hours ?? DEFAULT_HUNT_HOURS; const { supplies, cost } = packHuntSupplies(character, tripHours);
     if (supplies.length === 0 || cost > character.gold) { const hourly = suppliesCost(defaultSupplies(character, 1)); throw new GameError(hourly > 0 ? `You cannot afford enough supplies for this hunt. Around ${Math.ceil(hourly * MIN_SUPPLY_HOURS).toLocaleString()} gold buys a short trip.` : 'You cannot afford enough supplies for this hunt.', 402); }
     character.gold -= cost; character.supplies = supplies;
   }
   character.lastHuntId = huntId; ensureHuntTask(character, huntId); const stats = deriveStats(character); character.health = stats.maxHealth; character.mana = stats.maxMana;
+  character.staminaRestMs = 0; character.staminaRegenCreditMs = 0;
   const session = startSession(character, huntId, seed); session.boostedMonsterId = dailyBoostedMonster()?.id; session.startedAt = Date.now(); return session;
 }
 export function endHunt(session: HuntSession): { gold: number; refund: number; character: CharacterState } {

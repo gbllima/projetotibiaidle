@@ -195,6 +195,10 @@ export class Database {
     this.db.close();
   }
 
+  revokeAccountTokens(accountId: number): void {
+    this.db.prepare('DELETE FROM sessions WHERE account_id = ?').run(accountId);
+  }
+
   transaction<T>(action: () => T): T {
     this.db.exec('BEGIN IMMEDIATE');
     try {

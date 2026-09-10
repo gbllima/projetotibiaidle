@@ -13,9 +13,11 @@ export type OverlayId =
   | 'build'
   | 'progressao'
   | 'roleta'
-  | 'depot';
+  | 'depot'
+  | 'guild';
 
 export const NAV: Array<{ id: OverlayId; label: string; tone: string }> = [
+  { id: 'guild', label: 'Guild', tone: '#466a47' },
   { id: 'helper', label: 'Helper', tone: '#1e40af' },
   { id: 'cyclopedia', label: 'Cyclopedia', tone: '#1d4ed8' },
   { id: 'market', label: 'Mercado', tone: '#a16207' },
@@ -81,6 +83,8 @@ export function TopNav({
   onOverlay,
   onBack,
   onSettings,
+  onCity,
+  onTraining,
   badges,
 }: {
   name: string;
@@ -97,6 +101,8 @@ export function TopNav({
   onOverlay: (id: OverlayId) => void;
   onBack: () => void;
   onSettings?: () => void;
+  onCity: () => void;
+  onTraining: () => void;
   badges?: Partial<Record<OverlayId, string>>;
 }) {
   const { locale, setLocale, t } = useLocale();
@@ -161,6 +167,8 @@ export function TopNav({
         ))}
       </nav>
       <div className="top-right">
+        <button className="btn" onClick={onTraining}>Treino online</button>
+        <button className="btn" onClick={onCity}>Cidade</button>
         <button className={`flag ${locale === 'pt' ? 'on' : ''}`} title="PT" onClick={() => setLocale('pt')}>
           <img src={uiUrl('flags/bra')} alt="BR" />
         </button>

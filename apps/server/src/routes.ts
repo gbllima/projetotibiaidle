@@ -1,7 +1,8 @@
+import { partyPrincipal } from './party-access.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { meta } from '@tibia-idle/data';
 import { TICK_MS, isBossHunt } from '@tibia-idle/sim';
-import { accountFromHeader, AuthError, claimAccount, isGuestUsername, login, register, registerGuest } from './auth.js';
+import { accountFromHeader, AuthError, claimAccount, isGuestUsername, isAdminUsername, login, register, registerGuest } from './auth.js';
 import type { Database } from './db.js';
 import {
   addPartyMember, configureParty, characterSlotCap, createNewCharacter, describeCharacter, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
@@ -125,6 +126,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
         account: {
           username,
           guest: isGuestUsername(username),
+          admin: isAdminUsername(username),
           slots: characterSlotCap(db, accountId),
           used: rows.length,
         },
@@ -181,7 +183,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded } = loadCharacter(db, accountId, id);
-      return reply.send({ hunts: listHunts(loaded.character, db) });
+      return reply.send({ hunts: listHunts(partyPrincipal(db, loaded.row), db) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -192,7 +194,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded } = loadCharacter(db, accountId, id);
-      return reply.send({ bosses: listBosses(loaded.character) });
+      return reply.send({ bosses: listBosses(partyPrincipal(db, loaded.row)) });
     } catch (error) {
       return fail(reply, error);
     }

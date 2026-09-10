@@ -54,6 +54,7 @@ export function HuntModal({
   onStart,
   onStop,
   onEnterTraining,
+  onCity,
   onClose,
 }: {
   hunts: HuntView[];
@@ -65,6 +66,7 @@ export function HuntModal({
   initialTab?: 'hunts' | 'training';
   onStart: (id: string, hours: number) => void;
   onStop: () => void;
+  onCity: () => void;
   onEnterTraining: (roomId: string) => void;
   onClose: () => void;
 }) {
@@ -530,7 +532,7 @@ function HuntRow({
             {hunt.premium ? <span className="hunt-badge premium">Premium</span> : null}
           </div>
           <div className="meta hunt-row-meta">
-            {hunt.location || 'Tibia'} · lvl {hunt.recommendedLevel ?? hunt.statedLevel}
+            {hunt.location || 'Tibia'} · lvl {hunt.statedLevel}
             {partyTag(hunt.partySizes, t)}
             {hunt.unlocked ? '' : ` · ${t('blocked')}`}
             {hunt.partyLocked ? ` · ${t('partyNeed')}` : ''}

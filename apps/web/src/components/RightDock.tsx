@@ -32,9 +32,11 @@ type Props = {
   busy: boolean;
   onSell: () => void;
   onUpgrade: () => void;
-  onParty: () => void;
-  onRemoveParty: (characterId: number) => void;
-  onOutfit: () => void;
+  onParty: (currency: 'gold' | 'coins') => void;
+  onPartyConfig: () => void;
+  onPartyItems: (id: number) => void;
+  onPartyToggle: (id: number, active: boolean) => void;
+  onOutfit: (id: number) => void;
   onLootSlot: (currency: SlotCurrency) => void;
   onSupplySlot: (currency: SlotCurrency) => void;
   onLootFilter: (value: number) => void;
@@ -81,6 +83,10 @@ export function RightDock({
   busy,
   onSell,
   onParty,
+  onPartyConfig,
+  onPartyItems,
+  onPartyToggle,
+  onOutfit,
   onLootSlot,
   onSupplySlot,
   onLootFilter,
@@ -204,7 +210,7 @@ export function RightDock({
     if (partyBusy || busy) return;
     setPartyBusy(true);
     try {
-      onParty();
+      onParty(_currency);
       window.setTimeout(() => void refreshParty(), 250);
     } finally {
       window.setTimeout(() => setPartyBusy(false), 300);
@@ -277,11 +283,11 @@ export function RightDock({
     <PartyPanel
       character={partyView}
       busy={busy || partyBusy}
-      onConfig={() => setPartyManagerOpen(true)}
-      onItems={() => undefined}
-      onOutfit={() => undefined}
-      onToggle={() => undefined}
-      onUnlock={(currency) => void unlockPartySlot(currency)}
+      onConfig={onPartyConfig}
+      onItems={onPartyItems}
+      onOutfit={onOutfit}
+      onToggle={onPartyToggle}
+      onUnlock={onParty}
       onBlessings={() => setBlessOpen(true)}
     />
 
@@ -363,7 +369,7 @@ export function RightDock({
       {menu.from === 'backpack' && <button type="button" disabled={busy || lootActionBusy || view.session?.status !== 'active' || menuIgnored} title={view.session?.status !== 'active' ? 'Entre em uma hunt para usar o Loot Pouch' : menuIgnored ? 'Volte a coletar este item antes de enviá-lo ao pouch' : undefined} onClick={() => void moveBackpackToLoot(menu.itemId, menu.count)}>Enviar para Loot Pouch</button>}
       {menu.from === 'backpack' && <button type="button" className={menuIgnored ? '' : 'danger'} disabled={busy || lootActionBusy} onClick={() => void setItemIgnored(menu.itemId, !menuIgnored)}>{menuIgnored ? 'Voltar a coletar este item' : 'Não coletar este item'}</button>}
       {menu.from === 'pouch' && <button type="button" className="danger" disabled={busy || lootActionBusy} onClick={() => void setItemIgnored(menu.itemId, true)}>Não coletar mais este item</button>}
-      {menu.from !== 'backpack' && <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onMoveItem(menu.itemId, menu.from, menu.count))}>Mover pra backpack</button>}
+      {menu.from !== 'backpack' && <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onMoveItem(menu.itemId, menu.from === 'supply' ? 'supply' : 'pouch', menu.count))}>Mover pra backpack</button>}
       {menu.from === 'backpack' && <>
         <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onBackpackWithdraw(menu.itemId, menu.count, 'supply'))}>Mover pra supply</button>
         <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onBackpackWithdraw(menu.itemId, menu.count, 'warehouse'))}>Mover pro armazém</button>

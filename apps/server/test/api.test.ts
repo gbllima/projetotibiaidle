@@ -386,7 +386,8 @@ describe('offline settlement', () => {
     db.saveCharacter(row.id, JSON.stringify(state), null, Date.now() - 30 * 60 * 1000);
 
     const after = await get(`/api/characters/${character.id}`, token);
-    expect(after.json().character.stamina).toBe(2010);
+    // First 10 minutes are the resting delay; the remaining 20 restore 6 minutes.
+    expect(after.json().character.stamina).toBe(2006);
   });
 
   it('refuses a party-only hunt without enough slots', async () => {

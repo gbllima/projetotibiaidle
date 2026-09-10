@@ -178,6 +178,9 @@ export interface CharacterState {
   equipment: Partial<Record<EquipSlot, number>>;
   /** Minutes remaining, 0-2520 (42 hours). */
   stamina: number;
+  /** Continuous resting delay and unspent regeneration time, preserved between polls. */
+  staminaRestMs?: number;
+  staminaRegenCreditMs?: number;
   premium: boolean;
   gold: number;
   /** Bitmask of PvE blessings (Crystal ids 2/4/8/16/32). */

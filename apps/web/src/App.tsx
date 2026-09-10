@@ -1,3 +1,5 @@
+import { WikiScreen } from './screens/WikiScreen.js';
+import { AccountScreen } from './screens/AccountScreen.js';
 import { useEffect, useState } from 'react';
 import { api, LiveSocket, storeToken, storedToken } from './api/client.js';
 import type { AccountView, CharacterView, Settlement } from './api/types.js';
@@ -7,11 +9,12 @@ import { GameScreen } from './screens/GameScreen.js';
 import { SelectScreen } from './screens/SelectScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
 
-type Screen = 'home' | 'boot' | 'auth' | 'select' | 'game';
+type Screen = 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'select' | 'game';
 
 export function App() {
   const { t } = useLocale();
   const [screen, setScreen] = useState<Screen>('home');
+  const [afterAuth, setAfterAuth] = useState<'account' | 'select'>('select');
   const [characters, setCharacters] = useState<CharacterView[]>([]);
   const [account, setAccount] = useState<AccountView | null>(null);
   const [character, setCharacter] = useState<CharacterView | null>(null);
@@ -49,18 +52,24 @@ export function App() {
   }, [screen, character?.id]);
 
   if (screen === 'home') {
-    return <HomeScreen onPlay={() => {
-      if (!storedToken()) setScreen('auth');
+    return <HomeScreen onWiki={() => setScreen('wiki')} onAccount={() => { setAfterAuth('account'); setScreen(storedToken() ? 'account' : 'auth'); }} onPlay={() => {
+      if (!storedToken()) { setAfterAuth('select'); setScreen('auth'); }
       else void loadRoster().then(() => setScreen('select')).catch(() => { storeToken(null); setScreen('auth'); });
     }} />;
   }
+
+  if (screen === 'wiki') return <WikiScreen onHome={() => setScreen('home')} onPlay={() => { setAfterAuth('select'); if (storedToken()) void loadRoster().then(() => setScreen('select')); else setScreen('auth'); }} />;
+  if (screen === 'account') return <AccountScreen onHome={() => setScreen('home')}
+    onEnter={(id) => { void api.character(id).then((result) => { setCharacter(result.character); setSettlement(result.settlement); setScreen('game'); }); }}
+    onSelect={() => { void loadRoster().then(() => setScreen('select')); }}
+    onLogout={() => { void api.logout(); storeToken(null); setScreen('home'); }} />;
 
   if (screen === 'boot') {
     return <div className="auth-page"><div className="auth-page-bg" aria-hidden /><div className="auth-page-vignette" aria-hidden /><div className="splash auth-card-enter"><h1>TIBIA <span>IDLE</span></h1><p>{t('boot')}</p></div></div>;
   }
 
   if (screen === 'auth') {
-    return <AuthScreen onReady={() => { void loadRoster().then(() => setScreen('select')); }} />;
+    return <AuthScreen onReady={() => { void loadRoster().then(() => setScreen(afterAuth)); }} />;
   }
 
   if (screen === 'select') {

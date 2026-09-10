@@ -1,3 +1,5 @@
+import { PartyManagerModal } from '../components/PartyManagerModal.js';
+import { PartyMemberModal } from '../components/PartyMemberModal.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { huntsById, itemsById } from '@tibia-idle/data';
 import { ApiError, api, storeToken } from '../api/client.js';
@@ -70,6 +72,8 @@ export function GameScreen({
     () => localStorage.getItem('tibia-idle.training-room'),
   );
   const [outfitOpen, setOutfitOpen] = useState(false);
+  const [partyConfigOpen, setPartyConfigOpen] = useState(false);
+  const [partyMemberModal, setPartyMemberModal] = useState<{ id: number; mode: 'items' | 'appearance' } | null>(null);
   const [helperCharacter, setHelperCharacter] = useState<CharacterView | null>(null);
   const [huntError, setHuntError] = useState('');
   const [hunts, setHunts] = useState<HuntView[]>([]);
@@ -107,6 +111,21 @@ export function GameScreen({
     localStorage.setItem('tibia-idle.training-room', roomId);
     const room = trainingRoom(roomId);
     pushLog(room ? `Entrou em ${room.name}.` : 'Sala de treino.');
+  }
+
+  function goCity() {
+    userStopped.current = true;
+    lastHunt.current = null;
+    leaveTraining();
+    setPickingHunt(false);
+    setOverlay('none');
+    void act(async () => {
+      for (const id of server.partyMemberIds ?? [server.id]) {
+        const current = (await api.character(id)).character;
+        if (current.session || current.queue) await api.stopHunt(id);
+      }
+      onCharacter((await api.character(server.id)).character);
+    });
   }
 
   function leaveTraining() {
@@ -350,6 +369,8 @@ export function GameScreen({
   return (
     <div className="shell">
       <TopNav
+        onCity={goCity}
+        onTraining={() => { setHuntModalTab('training'); setPickingHunt(true); }}
         name={character.name}
         gold={character.gold}
         coins={character.coins}
@@ -720,9 +741,18 @@ export function GameScreen({
             pushLog(`Vendeu o loot por ${r.gold.toLocaleString('pt-BR')} gold.`);
           }))}
           onUpgrade={() => void act(() => api.upgradeGear(character.id).then((r) => onCharacter(r.character)))}
-          onParty={() => void act(() => api.act(character.id, { type: 'party-unlock' }).then((r) => onCharacter(r.character)))}
-          onRemoveParty={(memberId) => void act(() => api.removePartyMember(character.id, memberId).then((r) => onCharacter(r.character)))}
-          onOutfit={() => setOutfitOpen(true)}
+          onParty={(currency) => void act(() => api.act(character.id, { type: 'party-unlock', currency }).then((r) => onCharacter(r.character)))}
+          onPartyConfig={() => setPartyConfigOpen(true)}
+          onPartyItems={(id) => setPartyMemberModal({ id, mode: 'items' })}
+          onPartyToggle={(id, active) => {
+            if (!active && id === character.id) { setPickingHunt(true); return; }
+            void act(async () => {
+              if (active) await api.stopHunt(id);
+              else if (character.session) await api.startHunt(id, character.session.huntId, 1);
+              onCharacter((await api.character(character.id)).character);
+            });
+          }}
+          onOutfit={(id) => setPartyMemberModal({ id, mode: 'appearance' })}
           onLootSlot={(currency) => void act(() => api.act(character.id, { type: 'loot-slot', currency }).then((r) => onCharacter(r.character)))}
           onSupplySlot={(currency) => void act(() => api.act(character.id, { type: 'supply-slot', currency }).then((r) => onCharacter(r.character)))}
           onLootFilter={(value) => savePolicy({ lootMinValue: value })}
@@ -772,6 +802,7 @@ export function GameScreen({
 
       {pickingHunt && (
         <HuntModal
+          onCity={goCity}
           initialTab={huntModalTab}
           hunts={hunts}
           bosses={bosses}
@@ -808,6 +839,8 @@ export function GameScreen({
         />
       )}
 
+      {partyConfigOpen && <PartyManagerModal character={server} onClose={() => setPartyConfigOpen(false)} onSaved={onCharacter} />}
+      {partyMemberModal && <PartyMemberModal owner={server} memberId={partyMemberModal.id} mode={partyMemberModal.mode} onClose={() => setPartyMemberModal(null)} onCharacter={onCharacter} />}
       {outfitOpen && (
         <OutfitModal
           character={character}

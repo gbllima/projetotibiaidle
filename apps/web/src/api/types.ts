@@ -3,6 +3,7 @@ import type { HuntSession, SimEvent } from '@tibia-idle/sim';
 /** Shapes the server sends. Mirrors apps/server/src/game.ts. */
 
 export interface AccountView {
+  admin?: boolean;
   username: string;
   guest: boolean;
   slots: number;
@@ -305,6 +306,9 @@ export interface LobbyPlayer {
 }
 
 export interface RankRow {
+  vocationId?: number;
+  level?: number;
+  appearance?: CharacterView['appearance'];
   id: number;
   name: string;
   value: number;

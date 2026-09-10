@@ -108,7 +108,7 @@ export const api = {
   act: (id: number, body: Record<string, unknown>) => request<{ character: CharacterView; targetCharacter?: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body),
   world: (channel = 'geral') => request<WorldView>('GET', `/api/world?channel=${encodeURIComponent(channel)}`),
   admin: () => request<{
-    accounts: Array<{ id: number; username: string; admin: boolean; characters: Array<{ id: number; name: string; level: number; gold: number; coins: number }> }>;
+    accounts: Array<{ id: number; username: string; admin: boolean; banned?: boolean; characters: Array<{ id: number; name: string; level: number; gold: number; coins: number }> }>;
     orders: Array<{ id: number; accountId: number; packId: string; coins: number; brl: number; status: string; createdAt: number }>;
     event: { name: string; experience: number; loot: number };
     metrics: { accounts: number; characters: number; hunting: number; queued: number; gold: number; coins: number; beta: string; last24h: { dau: number; registers: number; huntsStarted: number; huntsStopped: number; goldFromHunts: number }; retention: { d1Cohort: number; d1Returned: number; d1: number | null }; topHunts: Array<{ huntId: string; n: number }> };

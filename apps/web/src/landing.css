@@ -5,3 +5,5 @@
 .landing-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px}.landing-title-row>small,.landing-title-row>h3{margin:0;min-width:0}.landing-title-sprite{display:block;width:32px;height:32px;flex:0 0 32px;object-fit:contain;image-rendering:pixelated}.landing-title-sprite .creature-icon{border:0;background:transparent;padding:0}
 
 .landing-data-value-row{display:flex;align-items:center;gap:12px;min-height:48px;margin-top:55px}.landing-data-value-row>.landing-title-sprite{width:48px;height:48px;flex-basis:48px}.landing-data-value-row>strong{margin-top:0;line-height:1}
+
+.landing-nav-link{border:0;background:none;color:#8da5ad;font-size:11px;font-weight:800;letter-spacing:.12em;cursor:pointer;padding:0}.landing-portal-links{position:relative;z-index:1;display:flex;gap:16px;justify-content:center;padding:12px 20px 30px}.landing-portal-links button{background:#172820;color:#e1c078;border:1px solid #465745;padding:12px 20px;cursor:pointer}

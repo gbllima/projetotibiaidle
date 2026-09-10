@@ -27,14 +27,14 @@ export function CityLobby({
 
   return (
     <section className="city-lobby city-lobby--thais">
-      <div className="city-lobby__map" aria-label="Thais - Praça do Depot">
+      <div className="city-lobby__map" aria-label="Cidade - Safe Zone">
         {scene}
       </div>
 
       <div className="city-lobby__bar city-lobby__bar--thais">
         <div className="city-lobby__place">
-          <span className="eyebrow">THAIS · SAFE ZONE</span>
-          <h2>Praça do Depot</h2>
+          <span className="eyebrow">SAFE ZONE</span>
+          <h2>Cidade</h2>
           <p>{players.length} aventureiro{players.length === 1 ? '' : 's'} na cidade · fora da hunt</p>
         </div>
         <div className="city-lobby__self">

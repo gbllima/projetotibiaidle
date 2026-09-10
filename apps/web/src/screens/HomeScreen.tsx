@@ -4,12 +4,12 @@ import { itemIconUrl } from '../render/itemIcon.js';
 import { storedToken } from '../api/client.js';
 
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
-type Props = { onPlay: () => void };
+type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
 
 const SWORD_HOME = new URL('../../../../home/swordhome.gif', import.meta.url).href;
 const HUNTS_HOME = new URL('../../../../home/hunts.png', import.meta.url).href;
 
-export function HomeScreen({ onPlay }: Props) {
+export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
   useEffect(() => {
     void fetch('/api/public-stats').then((r) => r.ok ? r.json() : Promise.reject()).then(setStats).catch(() => setStats(null));
@@ -21,7 +21,7 @@ export function HomeScreen({ onPlay }: Props) {
       <div className="landing-glow landing-glow-a" aria-hidden /><div className="landing-glow landing-glow-b" aria-hidden />
       <header className="landing-nav">
         <div className="landing-brand"><span>IK</span> IDLE KNOCK TIBIA</div>
-        <nav><a href="#servidor">SERVIDOR</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a></nav>
+        <nav><a href="#servidor">SERVIDOR</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a><button className="landing-nav-link" onClick={onWiki}>WIKI</button><button className="landing-nav-link" onClick={onAccount}>MINHA CONTA</button></nav>
         <button className="landing-nav-play" onClick={onPlay}>{actionLabel}</button>
       </header>
 
@@ -66,6 +66,7 @@ export function HomeScreen({ onPlay }: Props) {
       </section>
 
       <section className="landing-cta"><div><span>PRONTO PARA COMEÇAR?</span><h2>SUA AVENTURA<br /><em>COMEÇA AGORA.</em></h2></div><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button></section>
+      <div className="landing-portal-links"><button onClick={onWiki}>WIKI E TUTORIAL</button><button onClick={onAccount}>MINHA CONTA</button></div>
       <footer className="landing-footer">IDLE KNOCK TIBIA <span>•</span> MMORPG IDLE DE NAVEGADOR</footer>
     </main>
   );

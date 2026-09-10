@@ -1,3 +1,4 @@
+import { partyPrincipal } from './party-access.js';
 import { getMonster, getVocation, hunts, itemsById, recommendedLevelFor } from '@tibia-idle/data';
 import {
   activeBoosts, bestLoadout, bossPoints, bossSlotCap, bossCooldownRemainingMs, bossEncounters, bossHuntId,
@@ -110,10 +111,9 @@ export function lobbyPlayers(db: Database): Array<{
 
 export function canManageActivePartyMember(db: Database, accountId: number, ownerId: number, memberId: number): boolean {
   if (memberId === ownerId) return true;
-  const owner = loadCharacter(db, accountId, ownerId).loaded;
-  if (!owner.session || owner.session.status !== 'active') return false;
-  if (!storedPartyIds(db, ownerId).includes(memberId)) return false;
-  return db.listHuntHunters(owner.session.huntId).some((hunter) => hunter.id === memberId);
+  return db.findCharacter(ownerId)?.accountId === accountId
+    && db.findCharacter(memberId)?.accountId === accountId
+    && configuredPartyIds(db, accountId, ownerId).includes(memberId);
 }
 
 export function addPartyMember(db: Database, accountId: number, ownerId: number, memberId: number): void {
@@ -196,6 +196,14 @@ export function configureParty(db: Database, accountId: number, ownerId: number,
     const ordered = [primaryId, ...memberIds.filter((id) => id !== primaryId)];
     db.setWorld(partyKey(primaryId), JSON.stringify(ordered));
     db.setWorld('party-xp-cursor:' + primaryId, db.getWorld('party-xp-cursor:' + ownerId) ?? '0');
+    const allowedHunts = new Set([...listHunts(primary.character), ...listBosses(primary.character)]
+      .filter((entry) => entry.unlocked).map((entry) => 'huntId' in entry ? entry.huntId : entry.id));
+    for (const id of ordered) {
+      const row = db.findCharacter(id)!;
+      const session = row.session ? JSON.parse(row.session) as HuntSession : null;
+      const huntId = session?.huntId ?? db.queuedHunt(id)?.huntId;
+      if (huntId && !allowedHunts.has(huntId)) stopHunt(db, accountId, id, now);
+    }
     return primaryId;
   });
 }
@@ -450,6 +458,7 @@ export function loadCharacter(
   characterId: number,
   now = Date.now(),
 ): { loaded: LoadedCharacter; settlement: ReturnType<typeof settle> } {
+  if (db.getWorld('ban:' + accountId)) throw new GameError('Conta banida.', 403);
   let row = db.findCharacter(characterId);
   if (!row || row.accountId !== accountId) throw new GameError('No such character.', 404);
   const partySettlements = settleConfiguredParty(db, accountId, characterId, now);
@@ -484,7 +493,7 @@ export function loadCharacter(
   }
 
   if (!loaded.session) {
-    regenStamina(loaded.character, now - row.settledAt);
+    regenStamina(loaded.character, row.session ? 0 : now - row.settledAt);
     trainOffline(loaded.character, now - row.settledAt);
   }
 
@@ -503,6 +512,9 @@ export function startHunt(
   hours?: number,
 ): LoadedCharacter {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
+  const principal = partyPrincipal(db, loaded.row);
+  const allowed = [...listHunts(principal), ...listBosses(principal)].some((entry) => ('huntId' in entry ? entry.huntId : entry.id) === huntId && entry.unlocked);
+  if (!allowed) throw new GameError('Conteudo bloqueado pelo nivel do personagem principal.', 422);
   if (loaded.session?.huntId === huntId) {
     throw new GameError('That character is already hunting.', 409);
   }
@@ -800,7 +812,7 @@ export function listHunts(character: CharacterState, db?: Database) {
       location: hunt.location,
       statedLevel: hunt.level,
       recommendedLevel: required,
-      unlocked: required !== null && character.level >= Math.floor(required / 2),
+      unlocked: required !== null && character.level >= hunt.level,
       expectedXpPerHour: expectedExperiencePerHour(hunt.id),
       estimatedRate: throughput.estimated,
       expectedLootPerHour: hunt.expectedLootPerHour,
@@ -860,7 +872,7 @@ export function listBosses(character: CharacterState, now = Date.now()) {
       description: entry.description,
       experience: monster.experience,
       health: monster.health,
-      unlocked: character.level >= Math.floor(entry.minLevel / 2),
+      unlocked: character.level >= entry.minLevel,
       onCooldown: cooldownMs > 0,
       cooldownUntil: character.bossCooldowns?.[entry.id] ?? 0,
       cooldownRemainingMs: cooldownMs,
