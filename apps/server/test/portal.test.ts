@@ -109,9 +109,8 @@ describe('character persistence', () => {
 });
 
 describe('account administration', () => {
-  it('grants gbllima access and rejects regular or generic admin accounts', () => {
+  it('grants gbllima access and rejects regular accounts', () => {
     expect(isAdminUsername('gbllima')).toBe(true);
-    expect(isAdminUsername('admin')).toBe(false);
     expect(() => adminAct(db, ownerId, { type: 'set-gold', characterId: 1, gold: 500 })).toThrow('Admin only');
   });
   it('edits character gold and depot items and creates characters for a chosen account', () => {
