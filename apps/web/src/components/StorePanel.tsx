@@ -8,7 +8,7 @@ import { outfitIconUrl } from '../render/outfitIcon.js';
 
 type ShopOfferView = NonNullable<WorldView['catalogs']['shop']>[number];
 type StoreCategory = 'vip' | 'outfits' | 'mounts' | 'boosts' | 'services' | 'exercise';
-type WalletTab = 'store' | 'coins' | 'convert' | 'transfer';
+type WalletTab = 'store' | 'coins' | 'transfer';
 type OwnFilter = 'all' | 'owned' | 'available';
 type SortMode = 'name' | 'price-asc' | 'price-desc';
 
@@ -175,7 +175,6 @@ export function StorePanel({
   const [ownFilter, setOwnFilter] = useState<OwnFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('name');
   const [previewAddon, setPreviewAddon] = useState(0);
-  const [gold, setGold] = useState('10000');
   const [name, setName] = useState(character.name);
   const [code, setCode] = useState('');
   const [transferName, setTransferName] = useState('');
@@ -241,7 +240,7 @@ export function StorePanel({
     <div className="store-panel">
       <div className="store-head">
         <div>
-          <strong>{character.coins} TC</strong>
+          <strong>{character.coins} KC</strong>
           <span className="meta"> · {formatNumber(character.gold)} gold</span>
         </div>
         {vipActive && (
@@ -265,9 +264,8 @@ export function StorePanel({
 
       <div className="tabs store-wallet-tabs">
         <button type="button" className={walletTab === 'store' ? 'on' : ''} onClick={() => setWalletTab('store')}>Store</button>
-        <button type="button" className={walletTab === 'coins' ? 'on' : ''} onClick={() => setWalletTab('coins')}>Obter TC</button>
-        <button type="button" className={walletTab === 'convert' ? 'on' : ''} onClick={() => setWalletTab('convert')}>Converter</button>
-        <button type="button" className={walletTab === 'transfer' ? 'on' : ''} onClick={() => setWalletTab('transfer')}>Transferir</button>
+        <button type="button" className={walletTab === 'coins' ? 'on' : ''} onClick={() => setWalletTab('coins')}>Obter Coins</button>
+        <button type="button" className={walletTab === 'transfer' ? 'on' : ''} onClick={() => setWalletTab('transfer')}>Mover Coins</button>
       </div>
 
       {walletTab === 'store' && (
@@ -327,7 +325,7 @@ export function StorePanel({
 
           {category === 'vip' && (
             <p className="store-category-hint">
-              Premium Account: +5% XP, 4º slot de Prey, stamina 1.5× acima de 39h.
+              Premium da conta: +5% XP, 4º slot de Prey e stamina 1.5× acima de 39h para todos os personagens.
             </p>
           )}
 
@@ -468,22 +466,12 @@ export function StorePanel({
         </div>
       )}
 
-      {walletTab === 'convert' && (
-        <div className="store-wallet-pane">
-          <label>Converter gold → TC (10.000 = 1)</label>
-          <div className="row">
-            <input value={gold} onChange={(event) => setGold(event.target.value)} />
-            <button type="button" className="btn gold" disabled={busy} onClick={() => void onAct({ type: 'convert', gold: Number(gold) })}>Converter</button>
-          </div>
-        </div>
-      )}
-
       {walletTab === 'transfer' && (
         <div className="store-wallet-pane">
-          <p className="lede store-pane-hint">Envia TC para outro personagem pelo nome.</p>
-          <label>Personagem</label>
+          <p className="lede store-pane-hint">Move Knock Coins apenas entre personagens da sua própria conta.</p>
+          <label>Seu outro personagem</label>
           <input value={transferName} onChange={(event) => setTransferName(event.target.value)} placeholder="Nome" />
-          <label>TC</label>
+          <label>Knock Coins</label>
           <div className="row">
             <input value={transferCoins} onChange={(event) => setTransferCoins(event.target.value)} />
             <button
@@ -492,7 +480,7 @@ export function StorePanel({
               disabled={busy || !transferName.trim()}
               onClick={() => void onAct({ type: 'transfer', name: transferName.trim(), coins: Number(transferCoins) })}
             >
-              Enviar
+              Mover
             </button>
           </div>
         </div>
@@ -554,7 +542,7 @@ function StoreOfferRow({
             {offer.colors && <ColorDots colors={offer.colors} />}
           </strong>
           <div className="meta">{offer.description}</div>
-          <div className="store-offer-price">{offer.coins} TC</div>
+          <div className="store-offer-price">{offer.coins} KC</div>
         </div>
       </div>
 
