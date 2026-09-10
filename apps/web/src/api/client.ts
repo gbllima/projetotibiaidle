@@ -93,6 +93,8 @@ export const api = {
   addPartyMember: (ownerId: number, characterId: number) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party/members`, { characterId }),
   configureParty: (ownerId: number, memberIds: number[], primaryId: number) => request<{ character: CharacterView }>('PUT', `/api/characters/${ownerId}/party`, { memberIds, primaryId }),
   removePartyMember: (ownerId: number, characterId: number) => request<{ character: CharacterView }>('DELETE', `/api/characters/${ownerId}/party/members/${characterId}`),
+  partyItemsView: (ownerId: number, targetId: number) => request<{ character: CharacterView }>('GET', `/api/characters/${ownerId}/party-items/${targetId}`),
+  partyItemAct: (ownerId: number, targetId: number, body: Record<string, unknown>) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party-items/${targetId}`, body),
   hunts: (id: number) => request<{ hunts: HuntView[] }>('GET', `/api/characters/${id}/hunts`),
   bosses: (id: number) => request<{ bosses: BossView[] }>('GET', `/api/characters/${id}/bosses`),
   startHunt: startConfiguredPartyHunt,
