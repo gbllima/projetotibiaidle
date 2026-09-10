@@ -1,0 +1,133 @@
+.city-lobby--thais {
+  position: relative;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  border: 1px solid #5c5142;
+  background: #11151b;
+  box-shadow: 0 18px 48px rgba(0,0,0,.48);
+}
+
+.city-lobby--thais .city-lobby__map {
+  position: relative;
+  min-height: 500px;
+  overflow: hidden;
+  background: #20242b;
+}
+
+.city-lobby--thais .city-lobby__map canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 500px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  filter: saturate(.82) brightness(.78) contrast(1.08);
+}
+
+.city-hub-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(39,43,48,.26), transparent 17%, transparent 83%, rgba(39,43,48,.26)),
+    linear-gradient(180deg, rgba(24,27,30,.22), transparent 24%, transparent 80%, rgba(24,27,30,.3));
+  box-shadow: inset 0 0 0 4px rgba(70,74,68,.45), inset 0 0 60px rgba(0,0,0,.28);
+}
+
+.city-hub-sign {
+  position: absolute;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 7px;
+  align-items: center;
+  min-width: 112px;
+  padding: 6px 8px;
+  border: 1px solid #6f6656;
+  border-radius: 3px;
+  color: #eee3c1;
+  background: linear-gradient(180deg, rgba(35,33,29,.93), rgba(17,18,18,.94));
+  box-shadow: 0 3px 10px rgba(0,0,0,.5), inset 0 1px rgba(255,255,255,.07);
+  font-size: 12px;
+  text-shadow: 1px 1px #000;
+}
+.city-hub-sign b { color: #f1d17e; font-size: 12px; }
+.city-hub-sign span { grid-column: 2; color: #b9b6ad; font-size: 9px; }
+.city-hub-sign--post { top: 5%; left: 47%; }
+.city-hub-sign--team { top: 34%; left: 2.5%; }
+.city-hub-sign--depot { top: 18%; right: 2.5%; }
+.city-hub-sign--bank { top: 39%; right: 2.5%; }
+.city-hub-sign--store { top: 60%; right: 2.5%; }
+.city-hub-sign--temple { bottom: 6%; right: 4%; }
+
+.city-hub-fountain {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  width: 84px;
+  height: 84px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  border: 8px solid rgba(129,133,127,.92);
+  border-radius: 50%;
+  color: #a8e8ff;
+  background: radial-gradient(circle, #79ddff 0 16%, #177ea6 18% 58%, #0e435f 60% 70%, #777b74 72%);
+  box-shadow: 0 0 0 3px rgba(35,37,35,.85), 0 5px 12px rgba(0,0,0,.45), inset 0 0 16px rgba(255,255,255,.35);
+  font-size: 26px;
+  opacity: .9;
+}
+
+.city-lobby__bar--thais {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-top: 1px solid #5f5548;
+  border-bottom: 1px solid #2a2e35;
+  background: linear-gradient(180deg, #272b31, #171a1f);
+}
+.city-lobby__place h2 { margin: 2px 0; color: #e6c86f; font-family: Georgia, serif; font-size: 20px; }
+.city-lobby__place p { margin: 0; color: #aaa99f; font-size: 11px; }
+.city-lobby__bar--thais .eyebrow { color: #8ed087; font-size: 9px; letter-spacing: .11em; }
+.city-lobby__bar--thais .city-lobby__self { display: grid; min-width: 130px; padding: 7px 10px; border-left: 1px solid #3d424a; }
+.city-lobby__bar--thais .city-lobby__self strong { color: #f1d17e; }
+.city-lobby__bar--thais .city-lobby__self span { color: #aab0ba; font-size: 10px; }
+.city-lobby__bar--thais .city-lobby__actions { display: flex; gap: 7px; }
+
+.city-hub-services {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: #333840;
+}
+.city-hub-services > button,
+.city-hub-services > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  grid-template-rows: auto auto;
+  gap: 0 6px;
+  align-items: center;
+  padding: 8px 9px;
+  border: 0;
+  background: linear-gradient(180deg, #22272e, #181c22);
+  color: #e7e7e2;
+  text-align: left;
+}
+.city-hub-services > button:hover { background: linear-gradient(180deg, #343b43, #232932); }
+.city-hub-services > * > span { grid-row: 1 / 3; font-size: 20px; text-align: center; }
+.city-hub-services b { color: #e9cf83; font-size: 11px; }
+.city-hub-services small { color: #8f959e; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 820px) {
+  .city-lobby__bar--thais { grid-template-columns: 1fr; }
+  .city-lobby__bar--thais .city-lobby__self { border-left: 0; border-top: 1px solid #3d424a; }
+  .city-hub-services { grid-template-columns: repeat(3, 1fr); }
+  .city-hub-sign { transform: scale(.86); }
+}
