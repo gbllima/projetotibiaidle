@@ -1,4 +1,4 @@
-import { hunts, recommendedLevelFor, type Hunt } from '@tibia-idle/data';
+import { calibratedLevelFor, hunts, type Hunt } from '@tibia-idle/data';
 import {
   advance, defaultSupplies, expectedExperiencePerHour, hourlyRates,
   huntThroughput, referenceCharacter, startSession, TICKS_PER_HOUR,
@@ -37,7 +37,7 @@ interface Row {
 function bestVocation(hunt: Hunt): { vocationId: number; level: number } | null {
   let best: { vocationId: number; level: number } | null = null;
   for (const vocationId of PLAYABLE) {
-    const level = recommendedLevelFor(hunt.id, vocationId);
+    const level = calibratedLevelFor(hunt.id, vocationId);
     if (level === null) continue;
     if (!best || level < best.level) best = { vocationId, level };
   }
