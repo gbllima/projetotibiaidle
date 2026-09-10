@@ -3,7 +3,6 @@ import {
   LOOT_SLOT_DEFAULT,
   LOOT_SLOT_STEP,
   Rng,
-  ROULETTE_SPIN_COST,
   SUPPLY_SLOT_CAP,
   SUPPLY_SLOT_DEFAULT,
   SUPPLY_SLOT_STEP,
@@ -21,9 +20,16 @@ const MARKET_SELLER_RATE = 0.95;
 const PARTY_GOLD_COSTS = [25_000, 150_000] as const;
 const POUCH_BASE_GOLD = 10_000;
 const POUCH_GROWTH = 1.4;
+const ROULETTE_TICKET_COST = 1;
 const ROULETTE_TICKET_KEY = (accountId: number) => `roulette-tickets:${accountId}`;
 const DAILY_KEY = (accountId: number) => `daily:${accountId}`;
 const VIP_KEY = (accountId: number) => `vip:${accountId}`;
+
+type EconomyActResult = {
+  loaded: LoadedCharacter;
+  targetLoaded?: LoadedCharacter;
+  extra?: Record<string, unknown>;
+};
 
 function parseAuthoritative(row: ReturnType<Database['findCharacter']>): {
   state: CharacterState;
@@ -52,7 +58,6 @@ function saveAuthoritative(
   now: number,
 ): void {
   if (parsed.session) {
-    // Keep both snapshots aligned. The session remains authoritative while hunting.
     parsed.state.gold = parsed.character.gold;
     parsed.state.coins = parsed.character.coins;
     parsed.state.premium = parsed.character.premium;
@@ -95,10 +100,6 @@ function propagateVip(db: Database, accountId: number, vipUntil: number, now: nu
   }
 }
 
-/**
- * Apply account-owned economic state to a freshly created character.
- * New characters never mint premium currency, and active VIP follows the account.
- */
 export function finalizeNewCharacterEconomy(
   db: Database,
   accountId: number,
@@ -132,12 +133,11 @@ function claimAccountDaily(
   characterId: number,
   body: ActBody,
   now: number,
-) {
+): EconomyActResult {
   const day = new Date(now).toISOString().slice(0, 10);
   const yesterday = new Date(now - 86_400_000).toISOString().slice(0, 10);
   const previous = accountDaily(db, accountId);
 
-  // On the first claim after migration, respect a same-day claim stored on the character.
   if (!previous.day) {
     const row = db.findCharacter(characterId);
     const parsed = parseAuthoritative(row);
@@ -156,7 +156,6 @@ function claimAccountDaily(
   const rawGold = Number(result.extra?.gold ?? 0);
   const rawCoins = Number(result.extra?.coins ?? 0);
 
-  // Preserve the gameplay rewards while preventing Daily from minting premium currency.
   result.loaded.character.gold += desiredGold - rawGold;
   result.loaded.character.coins = Math.max(0, result.loaded.character.coins - rawCoins);
   result.loaded.character.dailyClaim = day;
@@ -175,19 +174,19 @@ function claimAccountDaily(
   };
 }
 
-function spinWithTicket(db: Database, accountId: number, characterId: number, now: number) {
+function spinWithTicket(db: Database, accountId: number, characterId: number, now: number): EconomyActResult {
   const tickets = Math.max(0, Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0) || 0);
-  if (tickets < ROULETTE_SPIN_COST) throw new GameError('Precisa de 1 Ticket de Roleta. Complete o 7º Daily para ganhar um.', 402);
+  if (tickets < ROULETTE_TICKET_COST) throw new GameError('Precisa de 1 Ticket de Roleta. Complete o 7º Daily para ganhar um.', 402);
 
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   const originalCoins = loaded.character.coins;
   loaded.character.coins = Math.max(originalCoins, 75);
-  const rng = new Rng(now ^ loaded.row.id ^ tickets);
+  const rng = new Rng(BigInt(now) ^ BigInt(loaded.row.id) ^ BigInt(tickets));
   const result = spinRoulette(loaded.character, rng);
   loaded.character.coins = originalCoins;
   if (!result.ok) throw new GameError(result.reason, result.reason.includes('Depot') ? 409 : 400);
 
-  db.setWorld(ROULETTE_TICKET_KEY(accountId), String(tickets - ROULETTE_SPIN_COST));
+  db.setWorld(ROULETTE_TICKET_KEY(accountId), String(tickets - ROULETTE_TICKET_COST));
   saveLoaded(db, loaded, now);
   return {
     loaded,
@@ -195,13 +194,13 @@ function spinWithTicket(db: Database, accountId: number, characterId: number, no
       itemId: result.itemId,
       itemName: result.itemName,
       levelRequired: result.levelRequired,
-      cost: ROULETTE_SPIN_COST,
-      ticketBalance: tickets - ROULETTE_SPIN_COST,
+      cost: ROULETTE_TICKET_COST,
+      ticketBalance: tickets - ROULETTE_TICKET_COST,
     },
   };
 }
 
-function unlockPartyWithGold(db: Database, accountId: number, characterId: number, now: number) {
+function unlockPartyWithGold(db: Database, accountId: number, characterId: number, now: number): EconomyActResult {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   const slots = loaded.character.partySlots ?? 1;
   if (slots >= 3) throw new GameError('Party is full.', 409);
@@ -224,7 +223,7 @@ function unlockPouchSlot(
   characterId: number,
   kind: 'loot' | 'supply',
   now: number,
-) {
+): EconomyActResult {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   const isLoot = kind === 'loot';
   const current = isLoot
@@ -242,17 +241,13 @@ function unlockPouchSlot(
   return { loaded, extra: { cost, currency: 'gold' } };
 }
 
-/**
- * Production economy boundary. The underlying gameplay action remains reusable,
- * while monetization-sensitive rules live in one auditable place.
- */
 export function economyAct(
   db: Database,
   accountId: number,
   characterId: number,
   body: ActBody,
   now = Date.now(),
-) {
+): EconomyActResult {
   const type = String(body.type ?? '');
 
   if (type === 'convert') {
@@ -293,14 +288,13 @@ export function economyAct(
     }
   }
 
-  const result = rawAct(db, accountId, characterId, body, now);
+  const result: EconomyActResult = rawAct(db, accountId, characterId, body, now);
 
   if (type === 'shop') {
     const sku = String(body.sku ?? '');
     if (sku.startsWith('vip')) {
       propagateVip(db, accountId, result.loaded.character.vipUntil ?? 0, now);
-      const refreshed = loadCharacter(db, accountId, characterId, now).loaded;
-      result.loaded = refreshed;
+      result.loaded = loadCharacter(db, accountId, characterId, now).loaded;
     }
   }
 
@@ -323,7 +317,6 @@ export function syncAccountEconomy(db: Database, accountId: number, loaded: Load
     applyVipToCharacter(loaded.character, vipUntil, now);
     if (loaded.session) applyVipToCharacter(loaded.session.character, vipUntil, now);
   } else if ((loaded.character.vipUntil ?? 0) > now) {
-    // One-time migration from the old character-scoped VIP model.
     propagateVip(db, accountId, loaded.character.vipUntil, now);
   }
 
