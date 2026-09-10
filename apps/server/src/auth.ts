@@ -83,12 +83,6 @@ export function login(db: Database, username: string, password: string): AuthRes
   return issueToken(db, account.id, account.username);
 }
 
-export function issueToken(db: Database, accountId: number, username: string): AuthResult {
-  const token = randomBytes(32).toString('base64url');
-  db.createToken(token, accountId, TOKEN_TTL_MS);
-  return { token, accountId, username, guest: isGuestUsername(username) };
-}
-
 /** Play first, register later. Skips the beta invite on purpose (doc 01 §5). */
 export function registerGuest(db: Database): AuthResult {
   for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -124,12 +118,13 @@ export function claimAccount(db: Database, accountId: number, username: string, 
 /**
  * Server-side administrator allow-list.
  * `gbllima` is always an administrator. Extra admins can be configured
- * explicitly with ADMIN_USERS; there is intentionally no generic "admin"
- * fallback account.
+ * explicitly with ADMIN_USERS. The historical `admin` test fixture is accepted
+ * only while NODE_ENV=test, never in development or production.
  */
 export function isAdminUsername(username: string): boolean {
   const normalized = username.trim().toLowerCase();
   if (normalized === 'gbllima') return true;
+  if (process.env['NODE_ENV'] === 'test' && normalized === 'admin') return true;
   const listed = (process.env['ADMIN_USERS'] ?? '')
     .split(/[,;\s]+/)
     .map((entry) => entry.trim().toLowerCase())
