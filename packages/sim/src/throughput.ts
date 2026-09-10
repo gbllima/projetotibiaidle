@@ -13,8 +13,6 @@ export interface HuntThroughput {
   monsters: Monster[];
 }
 
-const CONTINUOUS_WAVE_SPAWN_RATE = 1_000_000_000;
-
 const meanExperience = (hunt: Hunt): number => {
   const monsters = hunt.monsters.map(getMonster).filter((m) => m.experience > 0);
   if (monsters.length === 0) return 0;
@@ -68,7 +66,10 @@ export function huntThroughput(huntId: string): HuntThroughput {
   const throughput: HuntThroughput = {
     averageExperience,
     averageHealth,
-    killsPerHour: CONTINUOUS_WAVE_SPAWN_RATE,
+    // The combat loop must consume the same spawn budget used by balance
+    // calculations. Using an effectively infinite rate lets high-level
+    // characters exceed a zone's configured XP/hour by many multiples.
+    killsPerHour: balanceKillsPerHour,
     balanceKillsPerHour,
     packSize: packSizeFor(balanceKillsPerHour),
     estimated,
