@@ -5,10 +5,11 @@ import { TICK_MS, isBossHunt } from '@tibia-idle/sim';
 import { accountFromHeader, AuthError, claimAccount, isGuestUsername, isAdminUsername, login, register, registerGuest } from './auth.js';
 import type { Database } from './db.js';
 import {
-  addPartyMember, configureParty, characterSlotCap, createNewCharacter, describeCharacter, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
+  addPartyMember, configureParty, characterSlotCap, createNewCharacter, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
   sellPouch, stashPouch, startHunt, stopHunt, upgradeGear,
 } from './game.js';
-import { act, worldSnapshot, type ActBody } from './systems.js';
+import { worldSnapshot, type ActBody } from './systems.js';
+import { economyAct, economyCharacterView, finalizeNewCharacterEconomy, syncAccountEconomy } from './economy.js';
 import { adminAct, adminSnapshot, requireAdmin } from './admin.js';
 import { isBetaOpen, track } from './metrics.js';
 import { FREE_OFFLINE_HOURS, GameError, MAX_OFFLINE_HOURS, publicSettlement, VIP_OFFLINE_HOURS, BOSS_TRIP_HOURS } from './settle.js';
@@ -117,7 +118,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const rows = db.charactersForAccount(accountId);
       const characters = rows.map((row) => {
         const { loaded } = loadCharacter(db, accountId, row.id);
-        return describeCharacter(loaded, db);
+        syncAccountEconomy(db, accountId, loaded);
+        return economyCharacterView(db, accountId, loaded);
       });
       const account = db.findAccountById(accountId);
       const username = account?.username ?? '';
@@ -156,9 +158,13 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const gender = body.gender === 'f' ? 'f' as const : 'm' as const;
       const weapon = body.weapon === 'axe' || body.weapon === 'club' ? body.weapon : 'sword';
 
-      const loaded = createNewCharacter(db, accountId, asString(body.name, 'name'), vocationId, { gender, weapon });
+      const loaded = finalizeNewCharacterEconomy(
+        db,
+        accountId,
+        createNewCharacter(db, accountId, asString(body.name, 'name'), vocationId, { gender, weapon }),
+      );
       track(db, 'character_create', { accountId, characterId: loaded.row.id });
-      return reply.status(201).send({ character: describeCharacter(loaded, db) });
+      return reply.status(201).send({ character: economyCharacterView(db, accountId, loaded) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -169,8 +175,9 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded, settlement } = loadCharacter(db, accountId, id);
+      syncAccountEconomy(db, accountId, loaded);
       return reply.send({
-        character: describeCharacter(loaded, db),
+        character: economyCharacterView(db, accountId, loaded),
         settlement: publicSettlement(settlement),
       });
     } catch (error) {
@@ -183,6 +190,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded } = loadCharacter(db, accountId, id);
+      syncAccountEconomy(db, accountId, loaded);
       return reply.send({ hunts: listHunts(partyPrincipal(db, loaded.row), db) });
     } catch (error) {
       return fail(reply, error);
@@ -194,6 +202,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded } = loadCharacter(db, accountId, id);
+      syncAccountEconomy(db, accountId, loaded);
       return reply.send({ bosses: listBosses(partyPrincipal(db, loaded.row)) });
     } catch (error) {
       return fail(reply, error);
@@ -209,7 +218,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
         || typeof body.primaryId !== 'number' || !Number.isInteger(body.primaryId)) throw new GameError('Formação inválida.', 422);
       const id = configureParty(db, accountId, ownerId, body.memberIds, body.primaryId);
       const { loaded } = loadCharacter(db, accountId, id);
-      return reply.send({ character: describeCharacter(loaded, db) });
+      syncAccountEconomy(db, accountId, loaded);
+      return reply.send({ character: economyCharacterView(db, accountId, loaded) });
     } catch (error) { return fail(reply, error); }
   });
 
@@ -222,7 +232,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       if (!Number.isInteger(memberId)) throw new GameError('Missing "characterId".');
       addPartyMember(db, accountId, ownerId, memberId);
       const { loaded } = loadCharacter(db, accountId, ownerId);
-      return reply.send({ character: describeCharacter(loaded, db) });
+      syncAccountEconomy(db, accountId, loaded);
+      return reply.send({ character: economyCharacterView(db, accountId, loaded) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -235,7 +246,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const ownerId = Number(params.id);
       removePartyMember(db, accountId, ownerId, Number(params.memberId));
       const { loaded } = loadCharacter(db, accountId, ownerId);
-      return reply.send({ character: describeCharacter(loaded, db) });
+      syncAccountEconomy(db, accountId, loaded);
+      return reply.send({ character: economyCharacterView(db, accountId, loaded) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -254,8 +266,9 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
           ? Math.min(24, Math.max(1, Math.floor(rawHours)))
           : undefined;
       const loaded = startHunt(db, accountId, id, huntId, Date.now(), hours);
+      syncAccountEconomy(db, accountId, loaded);
       track(db, loaded.session ? 'hunt_start' : 'hunt_queued', { accountId, characterId: id, extra: huntId });
-      return reply.send({ character: describeCharacter(loaded, db) });
+      return reply.send({ character: economyCharacterView(db, accountId, loaded) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -266,8 +279,9 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded, gold, refund } = stopHunt(db, accountId, id);
+      syncAccountEconomy(db, accountId, loaded);
       track(db, 'hunt_stop', { accountId, characterId: id, value: gold });
-      return reply.send({ character: describeCharacter(loaded, db), goldBanked: gold, supplyRefund: refund });
+      return reply.send({ character: economyCharacterView(db, accountId, loaded), goldBanked: gold, supplyRefund: refund });
     } catch (error) {
       return fail(reply, error);
     }
@@ -278,7 +292,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded, gold } = sellPouch(db, accountId, id);
-      return reply.send({ character: describeCharacter(loaded, db), gold });
+      syncAccountEconomy(db, accountId, loaded);
+      return reply.send({ character: economyCharacterView(db, accountId, loaded), gold });
     } catch (error) {
       return fail(reply, error);
     }
@@ -289,7 +304,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded, items } = stashPouch(db, accountId, id);
-      return reply.send({ character: describeCharacter(loaded, db), items });
+      syncAccountEconomy(db, accountId, loaded);
+      return reply.send({ character: economyCharacterView(db, accountId, loaded), items });
     } catch (error) {
       return fail(reply, error);
     }
@@ -300,7 +316,8 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded, spent } = upgradeGear(db, accountId, id);
-      return reply.send({ character: describeCharacter(loaded, db), spent });
+      syncAccountEconomy(db, accountId, loaded);
+      return reply.send({ character: economyCharacterView(db, accountId, loaded), spent });
     } catch (error) {
       return fail(reply, error);
     }
@@ -311,13 +328,17 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const body = (request.body ?? {}) as ActBody;
-      const { loaded, targetLoaded, extra } = act(db, accountId, id, body);
+      const { loaded, targetLoaded, extra } = economyAct(db, accountId, id, body);
       track(db, `act:${String(body.type ?? 'unknown')}`, {
         accountId,
         characterId: id,
         value: Number(extra?.['gold'] ?? 0),
       });
-      return reply.send({ character: describeCharacter(loaded, db), targetCharacter: targetLoaded ? describeCharacter(targetLoaded, db) : undefined, ...extra });
+      return reply.send({
+        character: economyCharacterView(db, accountId, loaded),
+        targetCharacter: targetLoaded ? economyCharacterView(db, accountId, targetLoaded) : undefined,
+        ...extra,
+      });
     } catch (error) {
       return fail(reply, error);
     }
