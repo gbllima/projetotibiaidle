@@ -17,6 +17,14 @@ type Props = {
   onBlessings: () => void;
 };
 
+function BackpackIcon() {
+  return <svg className="party-action-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6.5 6V4.8C6.5 3.25 7.75 2 9.3 2h1.4c1.55 0 2.8 1.25 2.8 2.8V6M5 6.2h10c1.1 0 2 .9 2 2V16c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8.2c0-1.1.9-2 2-2Zm2.5 0v2m5-2v2M6 12h8m-4-2v5" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+}
+
+function HoodIcon() {
+  return <svg className="party-action-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.2c-3.1 0-5.5 3-5.5 6.7 0 1.7.45 3.3 1.25 4.55L4.7 17.8h10.6l-1.05-4.35A8.7 8.7 0 0 0 15.5 8.9c0-3.7-2.4-6.7-5.5-6.7Zm-2.7 7.1c.55-1.25 1.5-2.05 2.7-2.05s2.15.8 2.7 2.05c-.35 2-1.35 3.25-2.7 3.25S7.65 11.3 7.3 9.3Z" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+}
+
 export function PartyPanel({ character, busy, onConfig, onItems, onOutfit, onToggle, onUnlock, onBlessings }: Props) {
   const ids = character.partyMemberIds ?? [character.id];
   const self = { ...character, vocationId: character.vocation.id, self: true, active: character.session?.status === 'active' };
@@ -53,8 +61,8 @@ export function PartyPanel({ character, busy, onConfig, onItems, onOutfit, onTog
           </div>
         </div>
         <div className="party-compact-actions">
-          <button type="button" disabled={busy} onClick={() => onItems(member.id)}><span aria-hidden>▣</span> Itens</button>
-          <button type="button" disabled={busy} onClick={() => onOutfit(member.id)}><span aria-hidden>♧</span> Aparência</button>
+          <button type="button" disabled={busy} onClick={() => onItems(member.id)}><BackpackIcon /> Itens</button>
+          <button type="button" disabled={busy} onClick={() => onOutfit(member.id)}><HoodIcon /> Aparência</button>
         </div>
         <button type="button" className={'party-activity ' + (member.active ? 'active' : '')} disabled={busy || (member.id !== character.id && !member.active && character.session?.status !== 'active')}
           title={member.active ? 'Parar a caçada deste personagem' : 'Entrar na caçada do principal'} onClick={() => onToggle(member.id, !!member.active)}>
