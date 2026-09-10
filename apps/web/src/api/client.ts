@@ -61,11 +61,18 @@ async function startConfiguredPartyHunt(id: number, huntId: string, hours?: numb
   if (ids[0] !== id || ids.length <= 1) return started;
 
   for (const memberId of ids.slice(1)) {
-    try {
-      await request<{ character: CharacterView }>('POST', `/api/characters/${memberId}/hunt`, { huntId, hours });
-    } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 409) throw error;
+    const current = await request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${memberId}`);
+    if (current.character.session?.huntId === huntId && current.character.session.status === 'active') continue;
+
+    if (current.character.session || current.character.queue) {
+      try {
+        await request<{ character: CharacterView; goldBanked: number; supplyRefund: number }>('DELETE', `/api/characters/${memberId}/hunt`);
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 409) throw error;
+      }
     }
+
+    await request<{ character: CharacterView }>('POST', `/api/characters/${memberId}/hunt`, { huntId, hours });
   }
 
   return request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`)
