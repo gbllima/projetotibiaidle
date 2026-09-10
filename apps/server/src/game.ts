@@ -210,8 +210,6 @@ export function configureParty(db: Database, accountId: number, ownerId: number,
 
 function parse(row: CharacterRow): LoadedCharacter {
   const session = row.session ? (JSON.parse(row.session) as HuntSession) : null;
-  // While hunting, the session owns the character: the simulation mutates it
-  // in place, and the copy in `state` is a stale snapshot.
   const character = session ? session.character : (JSON.parse(row.state) as CharacterState);
   normalizeCharacter(character);
   if (session) {
@@ -365,11 +363,6 @@ function settleConfiguredParty(db: Database, accountId: number, characterId: num
   return results;
 }
 
-/**
- * Settle every stored hunt and drop ghost occupancy.
- * Call on boot (and optionally on a timer) so abandoned test characters
- * do not stay in caves forever after a server restart.
- */
 export function reconcileHunts(db: Database, now = Date.now()): { settled: number; orphans: number } {
   let settled = 0;
   let orphans = 0;
@@ -403,13 +396,8 @@ export function reconcileHunts(db: Database, now = Date.now()): { settled: numbe
     }
   }
 
-  for (const huntId of touchedHunts) {
-    promoteHunt(db, huntId, now);
-  }
-
-  if (settled || orphans) {
-    console.log(`hunt reconcile: settled=${settled} orphans=${orphans}`);
-  }
+  for (const huntId of touchedHunts) promoteHunt(db, huntId, now);
+  if (settled || orphans) console.log(`hunt reconcile: settled=${settled} orphans=${orphans}`);
   return { settled, orphans };
 }
 
@@ -420,26 +408,16 @@ export function createNewCharacter(
   vocationId: number,
   options: { gender?: 'm' | 'f'; weapon?: 'axe' | 'sword' | 'club' } = {},
 ): LoadedCharacter {
-  if (!/^[a-zA-Z][a-zA-Z ']{2,19}$/.test(name)) {
-    throw new GameError('Names are 3-20 characters and start with a letter.');
-  }
-  if (!PLAYABLE_VOCATIONS.includes(vocationId)) {
-    throw new GameError('Pick one of the five starting vocations.');
-  }
-  if (db.findCharacterByName(name)) {
-    throw new GameError('That name is taken.', 409);
-  }
+  if (!/^[a-zA-Z][a-zA-Z ']{2,19}$/.test(name)) throw new GameError('Names are 3-20 characters and start with a letter.');
+  if (!PLAYABLE_VOCATIONS.includes(vocationId)) throw new GameError('Pick one of the five starting vocations.');
+  if (db.findCharacterByName(name)) throw new GameError('That name is taken.', 409);
   const cap = characterSlotCap(db, accountId);
-  if (db.charactersForAccount(accountId).length >= cap) {
-    throw new GameError(`An account holds at most ${cap} characters.`, 409);
-  }
+  if (db.charactersForAccount(accountId).length >= cap) throw new GameError(`An account holds at most ${cap} characters.`, 409);
 
   const character = createCharacter(name, vocationId);
   character.gender = options.gender === 'f' ? 'f' : 'm';
   character.startWeapon = options.weapon === 'axe' || options.weapon === 'club' ? options.weapon : 'sword';
-  if (vocationId === 4) {
-    character.skills[character.startWeapon].level = 12;
-  }
+  if (vocationId === 4) character.skills[character.startWeapon].level = 12;
   character.gold = STARTING_GOLD;
   character.equipment = bestLoadout(character, STARTING_GEAR_BUDGET);
   character.gold -= loadoutCost(character.equipment);
@@ -451,7 +429,6 @@ export function createNewCharacter(
   return { row, character, session: null };
 }
 
-/** Load a character, settling elapsed time first. */
 export function loadCharacter(
   db: Database,
   accountId: number,
@@ -473,8 +450,6 @@ export function loadCharacter(
     .map((event) => ({ ...event, actorId: event.actorId ?? id, uid: targetUid ?? event.uid })));
 
   if (!partySettlements.has(characterId) && settlement.session && settlement.session.status !== 'active') {
-    // The hunt ended while the player was away: bank the loot so the gold is
-    // waiting for them rather than trapped in a dead session.
     endHunt(settlement.session);
     loaded.character = settlement.session.character;
     loaded.session = null;
@@ -497,9 +472,7 @@ export function loadCharacter(
     trainOffline(loaded.character, now - row.settledAt);
   }
 
-  if (!partySettlements.has(characterId) && (settlement.elapsedSeconds > 0 || loaded.session === null)) {
-    persist(db, loaded, now);
-  }
+  if (!partySettlements.has(characterId) && (settlement.elapsedSeconds > 0 || loaded.session === null)) persist(db, loaded, now);
   return { loaded, settlement };
 }
 
@@ -515,12 +488,8 @@ export function startHunt(
   const principal = partyPrincipal(db, loaded.row);
   const allowed = [...listHunts(principal), ...listBosses(principal)].some((entry) => ('huntId' in entry ? entry.huntId : entry.id) === huntId && entry.unlocked);
   if (!allowed) throw new GameError('Conteudo bloqueado pelo nivel do personagem principal.', 422);
-  if (loaded.session?.huntId === huntId) {
-    throw new GameError('That character is already hunting.', 409);
-  }
+  if (loaded.session?.huntId === huntId) throw new GameError('That character is already hunting.', 409);
 
-  // Clicking another cave while hunting (or queued) switches: bank the current
-  // trip, refund leftover potions, then buy a pack for the new spot.
   if (loaded.session) {
     endHunt(loaded.session);
     loaded.character = loaded.session.character;
@@ -560,23 +529,14 @@ export function stopHunt(
   return { loaded, gold, refund };
 }
 
-/** Buy the best gear the character can afford, in one action. */
-export function upgradeGear(
-  db: Database,
-  accountId: number,
-  characterId: number,
-  now = Date.now(),
-): { loaded: LoadedCharacter; spent: number } {
+export function upgradeGear(db: Database, accountId: number, characterId: number, now = Date.now()): { loaded: LoadedCharacter; spent: number } {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   if (loaded.session) throw new GameError('Finish the hunt before changing gear.', 409);
-
   const current = loadoutCost(loaded.character.equipment);
   const budget = current + loaded.character.gold;
   const target = bestLoadout(loaded.character, budget);
   const spent = Math.max(0, loadoutCost(target) - current);
-
   if (spent > loaded.character.gold) throw new GameError('Not enough gold.', 402);
-
   const previous = { ...loaded.character.equipment };
   loaded.character.equipment = target;
   loaded.character.gold -= spent;
@@ -585,33 +545,20 @@ export function upgradeGear(
     if (itemId === undefined) continue;
     if (loaded.character.equipment[slot as keyof typeof loaded.character.equipment] === itemId) continue;
     addItemStack(loaded.character.warehouse, itemId, 1);
-    if (loaded.character.equipmentTiers?.[slot as keyof typeof loaded.character.equipmentTiers]) {
-      delete loaded.character.equipmentTiers[slot as keyof typeof loaded.character.equipmentTiers];
-    }
+    if (loaded.character.equipmentTiers?.[slot as keyof typeof loaded.character.equipmentTiers]) delete loaded.character.equipmentTiers[slot as keyof typeof loaded.character.equipmentTiers];
   }
-
   const stats = deriveStats(loaded.character);
   loaded.character.health = Math.min(loaded.character.health, stats.maxHealth);
   loaded.character.mana = Math.min(loaded.character.mana, stats.maxMana);
-
   persist(db, loaded, now);
   return { loaded, spent };
 }
 
-/** Sell everything currently in the loot pouch without ending the hunt. */
-export function sellPouch(
-  db: Database,
-  accountId: number,
-  characterId: number,
-  now = Date.now(),
-): { loaded: LoadedCharacter; gold: number } {
+export function sellPouch(db: Database, accountId: number, characterId: number, now = Date.now()): { loaded: LoadedCharacter; gold: number } {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   if (!loaded.session) throw new GameError('You are not hunting.', 409);
-
   let gold = 0;
-  for (const [id, count] of Object.entries(loaded.session.totals.lootByItem)) {
-    gold += (itemsById.get(Number(id))?.sellPrice ?? 0) * count;
-  }
+  for (const [id, count] of Object.entries(loaded.session.totals.lootByItem)) gold += (itemsById.get(Number(id))?.sellPrice ?? 0) * count;
   loaded.session.totals.lootByItem = {};
   loaded.session.character.gold += gold;
   loaded.character.gold = loaded.session.character.gold;
@@ -619,23 +566,15 @@ export function sellPouch(
   return { loaded, gold };
 }
 
-/** Send pouch items to the warehouse without selling them. */
-export function stashPouch(
-  db: Database,
-  accountId: number,
-  characterId: number,
-  now = Date.now(),
-): { loaded: LoadedCharacter; items: number } {
+export function stashPouch(db: Database, accountId: number, characterId: number, now = Date.now()): { loaded: LoadedCharacter; items: number } {
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   if (!loaded.session) throw new GameError('You are not hunting.', 409);
-
   const items = movePouchToWarehouse(loaded.session);
   loaded.character.warehouse = loaded.session.character.warehouse;
   persist(db, loaded, now);
   return { loaded, items };
 }
 
-/** Character view for the client. */
 export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
   if (db) attachCaveParty(db, loaded);
   const { character } = loaded;
@@ -671,17 +610,8 @@ export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
     lastHuntId: character.lastHuntId ?? null,
     stamina: character.stamina,
     premium: character.premium,
-    equipment: Object.fromEntries(
-      Object.entries(character.equipment).map(([slot, id]) => [
-        slot,
-        { id, name: itemsById.get(id as number)?.name ?? 'unknown' },
-      ]),
-    ),
-    supplies: character.supplies.map((stack) => ({
-      itemId: stack.itemId,
-      name: itemsById.get(stack.itemId)?.name ?? 'unknown',
-      count: stack.count,
-    })),
+    equipment: Object.fromEntries(Object.entries(character.equipment).map(([slot, id]) => [slot, { id, name: itemsById.get(id as number)?.name ?? 'unknown' }])),
+    supplies: character.supplies.map((stack) => ({ itemId: stack.itemId, name: itemsById.get(stack.itemId)?.name ?? 'unknown', count: stack.count })),
     stats: {
       attackValue: stats.attackValue,
       attackSkill: stats.attackSkill,
@@ -715,16 +645,8 @@ export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
     coins: character.coins ?? 0,
     vipUntil: character.vipUntil ?? 0,
     gender: character.gender ?? 'm',
-    warehouse: (character.warehouse ?? []).map((stack) => ({
-      itemId: stack.itemId,
-      name: itemsById.get(stack.itemId)?.name ?? 'item',
-      count: stack.count,
-    })),
-    backpackContents: (character.backpackContents ?? []).map((stack) => ({
-      itemId: stack.itemId,
-      name: itemsById.get(stack.itemId)?.name ?? 'item',
-      count: stack.count,
-    })),
+    warehouse: (character.warehouse ?? []).map((stack) => ({ itemId: stack.itemId, name: itemsById.get(stack.itemId)?.name ?? 'item', count: stack.count })),
+    backpackContents: (character.backpackContents ?? []).map((stack) => ({ itemId: stack.itemId, name: itemsById.get(stack.itemId)?.name ?? 'item', count: stack.count })),
     backpackCapacity: backpackCapacity(character),
     charmsUnlocked: character.charmsUnlocked ?? [],
     charmBinds: character.charmBinds ?? [],
@@ -737,11 +659,8 @@ export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
     forgeDustLevel: character.forgeDustLevel ?? 100,
     forgeSlivers: character.forgeSlivers ?? 0,
     forgeCores: character.forgeCores ?? 0,
-    equipmentTiers: Object.fromEntries(
-      (['head', 'necklace', 'backpack', 'armor', 'right', 'left', 'legs', 'feet', 'ring', 'ammo'] as const)
-        .filter((slot) => character.equipment[slot])
-        .map((slot) => [slot, gearTier(character, slot)]),
-    ),
+    equipmentTiers: Object.fromEntries((['head', 'necklace', 'backpack', 'armor', 'right', 'left', 'legs', 'feet', 'ring', 'ammo'] as const)
+      .filter((slot) => character.equipment[slot]).map((slot) => [slot, gearTier(character, slot)])),
     helperProfiles: character.helperProfiles ?? {},
     dailyClaim: character.dailyClaim ?? '',
     dailyStreak: character.dailyStreak ?? 0,
@@ -793,7 +712,6 @@ export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
   };
 }
 
-/** Hunt list, annotated for this character. */
 export function listHunts(character: CharacterState, db?: Database) {
   const dps = estimateDamagePerSecond(character, 3);
   const used = db?.occupancyByHunt() ?? {};
@@ -812,14 +730,13 @@ export function listHunts(character: CharacterState, db?: Database) {
       location: hunt.location,
       statedLevel: hunt.level,
       recommendedLevel: required,
-      unlocked: required !== null && character.level >= hunt.level,
+      unlocked: required !== null && character.level >= required,
       expectedXpPerHour: expectedExperiencePerHour(hunt.id),
       estimatedRate: throughput.estimated,
       expectedLootPerHour: hunt.expectedLootPerHour,
       packSize: throughput.packSize,
       monsters: hunt.monsters,
       premium: hunt.premium,
-      /** 0-1: how much of the zone's spawn budget this character could use. */
       fit: Math.round(fit * 100) / 100,
       supplyCost,
       profitPerHour: Math.round(profitPerHour),
@@ -834,14 +751,7 @@ export function listHunts(character: CharacterState, db?: Database) {
   return listed.map((hunt) => ({ ...hunt, recommended: hunt.id === best }));
 }
 
-function bestHuntFor(hunts: Array<{
-  id: string;
-  unlocked: boolean;
-  partyLocked: boolean;
-  fit: number;
-  profitPerHour: number;
-  expectedXpPerHour: number;
-}>): string | null {
+function bestHuntFor(hunts: Array<{ id: string; unlocked: boolean; partyLocked: boolean; fit: number; profitPerHour: number; expectedXpPerHour: number }>): string | null {
   let bestId: string | null = null;
   let bestScore = Number.NEGATIVE_INFINITY;
   for (const hunt of hunts) {
@@ -856,7 +766,6 @@ function bestHuntFor(hunts: Array<{
   return bestId;
 }
 
-/** Boss / raid / event lever list for the hunt teleport UI. */
 export function listBosses(character: CharacterState, now = Date.now()) {
   return bossEncounters.map((entry) => {
     const monster = getMonster(entry.monsterId);
