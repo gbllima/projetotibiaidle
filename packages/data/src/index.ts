@@ -68,7 +68,7 @@ export function huntVocationKey(vocationId: number): number {
   return promoted[vocationId] ?? vocationId;
 }
 
-/** Lowest level any vocation can run a hunt at, or null if none can. */
+/** Lowest efficient/recommended level any vocation can run a hunt at. */
 export function recommendedLevelFor(huntId: string, vocationId?: number): number | null {
   const entry = huntLevels[huntId];
   if (!entry) return null;
@@ -77,6 +77,22 @@ export function recommendedLevelFor(huntId: string, vocationId?: number): number
   }
   const levels = Object.values(entry);
   return levels.length ? Math.min(...levels) : null;
+}
+
+/**
+ * Level used to lock/unlock a hunt in the game.
+ *
+ * Starter zones keep their source minimum (level 8) so a new character always
+ * has valid content and the tutorial can start. Past the starter tier, access
+ * follows the vocation-specific calibrated requirement shown by the game. This
+ * keeps advanced maps such as Hive Surface locked until their displayed level.
+ */
+export function accessLevelFor(huntId: string, vocationId: number): number | null {
+  const hunt = huntsById.get(huntId);
+  if (!hunt) return null;
+  const recommended = recommendedLevelFor(huntId, vocationId);
+  if (recommended === null) return null;
+  return hunt.level <= 8 ? hunt.level : recommended;
 }
 
 export const monstersById: ReadonlyMap<string, Monster> = new Map(monsters.map((m) => [m.id, m]));
@@ -105,10 +121,7 @@ export const wandsById: ReadonlyMap<number, WandStats> = new Map(wands.map((wand
 export const outfitsCatalogById: ReadonlyMap<string, OutfitCatalogEntry> = new Map(
   outfitsCatalog.map((entry) => [entry.id, entry]),
 );
-export const mountsCatalogById: ReadonlyMap<string, MountCatalogEntry> = new Map(
-  mountsCatalog.map((entry) => [entry.id, entry]),
-);
-export const mountsByServerId: ReadonlyMap<number, MountCatalogEntry> = new Map(
+export const mountsCatalogById: ReadonlyMap<number, MountCatalogEntry> = new Map(
   mountsCatalog.map((entry) => [entry.mount, entry]),
 );
 
