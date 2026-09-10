@@ -1,0 +1,207 @@
+.rank-panel {
+  display: grid;
+  gap: 16px;
+  min-width: min(860px, 82vw);
+}
+
+.rank-intro {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px;
+  border: 1px solid rgba(255, 213, 128, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(53, 37, 24, 0.96), rgba(24, 24, 28, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+.rank-intro::after {
+  content: '★';
+  position: absolute;
+  right: 18px;
+  top: 6px;
+  font-size: 72px;
+  line-height: 1;
+  color: rgba(255, 206, 105, 0.08);
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.rank-intro > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #e6b95f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.rank-intro h3 {
+  margin: 0;
+  color: #fff4db;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.rank-intro p {
+  margin: 7px 0 0;
+  color: rgba(255, 244, 219, 0.68);
+}
+
+.rank-panel .tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rank-panel .tabs button {
+  min-width: 108px;
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(20, 20, 23, 0.82);
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.rank-panel .tabs button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(230, 185, 95, 0.58);
+}
+
+.rank-panel .tabs button.on {
+  border-color: rgba(230, 185, 95, 0.75);
+  background: linear-gradient(180deg, rgba(123, 82, 30, 0.92), rgba(72, 46, 20, 0.92));
+  color: #fff0c5;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.rank-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(170px, 0.45fr);
+  gap: 10px;
+}
+
+.rank-filters input,
+.rank-filters select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(14, 14, 17, 0.88);
+  color: #f5ead6;
+  outline: none;
+}
+
+.rank-filters input:focus,
+.rank-filters select:focus {
+  border-color: rgba(230, 185, 95, 0.72);
+  box-shadow: 0 0 0 2px rgba(230, 185, 95, 0.12);
+}
+
+.rank-table-wrap {
+  overflow: auto;
+  max-height: min(62vh, 650px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(12, 12, 15, 0.82);
+}
+
+.rank-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+}
+
+.rank-table th,
+.rank-table td {
+  padding: 11px 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.rank-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #202025;
+  color: #d5ad63;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rank-table tbody tr {
+  background: rgba(255, 255, 255, 0.015);
+  transition: background 120ms ease;
+}
+
+.rank-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rank-table tbody tr:hover {
+  background: rgba(230, 185, 95, 0.08);
+}
+
+.rank-table tbody tr.rank-podium:nth-child(1) {
+  background: linear-gradient(90deg, rgba(190, 139, 32, 0.2), rgba(190, 139, 32, 0.04));
+}
+
+.rank-table tbody tr.rank-podium:nth-child(2) {
+  background: linear-gradient(90deg, rgba(166, 174, 186, 0.16), rgba(166, 174, 186, 0.03));
+}
+
+.rank-table tbody tr.rank-podium:nth-child(3) {
+  background: linear-gradient(90deg, rgba(157, 94, 45, 0.18), rgba(157, 94, 45, 0.03));
+}
+
+.rank-table tbody tr.rank-self {
+  outline: 1px solid rgba(92, 176, 255, 0.7);
+  outline-offset: -1px;
+  background: rgba(43, 104, 158, 0.14);
+}
+
+.rank-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 180px;
+}
+
+.rank-player strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #f5ead6;
+}
+
+.rank-player small {
+  color: #78c8ff;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rank-table td:first-child b {
+  color: #f0ca7a;
+  font-size: 14px;
+}
+
+.rank-table td:last-child b {
+  color: #fff0ba;
+}
+
+@media (max-width: 760px) {
+  .rank-panel {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .rank-filters {
+    grid-template-columns: 1fr;
+  }
+}
