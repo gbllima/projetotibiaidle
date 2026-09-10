@@ -19,6 +19,10 @@ export interface AppOptions {
   logger?: boolean;
 }
 
+const AUTH_RATE_WINDOW_MS = 60_000;
+const AUTH_RATE_LIMIT = 20;
+const AUTH_PATHS = new Set(['/api/login', '/api/register', '/api/guest', '/api/claim']);
+
 export async function createApp(options: AppOptions): Promise<{ app: FastifyInstance; db: Database }> {
   const db = new Database(options.databaseFile);
   loadWorldEvent(db);
@@ -36,7 +40,39 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   ignoredLootTimer.unref?.();
 
   const app = Fastify({ logger: options.logger ?? false });
-  await app.register(cors, { origin: true });
+
+  const configuredOrigins = (process.env['CORS_ORIGIN'] ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const localOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+  await app.register(cors, {
+    origin(origin, callback) {
+      if (!origin || localOrigin.test(origin) || configuredOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+  });
+
+  const authHits = new Map<string, { count: number; resetAt: number }>();
+  app.addHook('onRequest', async (request, reply) => {
+    if (!AUTH_PATHS.has(request.url.split('?')[0] ?? '')) return;
+    const now = Date.now();
+    const key = request.ip;
+    const current = authHits.get(key);
+    if (!current || current.resetAt <= now) {
+      authHits.set(key, { count: 1, resetAt: now + AUTH_RATE_WINDOW_MS });
+      return;
+    }
+    current.count += 1;
+    if (current.count > AUTH_RATE_LIMIT) {
+      reply.header('Retry-After', String(Math.ceil((current.resetAt - now) / 1000)));
+      return reply.status(429).send({ error: 'Muitas tentativas. Tente novamente em instantes.' });
+    }
+  });
+
   await app.register(websocket);
 
   registerRoutes(app, db);
@@ -66,6 +102,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   app.addHook('onClose', async () => {
     clearInterval(reconcileTimer);
     clearInterval(ignoredLootTimer);
+    authHits.clear();
   });
 
   if (options.assetsDir && fs.existsSync(options.assetsDir)) {
