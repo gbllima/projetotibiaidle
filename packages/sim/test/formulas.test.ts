@@ -6,15 +6,8 @@ import {
   Rng, stageMultiplier, staminaMultiplier, canReceiveLoot, MAX_LOOT_CHANCE,
 } from '../src/index.js';
 
-/**
- * Fixtures here are the values the real server produces, so a refactor that
- * quietly changes a formula shows up as a failing number rather than as a
- * slowly drifting economy.
- */
-
 describe('experience', () => {
   it('matches known Tibia level thresholds', () => {
-    // Player::getExpForLevel, player.cpp:4517.
     expect(expForLevel(1)).toBe(0);
     expect(expForLevel(2)).toBe(100);
     expect(expForLevel(8)).toBe(4200);
@@ -39,20 +32,17 @@ describe('experience', () => {
 
 describe('damage', () => {
   it('computes the spell level bonus', () => {
-    // getBaseDamageHealing, src/utils/tools.cpp:426
     expect(baseDamageHealing(8)).toBe(baseDamageHealing(8));
     expect(baseDamageHealing(100)).toBeGreaterThan(baseDamageHealing(50));
     expect(baseDamageHealing(1000)).toBeGreaterThan(baseDamageHealing(500));
   });
 
   it('scales weapon damage with skill and attack', () => {
-    // Weapons::getMaxWeaponDamage, weapons.cpp:111
     const low = maxWeaponDamage(100, 60, 40, 1.2, true);
     const highSkill = maxWeaponDamage(100, 120, 40, 1.2, true);
     const highAttack = maxWeaponDamage(100, 60, 80, 1.2, true);
     expect(highSkill).toBeGreaterThan(low);
     expect(highAttack).toBeGreaterThan(low);
-    // 0.085 * 1.2 * 40 * 60 + floor(100 / 5)
     expect(low).toBe(Math.round(0.085 * 1.2 * 40 * 60 + 20));
   });
 
@@ -63,7 +53,6 @@ describe('damage', () => {
   });
 
   it('uses integer division for the level term', () => {
-    // level / 5 truncates in C++, so 104 and 100 share a minimum.
     expect(minWeaponDamage(104, 10)).toBe(20);
     expect(minWeaponDamage(100, 10)).toBe(20);
     expect(minWeaponDamage(105, 10)).toBe(21);
@@ -115,9 +104,11 @@ describe('stamina', () => {
     expect(staminaMultiplier(0, false)).toBe(0);
   });
 
-  it('withholds loot below 14 hours', () => {
+  it('keeps loot enabled while any stamina remains', () => {
     expect(canReceiveLoot(841)).toBe(true);
-    expect(canReceiveLoot(840)).toBe(false);
+    expect(canReceiveLoot(840)).toBe(true);
+    expect(canReceiveLoot(1)).toBe(true);
+    expect(canReceiveLoot(0)).toBe(false);
   });
 });
 
@@ -137,7 +128,6 @@ describe('loot', () => {
   });
 
   it('hits roughly the stated frequency', () => {
-    // A 10% entry over 20k rolls should land near 2000.
     const rng = new Rng(3n);
     let drops = 0;
     for (let i = 0; i < 20000; i += 1) {
