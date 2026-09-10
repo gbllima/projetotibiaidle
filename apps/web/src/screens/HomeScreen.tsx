@@ -4,12 +4,7 @@ import { storedToken } from '../api/client.js';
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
 type Props = { onPlay: () => void };
 
-const SPRITES = {
-  hero: 'https://raw.githubusercontent.com/peonso/opentibia_sprite_pack/master/sprites_by_author/Celix.png',
-  hunt: 'https://raw.githubusercontent.com/peonso/opentibia_sprite_pack/master/sprites_by_author/Cat.png',
-  dark: 'https://raw.githubusercontent.com/peonso/opentibia_sprite_pack/master/sprites_by_author/ElderDark.png',
-  raven: 'https://raw.githubusercontent.com/peonso/opentibia_sprite_pack/master/sprites_by_author/Corvo.png',
-};
+const SWORD_HOME = '/swordhome.gif';
 
 export function HomeScreen({ onPlay }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
@@ -35,9 +30,7 @@ export function HomeScreen({ onPlay }: Props) {
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
         </div>
         <div className="landing-hero-art" aria-hidden>
-          <div className="landing-hero-sprite-frame">
-            <img src={SPRITES.hero} alt="" className="landing-hero-sprite" />
-          </div>
+          <div className="landing-sword-home-frame"><img src={SWORD_HOME} alt="" className="landing-sword-home" /></div>
           <div className="landing-sigil">IK</div>
           <div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" />
           <div className="landing-pixel-particles">✦　·　✧　　·　✦</div>
@@ -54,28 +47,28 @@ export function HomeScreen({ onPlay }: Props) {
       <section id="ranking" className="landing-section">
         <div className="landing-section-heading"><div><span>01</span><h2>O SERVIDOR EM TEMPO REAL</h2></div><p>Dados públicos do seu servidor, atualizados diretamente pela API do jogo.</p></div>
         <div className="landing-data-grid">
-          <DataCard sprite={SPRITES.hunt} value={stats?.characters} label="PERSONAGENS CRIADOS" text="Todos os personagens do mundo compartilhado aparecem aqui conforme o servidor registra novos aventureiros." large />
-          <DataCard sprite={SPRITES.raven} value={stats?.hunting} label="EM CAÇADA" text="Personagens com uma hunt ativa neste momento." />
-          <DataCard sprite={SPRITES.dark} value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Conteúdo carregado da base de dados do servidor." />
+          <DataCard value={stats?.characters} label="PERSONAGENS CRIADOS" text="Todos os personagens do mundo compartilhado aparecem aqui conforme o servidor registra novos aventureiros." large />
+          <DataCard value={stats?.hunting} label="EM CAÇADA" text="Personagens com uma hunt ativa neste momento." />
+          <DataCard value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Conteúdo carregado da base de dados do servidor." />
         </div>
       </section>
 
       <section id="sistemas" className="landing-features">
         <div className="landing-section-heading"><div><span>02</span><h2>UMA AVENTURA IDLE</h2></div><p>Progressão clara, elegante e sempre conectada ao seu servidor.</p></div>
         <div className="landing-feature-grid">
-          <Feature sprite={SPRITES.hero} title="VOCATIONS" text="Escolha seu estilo de combate e construa seu personagem." />
-          <Feature sprite={SPRITES.hunt} title="HUNTS" text="Selecione criaturas e deixe sua evolução acontecer." />
-          <Feature sprite={SPRITES.dark} title="LOOT & GOLD" text="Colete recursos, venda seu loot e fortaleça seu equipamento." />
-          <Feature sprite={SPRITES.raven} title="MUNDO ONLINE" text="Um servidor compartilhado com dados reais dos jogadores." />
+          <Feature sprite={SWORD_HOME} title="VOCATIONS" text="Escolha seu estilo de combate e construa seu personagem." />
+          <Feature title="HUNTS" text="Selecione criaturas e deixe sua evolução acontecer." />
+          <Feature title="LOOT & GOLD" text="Colete recursos, venda seu loot e fortaleça seu equipamento." />
+          <Feature title="MUNDO ONLINE" text="Um servidor compartilhado com dados reais dos jogadores." />
         </div>
       </section>
 
       <section className="landing-cta"><div><span>PRONTO PARA COMEÇAR?</span><h2>SUA AVENTURA<br /><em>COMEÇA AGORA.</em></h2></div><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button></section>
-      <footer className="landing-footer">IDLE KNOCK TIBIA <span>•</span> MMORPG IDLE DE NAVEGADOR <small>Sprites: OpenTibia Sprite Pack · CC BY 4.0</small></footer>
+      <footer className="landing-footer">IDLE KNOCK TIBIA <span>•</span> MMORPG IDLE DE NAVEGADOR</footer>
     </main>
   );
 }
 
 function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) { return <div className="landing-stat"><span className={accent ? 'online-dot' : ''} /><small>{label}</small><strong>{value}</strong></div>; }
-function DataCard({ sprite, value, label, text, large = false }: { sprite: string; value?: number; label: string; text: string; large?: boolean }) { return <div className={`landing-data-card${large ? ' large' : ''}`}><span className="data-sprite"><img src={sprite} alt="" /></span><strong>{value === undefined ? '—' : value.toLocaleString('pt-BR')}</strong><small>{label}</small><p>{text}</p></div>; }
-function Feature({ sprite, title, text }: { sprite: string; title: string; text: string }) { return <article className="landing-feature"><span className="feature-sprite"><img src={sprite} alt="" /></span><h3>{title}</h3><p>{text}</p></article>; }
+function DataCard({ value, label, text, large = false }: { value?: number; label: string; text: string; large?: boolean }) { return <div className={`landing-data-card${large ? ' large' : ''}`}><strong>{value === undefined ? '—' : value.toLocaleString('pt-BR')}</strong><small>{label}</small><p>{text}</p></div>; }
+function Feature({ sprite, title, text }: { sprite?: string; title: string; text: string }) { return <article className="landing-feature">{sprite ? <span className="feature-sprite feature-sprite-gif"><img src={sprite} alt="" /></span> : <span className="feature-sprite-placeholder" aria-hidden /> }<h3>{title}</h3><p>{text}</p></article>; }
