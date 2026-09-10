@@ -105,7 +105,7 @@ export function beginHunt(character: CharacterState, huntId: string, seed: bigin
     const encounter = getBossEncounterForHunt(huntId);
     if (!encounter) throw new GameError('Unknown boss.', 404);
     if (bossOnCooldown(character, encounter.id)) throw new GameError('This boss is on cooldown. You can fight again 20 hours after a kill.', 422);
-    if (principal.level < encounter.minLevel) throw new GameError(`This boss needs about level ${encounter.minLevel}. You are level ${character.level}.`, 422);
+    if (principal.level < encounter.minLevel) throw new GameError(`This boss needs about level ${encounter.minLevel}. You are level ${principal.level}.`, 422);
     if (options.restock !== false) {
       const { supplies, cost } = packHuntSupplies(character, BOSS_TRIP_HOURS);
       if (supplies.length === 0 || cost > character.gold) { const hourly = suppliesCost(defaultSupplies(character, 1)); throw new GameError(hourly > 0 ? `You cannot afford enough supplies for this boss. Around ${Math.ceil(hourly * MIN_SUPPLY_HOURS).toLocaleString()} gold buys a short trip.` : 'You cannot afford enough supplies for this boss.', 402); }
@@ -115,9 +115,9 @@ export function beginHunt(character: CharacterState, huntId: string, seed: bigin
     character.staminaRestMs = 0; character.staminaRegenCreditMs = 0;
   const session = startSession(character, huntId, seed); session.boostedMonsterId = dailyBoostedMonster()?.id; session.startedAt = Date.now(); return session;
   }
-  const required = getHunt(huntId).level;
+  const required = recommendedLevelFor(huntId, principal.vocationId);
   if (required === null) throw new GameError('No vocation can sustain that hunt yet.', 422);
-  if (principal.level < required) throw new GameError(`That hunt needs about level ${required}. You are level ${character.level}.`, 422);
+  if (principal.level < required) throw new GameError(`Conteúdo bloqueado: o personagem principal precisa ser nível ${required} ou maior.`, 422);
   const partyNeed = requiredPartySlots(getHunt(huntId).partySizes);
   if ((principal.partySlots ?? 1) < partyNeed) throw new GameError(`That hunt needs a party of ${partyNeed}. Unlock more party slots first.`, 422);
   if (options.restock !== false) {
