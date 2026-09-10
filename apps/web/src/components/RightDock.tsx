@@ -271,7 +271,7 @@ export function RightDock({
   const compatiblePartyTargets = menu && def && menu.from === 'backpack' && equipable && !consumable
     ? partyEquipTargets.filter((target) => canEquipFor(def, target.vocationId, target.level))
     : [];
-  const lootEnabledByStamina = view.stamina > 840;
+  const lootEnabledByStamina = view.stamina > 0;
 
   return <aside className="dock right">
     <PartyPanel
@@ -305,7 +305,7 @@ export function RightDock({
     </DockBox>
 
     <DockBox id="loot-pouch" title="Loot Pouch" extra={<span>Slots {lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots}</span>}>
-      {!lootEnabledByStamina && <div className="loot-status-warning">Loot desativado: sua stamina está em 14h ou menos. Acima de 14h os monstros voltam a gerar loot.</div>}
+      {!lootEnabledByStamina && <div className="loot-status-warning">Loot desativado: sua stamina chegou a 0. Descanse para voltar a gerar loot.</div>}
       {lootEnabledByStamina && view.policy.lootMinValue > 0 && <div className="loot-status-note">Auto-venda ativa: itens abaixo de {view.policy.lootMinValue} gold viram gold e não aparecem no pouch.</div>}
       <div className="grid8 supply-grid">
         {lootPaged.visible.map((item, index) => <ItemSlot
