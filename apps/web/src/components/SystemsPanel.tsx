@@ -418,7 +418,7 @@ function Daily({ character, busy, onAct }: { character: CharacterView; busy: boo
   return (
     <div>
       <p>Streak atual: <b>{character.dailyStreak}</b> / 7</p>
-      <p className="lede">400 gold × streak, coins extras a partir do dia 3, +1 prey reroll e +10% XP por 2 horas.</p>
+      <p className="lede">400 gold × streak, +1 prey reroll e +10% XP por 2 horas. O 7º Daily consecutivo dá 1 Ticket de Roleta. Recompensa por conta.</p>
       <button className="btn gold" disabled={busy || claimed} onClick={() => void onAct({ type: 'daily' })}>
         {claimed ? 'Já coletado hoje' : 'Coletar'}
       </button>

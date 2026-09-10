@@ -145,9 +145,7 @@ export function RightDock({
   const lootSlots = view.lootSlots ?? LOOT_SLOT_DEFAULT;
   const supplySlots = view.supplySlots ?? 20;
   const lootSlotCost = view.lootSlotCost ?? 10_000;
-  const lootSlotCoinCost = view.lootSlotCoinCost ?? 10;
   const supplySlotCost = view.supplySlotCost ?? 10_000;
-  const supplySlotCoinCost = view.supplySlotCoinCost ?? 10;
   const empty: StackView = { itemId: 0, name: '', count: 0 };
   const lootItems = view.session?.loot ?? [];
   const lootAll = pad(byValue(lootItems.filter((item) => !ignoredItemIds.includes(item.itemId)), rare), lootSlots, empty);
@@ -328,9 +326,6 @@ export function RightDock({
         <button className="btn gold" disabled={busy || !lootItems.length} onClick={onSell}>{t('sell')}</button>
         <button className="btn" disabled={busy || lootSlots >= LOOT_SLOT_CAP || view.gold < lootSlotCost} onClick={() => onLootSlot('gold')}>+slot {formatNumber(lootSlotCost)}g</button>
       </div>
-      <div className="box-tools">
-        <button className="btn gold" disabled={busy || lootSlots >= LOOT_SLOT_CAP || view.coins < lootSlotCoinCost} onClick={() => onLootSlot('coins')}>+slot {lootSlotCoinCost} TC</button>
-      </div>
       <div className="pouch-filter-label">Auto-vender abaixo de (gold):</div>
       <div className="box-tools">
         {([0, 10, 50, 200, 1000] as const).map((value) => <button key={value} type="button" className={`btn ${view.policy.lootMinValue === value ? 'gold' : ''}`} disabled={busy} onClick={() => onLootFilter(value)}>{value === 0 ? t('lootFilterOff') : value}</button>)}
@@ -350,7 +345,6 @@ export function RightDock({
       </div>
       <PouchPager page={supplyPaged.safePage} pageCount={supplyPaged.pageCount} onChange={setSupplyPage} />
       <div className="box-tools"><button className="btn" disabled={busy || supplySlots >= SUPPLY_SLOT_CAP || view.gold < supplySlotCost} onClick={() => onSupplySlot('gold')}>+slot {formatNumber(supplySlotCost)}g</button></div>
-      <div className="box-tools"><button className="btn gold" disabled={busy || supplySlots >= SUPPLY_SLOT_CAP || view.coins < supplySlotCoinCost} onClick={() => onSupplySlot('coins')}>+slot {supplySlotCoinCost} TC</button></div>
     </DockBox>
 
     {menu && <div ref={menuRef} className="item-ctx" style={{ left: menu.x, top: menu.y }} role="menu">

@@ -75,15 +75,14 @@ describe('systems', () => {
     expect(select.json().character.prey[0].monsterId).toBeTruthy();
   });
 
-  it('converts gold into coins and buys VIP', async () => {
+  it('blocks gold conversion and buys account VIP with premium coins', async () => {
     const { token, character } = await setup();
     patchState(character.id, (state) => {
       state.gold = 3_000_000;
-      state.coins = 0;
+      state.coins = 150;
     });
     const converted = await post(`/api/characters/${character.id}/act`, { type: 'convert', gold: 2_500_000 }, token);
-    expect(converted.statusCode, converted.body).toBe(200);
-    expect(converted.json().character.coins).toBe(250);
+    expect(converted.statusCode).toBe(409);
 
     const vip = await post(`/api/characters/${character.id}/act`, { type: 'shop', sku: 'vip7' }, token);
     expect(vip.statusCode, vip.body).toBe(200);
@@ -211,7 +210,7 @@ describe('systems', () => {
     const second = await post(`/api/characters/${character.id}/act`, { type: 'loot-slot', currency: 'gold' }, token);
     expect(second.statusCode, second.body).toBe(200);
     expect(second.json().character.lootSlots).toBe(22);
-    expect(second.json().character.gold).toBe(5_000);
+    expect(second.json().character.gold).toBe(11_000);
   });
 
   it('buys one supply pouch slot at escalating gold cost', async () => {
@@ -225,36 +224,24 @@ describe('systems', () => {
     expect(response.json().character.gold).toBe(15_000);
   });
 
-  it('buys one loot pouch slot with Tibia Coins', async () => {
+  it('does not sell loot pouch slots for premium coins', async () => {
     const { token, character } = await setup();
-    patchState(character.id, (state) => {
-      state.coins = 50;
-    });
+    patchState(character.id, (state) => { state.coins = 50; });
     const response = await post(`/api/characters/${character.id}/act`, { type: 'loot-slot', currency: 'coins' }, token);
-    expect(response.statusCode, response.body).toBe(200);
-    expect(response.json().character.lootSlots).toBe(21);
-    expect(response.json().character.coins).toBe(40);
-    expect(response.json().character.lootSlotCoinCost).toBe(10);
+    expect(response.statusCode).toBe(409);
   });
 
-  it('keeps loot pouch TC cost flat after gold slot purchases', async () => {
+  it('uses 40 percent pouch growth and keeps premium path disabled', async () => {
     const { token, character } = await setup();
-    patchState(character.id, (state) => {
-      state.gold = 35_000;
-      state.coins = 50;
-    });
+    patchState(character.id, (state) => { state.gold = 50_000; state.coins = 50; });
     const firstGold = await post(`/api/characters/${character.id}/act`, { type: 'loot-slot', currency: 'gold' }, token);
     expect(firstGold.statusCode, firstGold.body).toBe(200);
     const secondGold = await post(`/api/characters/${character.id}/act`, { type: 'loot-slot', currency: 'gold' }, token);
     expect(secondGold.statusCode, secondGold.body).toBe(200);
-    expect(secondGold.json().character.lootSlotCost).toBe(40_000);
-    expect(secondGold.json().character.lootSlotCoinCost).toBe(10);
-
+    expect(secondGold.json().character.lootSlotCost).toBe(19_600);
+    expect(secondGold.json().character.lootSlotCoinCost).toBe(0);
     const withCoins = await post(`/api/characters/${character.id}/act`, { type: 'loot-slot', currency: 'coins' }, token);
-    expect(withCoins.statusCode, withCoins.body).toBe(200);
-    expect(withCoins.json().character.lootSlots).toBe(23);
-    expect(withCoins.json().character.coins).toBe(40);
-    expect(withCoins.json().character.lootSlotCoinCost).toBe(10);
+    expect(withCoins.statusCode).toBe(409);
   });
 
   it('saves and loads an appearance preset', async () => {
@@ -274,31 +261,31 @@ describe('systems', () => {
     expect(response.json().character.decorations).toContain('torch');
   });
 
-  it('spins the vocation roulette for 75 TC and stores the prize in the depot', async () => {
+  it('spins the vocation roulette with an earned ticket and stores the prize in the depot', async () => {
     const { token, character } = await setup();
-    patchState(character.id, (state) => {
-      state.coins = 100;
-      state.warehouse = [];
-    });
+    patchState(character.id, (state) => { state.coins = 100; state.warehouse = []; });
+    const accountId = db.findCharacter(character.id)!.accountId;
+    db.setWorld(`roulette-tickets:${accountId}`, '1');
     const response = await post(`/api/characters/${character.id}/act`, { type: 'roleta-spin' }, token);
     expect(response.statusCode, response.body).toBe(200);
     const body = response.json();
-    expect(body.character.coins).toBe(25);
+    expect(body.character.coins).toBe(100);
+    expect(body.character.rouletteTickets).toBe(0);
     expect(typeof body.itemId).toBe('number');
     expect(typeof body.itemName).toBe('string');
     expect(body.character.warehouse.some((stack: { itemId: number }) => stack.itemId === body.itemId)).toBe(true);
   });
 
-  it('allows roulette spin while a hunt session is active', async () => {
+  it('allows ticket roulette spin while a hunt session is active', async () => {
     const { token, character } = await setup();
-    patchState(character.id, (state) => {
-      state.coins = 100;
-      state.warehouse = [];
-    });
+    patchState(character.id, (state) => { state.coins = 100; state.warehouse = []; });
+    const accountId = db.findCharacter(character.id)!.accountId;
+    db.setWorld(`roulette-tickets:${accountId}`, '1');
     await post(`/api/characters/${character.id}/hunt`, { huntId: 'venore-rotworm-cave' }, token);
     const response = await post(`/api/characters/${character.id}/act`, { type: 'roleta-spin' }, token);
     expect(response.statusCode, response.body).toBe(200);
-    expect(response.json().character.coins).toBe(25);
+    expect(response.json().character.coins).toBe(100);
+    expect(response.json().character.rouletteTickets).toBe(0);
   });
 
   it('spends a wheel point after level 50', async () => {
@@ -323,7 +310,7 @@ describe('systems', () => {
     expect(redeemed.statusCode, redeemed.body).toBe(200);
     expect(redeemed.json().character.coins).toBeGreaterThanOrEqual(100);
 
-    const order = await post(`/api/characters/${character.id}/act`, { type: 'buy-coins', pack: 'pack50' }, token);
+    const order = await post(`/api/characters/${character.id}/act`, { type: 'buy-coins', pack: 'pack100' }, token);
     expect(order.statusCode, order.body).toBe(200);
     expect(order.json().orderId).toBeTruthy();
 
@@ -374,12 +361,11 @@ describe('systems', () => {
     expect(aura.json().character.appearance.aura).toBe(1);
     expect(aura.json().character.coins).toBe(380);
 
-    const otherToken = (await post('/api/register', { username: 'payee', password: 'hunter2hunter2' })).json().token as string;
-    const other = (await post('/api/characters', { name: 'Payee', vocationId: 1 }, otherToken)).json().character as { id: number; coins: number };
+    const other = (await post('/api/characters', { name: 'Payee', vocationId: 1 }, token)).json().character as { id: number; coins: number };
     const sent = await post(`/api/characters/${character.id}/act`, { type: 'transfer', name: 'Payee', coins: 20 }, token);
     expect(sent.statusCode, sent.body).toBe(200);
     expect(sent.json().character.coins).toBe(360);
-    const received = await get(`/api/characters/${other.id}`, otherToken);
+    const received = await get(`/api/characters/${other.id}`, token);
     expect(received.json().character.coins).toBe(other.coins + 20);
   });
 
@@ -412,17 +398,18 @@ describe('systems', () => {
     expect(again.statusCode).toBe(409);
   });
 
-  it('sells extra character slots', async () => {
+  it('starts with four character slots and sells more up to the cap', async () => {
     const { token, character } = await setup();
     expect((await post('/api/characters', { name: 'Second', vocationId: 1 }, token)).statusCode).toBe(201);
     expect((await post('/api/characters', { name: 'Third', vocationId: 2 }, token)).statusCode).toBe(201);
     expect((await post('/api/characters', { name: 'Fourth', vocationId: 3 }, token)).statusCode).toBe(201);
-    expect((await post('/api/characters', { name: 'Fifth', vocationId: 4 }, token)).statusCode).toBe(201);
-    expect((await post('/api/characters', { name: 'Sixth', vocationId: 1 }, token)).statusCode).toBe(409);
-
+    expect((await post('/api/characters', { name: 'Fifth', vocationId: 4 }, token)).statusCode).toBe(409);
     patchState(character.id, (state) => { state.coins = 200; });
     const bought = await post(`/api/characters/${character.id}/act`, { type: 'shop', sku: 'char_slot' }, token);
-    expect(bought.statusCode).toBe(409);
+    expect(bought.statusCode, bought.body).toBe(200);
+    expect(bought.json().slots).toBe(5);
+    expect((await post('/api/characters', { name: 'Fifth', vocationId: 4 }, token)).statusCode).toBe(201);
+    expect((await post('/api/characters', { name: 'Sixth', vocationId: 1 }, token)).statusCode).toBe(409);
   });
 
   it('ranks skill and lists hunters as online', async () => {

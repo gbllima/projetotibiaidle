@@ -334,6 +334,9 @@ export function economyAct(
   if (type === 'daily') return claimAccountDaily(db, accountId, characterId, body, now);
   if (type === 'roleta-spin') return spinWithTicket(db, accountId, characterId, now);
   if (type === 'party-unlock') return unlockPartyWithGold(db, accountId, characterId, now);
+  if ((type === 'loot-slot' || type === 'supply-slot') && body.currency === 'coins') {
+    throw new GameError('Expansões de pouch agora usam apenas gold.', 409);
+  }
   if (type === 'loot-slot') return unlockPouchSlot(db, accountId, characterId, 'loot', now);
   if (type === 'supply-slot') return unlockPouchSlot(db, accountId, characterId, 'supply', now);
   if (type === 'shop' && String(body.sku ?? '') === 'char_slot') return buyCharacterSlot(db, accountId, characterId, now);

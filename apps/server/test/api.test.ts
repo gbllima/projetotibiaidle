@@ -86,7 +86,7 @@ describe('accounts', () => {
     const roster = await get('/api/characters', token);
     expect(roster.statusCode).toBe(200);
     expect(roster.json().account.guest).toBe(true);
-    expect(roster.json().account.slots).toBe(5);
+    expect(roster.json().account.slots).toBe(4);
 
     const claimed = await post('/api/claim', { username: 'keeper', password: 'hunter2hunter2' }, token);
     expect(claimed.statusCode, claimed.body).toBe(200);
