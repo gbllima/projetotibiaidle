@@ -30,7 +30,6 @@ export function HomeScreen({ onPlay }: Props) {
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
         </div>
         <div className="landing-hero-art" aria-hidden>
-          <div className="landing-sword-home-frame"><img src={SWORD_HOME} alt="" className="landing-sword-home" /></div>
           <div className="landing-sigil">IK</div>
           <div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" />
           <div className="landing-pixel-particles">✦　·　✧　　·　✦</div>
