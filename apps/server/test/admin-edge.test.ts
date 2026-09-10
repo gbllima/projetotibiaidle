@@ -19,6 +19,7 @@ afterEach(() => db.close());
 function createActiveHunter(): number {
   const character = createCharacter('Hunter', 4);
   character.gold = 500_000;
+  character.coins = 0;
   const row = db.createCharacter(playerId, character.name, character.vocationId, JSON.stringify(character));
   const session = startSession(character, 'venore-rotworm-cave', 1n);
   session.startedAt = NOW;
