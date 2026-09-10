@@ -83,6 +83,12 @@ export function login(db: Database, username: string, password: string): AuthRes
   return issueToken(db, account.id, account.username);
 }
 
+export function issueToken(db: Database, accountId: number, username: string): AuthResult {
+  const token = randomBytes(32).toString('base64url');
+  db.createToken(token, accountId, TOKEN_TTL_MS);
+  return { token, accountId, username, guest: isGuestUsername(username) };
+}
+
 /** Play first, register later. Skips the beta invite on purpose (doc 01 §5). */
 export function registerGuest(db: Database): AuthResult {
   for (let attempt = 0; attempt < 8; attempt += 1) {
