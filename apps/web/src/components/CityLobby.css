@@ -7,11 +7,6 @@
   box-shadow: 0 14px 36px rgba(0,0,0,.42);
 }
 
-/* Hunt selector / wave / loop controls do not apply while the player is in the city. */
-.center:has(.city-lobby--thais) .arena-head {
-  display: none !important;
-}
-
 .city-lobby--thais .city-lobby__map {
   position: relative;
   overflow: hidden;
@@ -73,6 +68,8 @@
 }
 
 @media (max-width: 820px) {
+  /* Hunt selector / wave / loop controls are hidden in the city only on mobile. */
+  .center:has(.city-lobby--thais) .arena-head { display:none!important; }
   .city-lobby__bar--thais { grid-template-columns:1fr; }
   .city-lobby--thais { height:auto!important; min-height:0!important; display:block!important; }
   .city-lobby--thais .city-lobby__map { height:auto!important; min-height:0!important; max-height:none!important; display:block!important; overflow:hidden!important; background:transparent; }
