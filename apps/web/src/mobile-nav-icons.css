@@ -1,0 +1,42 @@
+@media (max-width: 768px) {
+  .mobile-main-nav .mobile-nav-pixel {
+    display: none !important;
+  }
+
+  .mobile-main-nav button::before {
+    content: "";
+    width: 32px;
+    height: 32px;
+    display: block;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 32px 32px;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 2px rgba(0,0,0,.8));
+  }
+
+  /* Cidade — castelo de pedra, telhados e portão dourado. */
+  .mobile-main-nav button:nth-child(1)::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23110d09' d='M3 10h4V5h5v4h3V4h4v5h3V5h5v5h2v18H3z'/%3E%3Cpath fill='%23574a43' d='M5 11h5V7h2v5h7V6h2v6h5v14H5z'/%3E%3Cpath fill='%23877a6c' d='M6 13h19v3H6zm2 5h5v3H8zm11 0h5v3h-5z'/%3E%3Cpath fill='%23b6aa94' d='M7 12h4v2H7zm6-2h6v3h-6zm8 2h3v2h-3z'/%3E%3Cpath fill='%23382a1c' d='M13 18h6v8h-6z'/%3E%3Cpath fill='%23c58a2b' d='M14 19h4v7h-4z'/%3E%3Cpath fill='%23f1c75b' d='M15 20h2v2h-2z'/%3E%3Cpath fill='%232c332f' d='M7 22h4v4H7zm14 0h4v4h-4z'/%3E%3Cpath fill='%23d9d0be' d='M8 23h2v2H8zm14 0h2v2h-2z'/%3E%3Cpath fill='%236a3018' d='M4 9h4V6h3v2H9v3H4zm17 0h3V6h3v3h2v2h-8z'/%3E%3C/svg%3E");
+  }
+
+  /* Hunts — espada ornamentada sobre escudo vermelho. */
+  .mobile-main-nav button:nth-child(2)::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23120b0b' d='M17 4h10v12c0 7-5 11-10 13-5-2-10-6-10-13V8h10z'/%3E%3Cpath fill='%237a2019' d='M18 6h7v10c0 5-3 8-8 10-4-2-7-5-7-10V10h8z'/%3E%3Cpath fill='%23b43a28' d='M20 8h3v8c0 3-2 5-5 7v-4h-3V9h5z'/%3E%3Cpath fill='%23ece7d8' d='M5 5h4l16 16-4 4L5 9z'/%3E%3Cpath fill='%2399a3ad' d='M8 7h2l14 14-2 2L8 9z'/%3E%3Cpath fill='%23f7f5eb' d='M7 6h2l5 5-2 2-5-5z'/%3E%3Cpath fill='%23552d13' d='M4 22h4l3 3v3H8v-2H5z'/%3E%3Cpath fill='%23e6b84d' d='M7 20h3l4 4-2 2-4-4H7z'/%3E%3Cpath fill='%23f4d875' d='M8 21h2l2 2-1 1-3-3z'/%3E%3C/svg%3E");
+  }
+
+  /* Party — três aventureiros com cores de vocação e pequenos equipamentos. */
+  .mobile-main-nav button:nth-child(3)::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23080d12' d='M3 18h8v11H3zm10-10h8v15h-8zm10 10h6v11h-6z'/%3E%3Cpath fill='%23d4a36d' d='M5 14h4v5H5zm10-10h4v6h-4zm9 10h4v5h-4z'/%3E%3Cpath fill='%23805a35' d='M5 13h4v2H5zm10-10h4v2h-4zm9 10h4v2h-4z'/%3E%3Cpath fill='%232f7d48' d='M4 20h6v7H4z'/%3E%3Cpath fill='%2337558a' d='M14 11h6v10h-6z'/%3E%3Cpath fill='%23822c33' d='M23 20h6v7h-6z'/%3E%3Cpath fill='%23e3bd55' d='M14 12h2v7h-2zm4 0h2v7h-2z'/%3E%3Cpath fill='%23cfd6df' d='M11 16h2v7h-2zm9 0h2v7h-2z'/%3E%3Cpath fill='%236d7783' d='M10 17h2v2h-2zm10 3h2v2h-2z'/%3E%3Cpath fill='%23f0d08a' d='M6 16h2v2H6zm10-10h2v2h-2zm9 10h2v2h-2z'/%3E%3Cpath fill='%231a1f26' d='M5 27h2v2H5zm3 0h2v2H8zm7-6h2v2h-2zm3 0h2v2h-2zm6 6h2v2h-2zm3 0h2v2h-2z'/%3E%3C/svg%3E");
+  }
+
+  /* Menu — grimório antigo com fecho e páginas douradas. */
+  .mobile-main-nav button:nth-child(4)::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23130d08' d='M5 4h21v24H5z'/%3E%3Cpath fill='%2353311c' d='M7 5h17v22H7z'/%3E%3Cpath fill='%238a5729' d='M9 6h13v20H9z'/%3E%3Cpath fill='%23d4ad5f' d='M11 8h9v16h-9z'/%3E%3Cpath fill='%23f0d887' d='M12 9h7v3h-7zm0 5h7v2h-7zm0 4h5v2h-5z'/%3E%3Cpath fill='%23331d12' d='M7 5h3v22H7zm14 0h3v22h-3z'/%3E%3Cpath fill='%23c78f36' d='M21 13h5v6h-5z'/%3E%3Cpath fill='%23f1c65d' d='M22 14h3v4h-3z'/%3E%3Cpath fill='%2360441d' d='M14 22h4v2h-4z'/%3E%3Cpath fill='%23fff0a8' d='M13 9h2v1h-2z'/%3E%3C/svg%3E");
+  }
+
+  .mobile-main-nav button:active::before,
+  .mobile-main-nav button.on::before {
+    filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 4px rgba(232,197,71,.45)) brightness(1.12);
+  }
+}
