@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatStamina } from '../format.js';
 import { useLocale } from '../i18n/Locale.js';
 import { NAV_ASSET_ICON, NAV_ICON, NAV_UI_ICON, assetUrl, uiUrl } from '../ui/chrome.js';
@@ -32,165 +33,94 @@ export const NAV: Array<{ id: OverlayId; label: string; tone: string }> = [
 
 function Glyph({ id }: { id: OverlayId }) {
   switch (id) {
-    case 'guild':
-      return <g shapeRendering="crispEdges">
-        <path d="M3 2h18v12h-2v4h-3v3h-3v2h-2v-2H8v-3H5v-4H3Z" fill="#091510" />
-        <path d="M4 3h16v10h-2v4h-3v3h-3v1h-1v-2H8v-3H6v-4H4Z" fill="#917132" />
-        <path d="M4 3h16v2H6v8H4Zm2 10h2v3H6Zm2 3h3v3H8Z" fill="#f5df8b" />
-        <path d="M7 6h10v7h-2v3h-3v2h-1v-2H9v-3H7Z" fill="#205540" />
-        <path d="M7 6h5v10H9v-3H7Z" fill="#409c66" />
-        <path d="M12 6h5v7h-2v3h-3Z" fill="#163f34" />
-        <path d="M11 7h2v2h3v2h-2v3h-1v-1h-2v1h-1v-3H8V9h3Z" fill="#d6ad45" />
-        <path d="M11 7h2v2h-2Zm-3 2h5v2H8Z" fill="#fff0ac" />
-        <path d="M5 4h2v2H5Zm12 0h2v2h-2Z" fill="#fff4bf" />
-      </g>;
-    case 'helper':
-      return <path d="M10 3c-2 0-3 1.6-3 3.4 0 2.6 3 6.6 5 8.6 2-2 5-6 5-8.6C17 4.6 16 3 14 3c-1.2 0-2 .7-2 1.6C12 3.7 11.2 3 10 3z" />;
-    case 'cyclopedia':
-      return <path d="M5 4h6a3 3 0 0 1 3 3v11H8a3 3 0 0 0-3 3V4zm8 0h2a3 3 0 0 1 3 3v11h-5V7a3 3 0 0 0-3-3z" />;
-    case 'market':
-      return <path d="M6 4h8l4 4v12H6V4zm8 0v4h4" />;
-    case 'loja':
-      return <path d="M4 8h16l-1 12H5L4 8zm3-3h10l1 3H6l1-3z" />;
-    case 'vip':
-      return <path d="M4 8l3 2 5-6 5 6 3-2-2 12H6L4 8z" />;
-    case 'rank':
-      return <path d="M6 16h3V8H6v8zm5 4h3V4h-3v16zm5-7h3V9h-3v4z" />;
-    case 'build':
-      return <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />;
-    case 'progressao':
-      return (
-        <>
-          <path d="M4 18V6l8-3 8 3v12l-8 3-8-3z" opacity="0.35" />
-          <path d="M12 8v8M8 10l4-2 4 2" />
-        </>
-      );
-    case 'roleta':
-      return (
-        <>
-          <path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zm0 2a7 7 0 1 1 0 14a7 7 0 0 1 0-14z" opacity="0.35" />
-          <path d="M12 5v7l5.2 3" />
-          <circle cx="12" cy="12" r="1.8" />
-        </>
-      );
-    case 'depot':
-      return <path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8zm2-3h10l1 3H6l1-3z" />;
-    default:
-      return <circle cx="12" cy="12" r="6" />;
+    case 'guild': return <path d="M3 3h18v11l-9 8-9-8V3zm4 4v6l5 4 5-4V7z" />;
+    case 'helper': return <path d="M10 3c-2 0-3 1.6-3 3.4 0 2.6 3 6.6 5 8.6 2-2 5-6 5-8.6C17 4.6 16 3 14 3c-1.2 0-2 .7-2 1.6C12 3.7 11.2 3 10 3z" />;
+    case 'cyclopedia': return <path d="M5 4h6a3 3 0 0 1 3 3v11H8a3 3 0 0 0-3 3V4zm8 0h2a3 3 0 0 1 3 3v11h-5V7a3 3 0 0 0-3-3z" />;
+    case 'market': return <path d="M6 4h8l4 4v12H6V4zm8 0v4h4" />;
+    case 'loja': return <path d="M4 8h16l-1 12H5L4 8zm3-3h10l1 3H6l1-3z" />;
+    case 'vip': return <path d="M4 8l3 2 5-6 5 6 3-2-2 12H6L4 8z" />;
+    case 'rank': return <path d="M6 16h3V8H6v8zm5 4h3V4h-3v16zm5-7h3V9h-3v4z" />;
+    case 'build': return <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />;
+    case 'progressao': return <><path d="M4 18V6l8-3 8 3v12l-8 3-8-3z" opacity="0.35" /><path d="M12 8v8M8 10l4-2 4 2" /></>;
+    case 'roleta': return <><circle cx="12" cy="12" r="8" /><path d="M12 5v7l5 3" /></>;
+    case 'depot': return <path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8zm2-3h10l1 3H6l1-3z" />;
+    default: return <circle cx="12" cy="12" r="6" />;
   }
 }
 
-export function TopNav({
-  name,
-  gold,
-  coins,
-  health,
-  maxHealth,
-  mana,
-  maxMana,
-  level,
-  xpPercent,
-  stamina,
-  overlay,
-  onOverlay,
-  onBack,
-  onSettings,
-  onCity,
-  onTraining,
-  badges,
-}: {
-  name: string;
-  gold: number;
-  coins: number;
-  health: number;
-  maxHealth: number;
-  mana: number;
-  maxMana: number;
-  level: number;
-  xpPercent: number;
-  stamina: number;
-  overlay: OverlayId;
-  onOverlay: (id: OverlayId) => void;
-  onBack: () => void;
-  onSettings?: () => void;
-  onCity: () => void;
-  onTraining: () => void;
-  badges?: Partial<Record<OverlayId, string>>;
+function NavIcon({ id, tone, badge }: { id: OverlayId; tone: string; badge?: string }) {
+  return <span className="ico" style={{ background: tone }}>
+    {NAV_ASSET_ICON[id] ? <img className="nav-item-icon" src={assetUrl(NAV_ASSET_ICON[id]!)} alt="" />
+      : NAV_UI_ICON[id] ? <img className="nav-ui-icon" src={uiUrl(NAV_UI_ICON[id]!)} alt="" />
+      : NAV_ICON[id] ? <img className="nav-ui-icon" src={uiUrl(NAV_ICON[id]!)} alt="" />
+      : <svg viewBox="0 0 24 24" aria-hidden="true"><Glyph id={id} /></svg>}
+    {badge !== undefined && <em>{badge}</em>}
+  </span>;
+}
+
+export function TopNav({ name, gold, coins, health, maxHealth, mana, maxMana, level, xpPercent, stamina, overlay, onOverlay, onBack, onSettings, onCity, onTraining, onHunts, onParty, badges }: {
+  name: string; gold: number; coins: number; health: number; maxHealth: number; mana: number; maxMana: number; level: number; xpPercent: number; stamina: number;
+  overlay: OverlayId; onOverlay: (id: OverlayId) => void; onBack: () => void; onSettings?: () => void; onCity: () => void; onTraining: () => void; onHunts?: () => void; onParty?: () => void; badges?: Partial<Record<OverlayId, string>>;
 }) {
   const { locale, setLocale, t } = useLocale();
+  const [mobileMenu, setMobileMenu] = useState(false);
   const hp = Math.max(0, Math.min(100, (health / Math.max(1, maxHealth)) * 100));
   const mp = Math.max(0, Math.min(100, (mana / Math.max(1, maxMana)) * 100));
   const sta = Math.max(0, Math.min(100, (stamina / 2520) * 100));
-  return (
+  const openMobile = (id: OverlayId) => { setMobileMenu(false); onOverlay(id); };
+  return <>
     <header className="topnav">
       <div className="logo">TIBIA <span>IDLE</span></div>
-      <div className="who">
-        <strong>{name}</strong>
-        <small>lvl {level}</small>
-      </div>
+      <div className="who"><strong>{name}</strong><small>lvl {level}</small></div>
       <div className="top-vitals">
-        <div className="top-bar" title={`HP ${health}/${maxHealth}`}>
-          <span>HP</span>
-          <div className="meter hp"><i style={{ width: `${hp}%` }} /></div>
-        </div>
-        <div className="top-bar" title={`MP ${mana}/${maxMana}`}>
-          <span>MP</span>
-          <div className="meter mana"><i style={{ width: `${mp}%` }} /></div>
-        </div>
-        <div className="top-bar" title={`XP ${Math.round(xpPercent)}%`}>
-          <span>XP</span>
-          <div className="meter xp"><i style={{ width: `${xpPercent}%` }} /></div>
-        </div>
-        <div className="top-bar" title={`Stamina ${formatStamina(stamina)}`}>
-          <span>ST</span>
-          <div className="meter stamina"><i style={{ width: `${sta}%` }} /></div>
-        </div>
+        <div className="top-bar" title={`HP ${health}/${maxHealth}`}><span>HP</span><div className="meter hp"><i style={{ width: `${hp}%` }} /></div></div>
+        <div className="top-bar" title={`MP ${mana}/${maxMana}`}><span>MP</span><div className="meter mana"><i style={{ width: `${mp}%` }} /></div></div>
+        <div className="top-bar" title={`XP ${Math.round(xpPercent)}%`}><span>XP</span><div className="meter xp"><i style={{ width: `${xpPercent}%` }} /></div></div>
+        <div className="top-bar" title={`Stamina ${formatStamina(stamina)}`}><span>ST</span><div className="meter stamina"><i style={{ width: `${sta}%` }} /></div></div>
       </div>
-      <div className="pill gold">
-        <i className="coin-dot" />
-        {gold.toLocaleString('pt-BR')}
-      </div>
-      <div className="pill coin">
-        <i className="crystal-dot" />
-        {coins}
-      </div>
-      <nav className="nav-icons">
-        {NAV.map((item) => (
-          <button
-            key={item.id}
-            className={`iconbtn nav-${item.id} ${overlay === item.id ? 'on' : ''}`}
-            title={item.label}
-            onClick={() => onOverlay(item.id)}
-          >
-            <span className="ico" style={{ background: item.tone }}>
-              {NAV_ASSET_ICON[item.id] ? (
-                <img className="nav-item-icon" src={assetUrl(NAV_ASSET_ICON[item.id]!)} alt="" />
-              ) : NAV_UI_ICON[item.id] ? (
-                <img className="nav-ui-icon" src={uiUrl(NAV_UI_ICON[item.id]!)} alt="" />
-              ) : NAV_ICON[item.id] ? (
-                <img className="nav-ui-icon" src={uiUrl(NAV_ICON[item.id]!)} alt="" />
-              ) : (
-                <svg viewBox="0 0 24 24" aria-hidden="true"><Glyph id={item.id} /></svg>
-              )}
-              {badges?.[item.id] !== undefined && <em>{badges[item.id]}</em>}
-            </span>
-            <small>{item.label}</small>
-          </button>
-        ))}
-      </nav>
+      <div className="pill gold"><i className="coin-dot" />{gold.toLocaleString('pt-BR')}</div>
+      <div className="pill coin"><i className="crystal-dot" />{coins}</div>
+      <nav className="nav-icons">{NAV.map((item) => <button key={item.id} className={`iconbtn nav-${item.id} ${overlay === item.id ? 'on' : ''}`} title={item.label} onClick={() => onOverlay(item.id)}><NavIcon id={item.id} tone={item.tone} badge={badges?.[item.id]} /><small>{item.label}</small></button>)}</nav>
       <div className="top-right">
-        <button className="btn" onClick={onTraining}>Treino online</button>
-        <button className="btn" onClick={onCity}>Cidade</button>
-        <button className={`flag ${locale === 'pt' ? 'on' : ''}`} title="PT" onClick={() => setLocale('pt')}>
-          <img src={uiUrl('flags/bra')} alt="BR" />
-        </button>
-        <button className={`flag ${locale === 'en' ? 'on' : ''}`} title="EN" onClick={() => setLocale('en')}>
-          <img src={uiUrl('flags/en')} alt="US" />
-        </button>
-        <button className="iconbtn mini" title="Discord" onClick={onSettings}>Ds</button>
-        <button className="iconbtn mini" title={t('settings')} onClick={onSettings}>⚙</button>
-        <button className="iconbtn mini" title={t('logout')} onClick={onBack}>{t('logout')}</button>
+        <button className="btn" onClick={onTraining}>Treino online</button><button className="btn" onClick={onCity}>Cidade</button>
+        <button className={`flag ${locale === 'pt' ? 'on' : ''}`} title="PT" onClick={() => setLocale('pt')}><img src={uiUrl('flags/bra')} alt="BR" /></button>
+        <button className={`flag ${locale === 'en' ? 'on' : ''}`} title="EN" onClick={() => setLocale('en')}><img src={uiUrl('flags/en')} alt="US" /></button>
+        <button className="iconbtn mini" title="Discord" onClick={onSettings}>Ds</button><button className="iconbtn mini" title={t('settings')} onClick={onSettings}>⚙</button><button className="iconbtn mini" title={t('logout')} onClick={onBack}>{t('logout')}</button>
       </div>
     </header>
-  );
+
+    <nav className="mobile-main-nav" aria-label="Navegação principal">
+      <button onClick={onCity}><span>⌂</span><strong>Cidade</strong></button>
+      <button onClick={onHunts ?? onTraining}><span>⚔</span><strong>Hunts</strong></button>
+      <button onClick={onParty}><span>♟</span><strong>Party</strong></button>
+      <button className={mobileMenu ? 'on' : ''} onClick={() => setMobileMenu((v) => !v)}><span>☰</span><strong>Menu</strong></button>
+    </nav>
+
+    {mobileMenu && <div className="mobile-menu-backdrop" onClick={() => setMobileMenu(false)}>
+      <section className="mobile-menu-sheet" onClick={(e) => e.stopPropagation()}>
+        <header><h2>Menu</h2><button onClick={() => setMobileMenu(false)} aria-label="Fechar">×</button></header>
+        <div className="mobile-menu-scroll">
+          <h3>GERAL</h3><div className="mobile-menu-grid">
+            {NAV.filter((x) => ['helper','cyclopedia','rank','build'].includes(x.id)).map((item) => <button key={item.id} onClick={() => openMobile(item.id)}><NavIcon id={item.id} tone={item.tone} badge={badges?.[item.id]} /><strong>{item.label}</strong></button>)}
+          </div>
+          <h3>PROGRESSÃO</h3><div className="mobile-menu-grid">
+            {NAV.filter((x) => ['progressao','roleta','vip'].includes(x.id)).map((item) => <button key={item.id} onClick={() => openMobile(item.id)}><NavIcon id={item.id} tone={item.tone} badge={badges?.[item.id]} /><strong>{item.label}</strong></button>)}
+          </div>
+          <h3>COMÉRCIO</h3><div className="mobile-menu-grid">
+            {NAV.filter((x) => ['market','loja','depot'].includes(x.id)).map((item) => <button key={item.id} onClick={() => openMobile(item.id)}><NavIcon id={item.id} tone={item.tone} badge={badges?.[item.id]} /><strong>{item.label}</strong></button>)}
+          </div>
+          <h3>SOCIAL</h3><div className="mobile-menu-grid">
+            {NAV.filter((x) => x.id === 'guild').map((item) => <button key={item.id} onClick={() => openMobile(item.id)}><NavIcon id={item.id} tone={item.tone} badge={badges?.[item.id]} /><strong>{item.label}</strong></button>)}
+            <button onClick={() => { setMobileMenu(false); onTraining(); }}><span className="mobile-menu-symbol">⚔</span><strong>Treino</strong></button>
+            <button onClick={() => { setMobileMenu(false); onSettings?.(); }}><span className="mobile-menu-symbol">⚙</span><strong>Config.</strong></button>
+          </div>
+          <h3>CONTA</h3><div className="mobile-menu-grid mobile-menu-grid-account">
+            <button onClick={() => setLocale('pt')}><span className="mobile-menu-symbol">🇧🇷</span><strong>Português</strong></button>
+            <button onClick={() => setLocale('en')}><span className="mobile-menu-symbol">🇺🇸</span><strong>English</strong></button>
+            <button onClick={onBack}><span className="mobile-menu-symbol">↪</span><strong>Sair</strong></button>
+          </div>
+        </div>
+      </section>
+    </div>}
+  </>;
 }
