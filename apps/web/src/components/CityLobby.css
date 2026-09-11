@@ -26,8 +26,13 @@
   align-items: center;
   gap: 14px;
   padding: 10px 12px;
-  border-top: 1px solid #454b55;
+  border-bottom: 1px solid #454b55;
   background: linear-gradient(180deg, #242932, #171b21);
+}
+
+.city-lobby__bar--minimal {
+  grid-template-columns: 1fr;
+  padding: 8px 12px 7px;
 }
 
 .city-lobby__place h2 {
@@ -64,9 +69,6 @@
 .city-lobby__bar--thais .city-lobby__self span { color: #aab0ba; font-size: 10px; }
 .city-lobby__bar--thais .city-lobby__actions { display: flex; gap: 7px; }
 
-/* Desktop gameplay layout inspired by BaiakIdle: the map keeps Tibia's 13x11
-   proportions and gets the vertical space, while chat/action bar float over
-   the lower chrome instead of shrinking the playfield. */
 @media (min-width: 1180px) {
   .board {
     grid-template-columns: 220px minmax(0, 1fr) 220px;
@@ -116,9 +118,7 @@
     pointer-events: none;
   }
 
-  .bottom-console > * {
-    pointer-events: auto;
-  }
+  .bottom-console > * { pointer-events: auto; }
 
   .chat-console {
     position: absolute;
@@ -135,10 +135,7 @@
     box-shadow: 0 0 0 1px rgba(70,78,90,.55), 0 -6px 24px rgba(0,0,0,.25);
   }
 
-  .chat-console__log {
-    min-height: 0;
-    max-height: none;
-  }
+  .chat-console__log { min-height: 0; max-height: none; }
 
   .action-bar {
     position: absolute;
@@ -149,9 +146,7 @@
     max-width: calc(100% - 32px);
   }
 
-  .action-bar__panel {
-    margin: 0 auto;
-  }
+  .action-bar__panel { margin: 0 auto; }
 
   .city-lobby--thais {
     width: auto;
@@ -161,9 +156,12 @@
     border-right: 0;
     box-shadow: none;
     background: #05070a;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .city-lobby--thais .city-lobby__map {
+    min-height: 0;
     height: 100%;
     display: flex;
     align-items: center;
@@ -171,9 +169,7 @@
     background: #05070a;
   }
 
-  .city-lobby--thais .city-lobby__map .scene-host {
-    height: 100%;
-  }
+  .city-lobby--thais .city-lobby__map .scene-host { height: 100%; }
 
   .city-lobby--thais .city-lobby__map canvas {
     width: auto !important;
@@ -185,13 +181,10 @@
   }
 
   .city-lobby__bar--thais {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
+    position: static;
     z-index: 5;
-    padding: 5px 8px;
-    background: linear-gradient(180deg, rgba(50,51,49,.94), rgba(36,38,39,.84));
+    padding: 6px 10px;
+    background: linear-gradient(180deg, rgba(50,51,49,.98), rgba(36,38,39,.94));
     border-top: 0;
     border-bottom: 1px solid #3f4349;
   }
@@ -203,8 +196,4 @@
 
 @media (max-width: 820px) {
   .city-lobby__bar--thais { grid-template-columns: 1fr; }
-  .city-lobby__bar--thais .city-lobby__self {
-    border-left: 0;
-    border-top: 1px solid #3d424a;
-  }
 }
