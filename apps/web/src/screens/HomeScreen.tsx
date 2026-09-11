@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { CreatureIcon } from '../components/CreatureIcon.js';
 import { itemIconUrl } from '../render/itemIcon.js';
 import { storedToken } from '../api/client.js';
+import '../launch-notice.css';
 
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
 type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
@@ -12,6 +13,7 @@ const KNOCK_LOGO = '/home/knock-idle-br-logo.png';
 
 export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
+  const [launchNoticeOpen, setLaunchNoticeOpen] = useState(true);
   useEffect(() => {
     void fetch('/api/public-stats').then((r) => r.ok ? r.json() : Promise.reject()).then(setStats).catch(() => setStats(null));
   }, []);
@@ -19,6 +21,19 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 
   return (
     <main className="landing-page">
+      {launchNoticeOpen && (
+        <div className="launch-notice-backdrop" role="dialog" aria-modal="true" aria-labelledby="launch-notice-title">
+          <div className="launch-notice">
+            <button className="launch-notice-close" type="button" aria-label="Fechar aviso" onClick={() => setLaunchNoticeOpen(false)}>×</button>
+            <span className="launch-notice-kicker">⚔ ABERTURA OFICIAL DO SERVIDOR ⚔</span>
+            <h2 id="launch-notice-title">A AVENTURA<br /><em>COMEÇA EM BREVE</em></h2>
+            <div className="launch-notice-date"><span>●</span> 05 DE DEZEMBRO DE 2026</div>
+            <p>Prepare seu personagem para o início oficial do <strong>Knock Idle BR</strong>. O servidor será inaugurado em <strong>5 de dezembro de 2026</strong>.</p>
+            <button className="launch-notice-action" type="button" onClick={() => setLaunchNoticeOpen(false)}>ENTENDI — CONTINUAR NO SITE</button>
+          </div>
+        </div>
+      )}
+
       <div className="landing-glow landing-glow-a" aria-hidden /><div className="landing-glow landing-glow-b" aria-hidden />
       <header className="landing-nav">
         <div className="landing-brand">
