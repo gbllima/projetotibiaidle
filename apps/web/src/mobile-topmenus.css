@@ -1,0 +1,375 @@
+/* Mobile audit for every top navigation menu.
+   Loaded after the generic mobile and hunt rules so overlays always win over the fixed header. */
+
+@media (max-width: 768px) {
+  /* All top-menu overlays must cover the fixed header instead of opening underneath it. */
+  .modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 3200 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: none !important;
+    padding: 6px !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+
+  .modal > .modal-card,
+  .modal > .helper-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc(100dvh - 12px) !important;
+    max-height: calc(100dvh - 12px) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .modal-card > .window-head,
+  .helper-card > .window-head {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 3;
+  }
+
+  .modal-card-body,
+  .helper-body,
+  .hunt-modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-card-body {
+    padding: 10px !important;
+  }
+
+  /* Guild / Market / VIP / Depot use SystemsPanel. */
+  .compact-panel,
+  .depot-panel,
+  .roleta-panel,
+  .progressao-panel,
+  .build-panel,
+  .rank-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Helper: desktop two-column navigation becomes a horizontal mobile tab strip. */
+  .helper-mode-hint {
+    flex: 0 0 auto;
+    margin: 6px 10px !important;
+  }
+
+  .helper-body {
+    display: block !important;
+    padding: 0 10px 12px !important;
+  }
+
+  .helper-nav {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex !important;
+    width: 100%;
+    max-width: 100%;
+    gap: 4px;
+    padding: 6px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: var(--panel);
+    scrollbar-width: none;
+  }
+
+  .helper-nav::-webkit-scrollbar { display: none; }
+
+  .helper-nav button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .helper-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding-top: 8px;
+  }
+
+  .helper-row,
+  .helper-gear-row,
+  .spell-tree-row {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .helper-row .row {
+    width: auto !important;
+    max-width: 100% !important;
+    flex-wrap: wrap;
+  }
+
+  /* Cyclopedia: list and detail stack instead of forcing desktop split width. */
+  .compact-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+
+  .compact-toolbar .tabs,
+  .compact-tabs,
+  .cy-cats {
+    display: flex !important;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+
+  .compact-toolbar .tabs::-webkit-scrollbar,
+  .compact-tabs::-webkit-scrollbar,
+  .cy-cats::-webkit-scrollbar { display: none; }
+
+  .compact-toolbar .tabs button,
+  .compact-tabs button,
+  .cy-cats button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .compact-search {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .compact-split {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .compact-list,
+  .compact-detail {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .compact-detail {
+    position: static !important;
+    max-height: none !important;
+  }
+
+  .compact-row {
+    min-width: 0 !important;
+  }
+
+  .compact-row-main {
+    min-width: 0 !important;
+  }
+
+  /* Mercado/Loja/Guild/VIP controls may have desktop grids or long rows. */
+  .market-layout,
+  .market-grid,
+  .store-layout,
+  .store-grid,
+  .guild-layout,
+  .guild-grid,
+  .vip-grid,
+  .shop-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .store-filter-row,
+  .depot-toolbar,
+  .box-tools,
+  .modal-card-body .row {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .store-filter-row > *,
+  .depot-toolbar > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Rank: tabs scroll horizontally; table keeps columns but scrolls only inside itself. */
+  .rank-panel {
+    gap: 10px !important;
+  }
+
+  .rank-intro {
+    padding: 14px !important;
+  }
+
+  .rank-intro h3 {
+    font-size: 20px !important;
+  }
+
+  .rank-panel .tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .rank-panel .tabs::-webkit-scrollbar { display: none; }
+
+  .rank-panel .tabs button {
+    min-width: 96px !important;
+    flex: 0 0 auto;
+  }
+
+  .rank-filters {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .rank-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+  }
+
+  /* Build: hero and stats collapse into one column. */
+  .build-hero,
+  .build-body,
+  .build-stats-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .build-hero {
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  .build-portrait {
+    justify-self: center;
+  }
+
+  .build-stat-card,
+  .build-stat-card-wide,
+  .build-set-card {
+    grid-column: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Progression hub and all sub-systems. */
+  .progressao-menu {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .progressao-menu-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .progressao-sub,
+  .imbue-layout,
+  .prey-layout,
+  .wheel-layout,
+  .task-layout,
+  .forge-layout {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Roulette: never let the strip widen the modal. */
+  .roleta-stage,
+  .roleta-viewport {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .roleta-actions,
+  .roleta-spin-btn {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Depot: preserve 5-slot identity but shrink cells to the phone width. */
+  .depot-grid-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .depot-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+
+  .depot-grid .cell,
+  .depot-grid .item-slot {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Any nested modal (item detail/inspect etc.) must stay above its parent. */
+  .hunt-details-overlay,
+  .item-inspect-overlay,
+  .item-detail-overlay {
+    z-index: 3600 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 3px !important;
+  }
+
+  .modal > .modal-card,
+  .modal > .helper-card {
+    height: calc(100dvh - 6px) !important;
+    max-height: calc(100dvh - 6px) !important;
+    border-radius: 8px !important;
+  }
+
+  .modal-card-body {
+    padding: 8px !important;
+  }
+
+  .helper-card .window-head-extra {
+    max-width: 52vw;
+    overflow-x: auto;
+  }
+
+  .helper-modes {
+    display: flex;
+    gap: 3px;
+    white-space: nowrap;
+  }
+
+  .rank-table {
+    min-width: 560px !important;
+  }
+
+  .build-paperdoll {
+    transform: scale(.92);
+    transform-origin: top center;
+  }
+
+  .progressao-menu-card {
+    min-height: 68px;
+  }
+}
