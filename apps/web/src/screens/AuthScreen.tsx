@@ -51,9 +51,9 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
   }
 
   return (
-    <AuthShell footer={<span>Tibia Idle 15.30 · hunts oficiais · sim determinístico</span>}>
+    <AuthShell footer={<span>KNOCK IDLE BR · O RPG IDLE BRASILEIRO</span>}>
       <div className="auth-card auth-card-enter">
-        <AuthLogo subtitle={t('authLede')} />
+        <AuthLogo subtitle="Entre no mundo do Knock Idle BR e continue sua aventura." />
 
         <button
           className="auth-play-now"
