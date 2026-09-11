@@ -23,22 +23,30 @@
     padding-bottom: 20px;
   }
 
-  /* Compact account/resources header. */
+  /* Compact account/resources header, inspired by the mobile reference. */
   .topnav {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 80;
+    left: 0;
+    right: 0;
+    z-index: 1200;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 4px 6px;
+    gap: 6px 8px;
     width: 100%;
     min-height: 0;
     height: auto;
-    padding: 6px 8px;
-    background: rgba(13, 16, 22, 0.97);
+    padding: 8px 10px;
+    background: rgba(13, 16, 22, 0.985);
     border-bottom: 1px solid var(--line);
+    box-shadow: 0 6px 18px rgba(0,0,0,.45);
     backdrop-filter: blur(10px);
+  }
+
+  /* Reserve room for the fixed mobile header so content never slides under it. */
+  .board {
+    padding-top: 132px !important;
   }
 
   .topnav .logo,
@@ -57,20 +65,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
-    line-height: 1.05;
+    font-size: 14px;
   }
 
   .topnav .who small {
-    font-size: 9px;
-    line-height: 1;
+    font-size: 10px;
   }
 
   .topnav .pill {
     min-width: 0;
-    height: 30px;
-    padding: 0 8px;
-    font-size: 11px;
+    height: 34px;
+    padding: 0 9px;
+    font-size: 12px;
     white-space: nowrap;
   }
 
@@ -78,9 +84,9 @@
   .topnav .nav-icons {
     grid-column: 1 / -1;
     display: flex;
-    gap: 2px;
+    gap: 4px;
     width: 100%;
-    padding: 0;
+    padding: 2px 0 4px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
@@ -92,32 +98,25 @@
   }
 
   .topnav .nav-icons .iconbtn {
-    flex: 0 0 46px;
-    min-width: 46px;
-    min-height: 42px;
-    padding: 2px;
-  }
-
-  .topnav .nav-icons .iconbtn .ico {
-    transform: scale(.88);
-    transform-origin: center;
+    flex: 0 0 52px;
+    min-width: 52px;
+    min-height: 48px;
   }
 
   .topnav .nav-icons .iconbtn small {
-    max-width: 44px;
+    max-width: 50px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 8px;
-    line-height: 1;
+    font-size: 9px;
   }
 
   .topnav .top-right {
     grid-column: 1 / -1;
     display: flex;
-    gap: 4px;
+    gap: 6px;
     width: 100%;
-    padding-top: 0;
+    padding-top: 2px;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -130,16 +129,9 @@
     flex: 0 0 auto;
   }
 
-  .topnav .top-right .btn,
-  .topnav .top-right .iconbtn,
-  .topnav .top-right .flag {
-    min-height: 32px;
-    height: 32px;
-  }
-
   .topnav .top-right .btn {
-    padding-inline: 10px;
-    font-size: 10px;
+    min-height: 40px;
+    padding-inline: 12px;
   }
 
   /* Desktop: left stats | game | party/inventory.
@@ -148,17 +140,27 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) !important;
     grid-auto-rows: auto;
-    gap: 7px;
+    gap: 8px;
     width: 100%;
     height: auto !important;
     min-height: 0;
-    padding: 7px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    padding-left: 8px;
     overflow: visible !important;
   }
 
-  .board > .center { order: 1; }
-  .board > .dock.right { order: 2; }
-  .board > .dock:not(.right) { order: 3; }
+  .board > .center {
+    order: 1;
+  }
+
+  .board > .dock.right {
+    order: 2;
+  }
+
+  .board > .dock:not(.right) {
+    order: 3;
+  }
 
   .center,
   .dock,
@@ -182,15 +184,13 @@
     min-width: 0;
   }
 
-  /* Keep the playfield visible without letting it consume the whole phone screen. */
-  .center > .viewport,
-  .center .training-viewport,
-  .city-lobby .scene-host {
-    width: 100%;
-    max-height: min(62vw, 300px);
-    min-height: 210px;
-    overflow: hidden !important;
-    position: relative;
+  /* Combat/city/training should use the full phone width without taking over the whole screen. */
+  .viewport,
+  .training-viewport,
+  .city-lobby {
+    max-height: 54vh;
+    min-height: 280px;
+    overflow: hidden;
   }
 
   .combat-scene,
@@ -202,78 +202,43 @@
     max-width: 100%;
   }
 
-  .center > .viewport canvas,
-  .center .training-viewport canvas,
-  .city-lobby .scene-host canvas {
-    display: block;
+  .center canvas {
     width: 100% !important;
-    height: min(62vw, 300px) !important;
-    min-height: 210px;
+    height: auto !important;
+    max-height: 54vh !important;
     object-fit: cover;
     object-position: center;
   }
 
-  /* Chat is deliberately shallow on mobile; it remains readable without burying Party. */
   .bottom-console {
-    gap: 5px;
-  }
-
-  .chat-console {
-    max-height: 155px;
-    min-height: 0;
-  }
-
-  .chat-console__head,
-  .chat-console__tabs {
-    min-height: 34px;
-  }
-
-  .chat-console__tabs {
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap !important;
-    scrollbar-width: none;
-  }
-
-  .chat-console__tabs::-webkit-scrollbar { display: none; }
-
-  .chat-console__tabs button {
-    flex: 0 0 auto;
-    min-height: 32px !important;
-    padding: 5px 9px;
-    font-size: 9px;
+    gap: 6px;
+    margin-top: 0;
   }
 
   .chat-console__log {
-    height: 76px !important;
-    min-height: 76px;
-    max-height: 76px;
-    overflow-y: auto;
+    max-height: 96px;
+    min-height: 72px;
   }
 
-  .chat-console__input {
-    min-height: 34px;
+  .chat-console__tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .chat-console__input input {
-    min-height: 32px;
+  .chat-console__tabs::-webkit-scrollbar {
+    display: none;
   }
 
-  .chat-console__send {
-    min-height: 32px !important;
-  }
-
-  /* Action bar stays directly under chat and scrolls sideways instead of growing vertically. */
   .actionbar,
   .action-bar {
-    max-width: 100%;
     overflow-x: auto;
-    overflow-y: hidden;
     scrollbar-width: none;
   }
 
   .actionbar::-webkit-scrollbar,
-  .action-bar::-webkit-scrollbar { display: none; }
+  .action-bar::-webkit-scrollbar {
+    display: none;
+  }
 
   /* Dock boxes become stacked mobile cards. */
   .dockbox,
@@ -284,60 +249,24 @@
   }
 
   .dock > * + * {
-    margin-top: 7px;
+    margin-top: 8px;
   }
 
-  /* Party: preserve equipment preview while reducing vertical footprint. */
+  /* Party is deliberately denser on phones. */
   .party-compact-member {
     padding: 5px 0 6px;
   }
 
   .party-compact-top {
-    grid-template-columns: minmax(0, 1fr) 76px;
+    grid-template-columns: minmax(0, 1fr) 72px;
     gap: 5px;
   }
 
-  .party-compact-name {
-    margin-bottom: 1px;
-  }
-
-  .party-compact-name strong {
-    font-size: 12px;
-  }
-
-  .party-compact-vocation {
-    margin-bottom: 3px;
-    font-size: 9px;
-  }
-
-  .party-compact-bars {
-    gap: 2px;
-  }
-
-  .party-compact-bar > div {
-    height: 13px;
-  }
-
-  .party-compact-bar > div b {
-    line-height: 11px;
-    font-size: 8px;
-  }
-
   .party-mini-set {
-    grid-template-columns: repeat(3, 22px);
-    grid-template-rows: repeat(4, 22px);
-    gap: 2px;
-    width: 70px;
-    min-height: 94px;
-  }
-
-  .party-mini-set .paper-slot,
-  .party-mini-set .cell,
-  .party-mini-set .item-slot {
-    width: 22px !important;
-    height: 22px !important;
-    min-width: 22px !important;
-    min-height: 22px !important;
+    transform: scale(.88);
+    transform-origin: top right;
+    width: 72px;
+    margin-bottom: -10px;
   }
 
   .party-compact-actions {
@@ -346,8 +275,7 @@
   }
 
   .party-compact-actions button {
-    min-height: 32px !important;
-    font-size: 9px;
+    min-height: 34px !important;
   }
 
   /* Inventory/pouch rows are allowed to wrap instead of overflowing sideways. */
@@ -355,17 +283,14 @@
   .inventory-grid,
   .backpack-grid,
   .loot-grid,
-  .supply-grid,
-  .backpack-dock-grid {
+  .supply-grid {
     max-width: 100%;
   }
 
-  .backpack-dock-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    max-height: 230px;
-  }
-
-  /* General touch targets, except intentionally compact Party/chat controls above. */
+  /* Chat/action controls stay usable with a finger. */
+  .chat-console button,
+  .actionbar button,
+  .action-bar button,
   .center button,
   .dock button {
     min-height: 36px;
@@ -385,46 +310,54 @@
 
 @media (max-width: 480px) {
   .board {
-    padding: 5px;
+    padding-top: 128px !important;
+    padding-right: 6px;
+    padding-bottom: 6px;
+    padding-left: 6px;
     gap: 6px;
   }
 
   .topnav {
-    padding: 5px 6px;
+    padding: 6px 8px;
+    gap: 4px 6px;
   }
 
   .topnav .pill {
-    padding-inline: 6px;
-    font-size: 10px;
+    padding-inline: 7px;
+    height: 31px;
+  }
+
+  .topnav .nav-icons {
+    padding-bottom: 2px;
   }
 
   .topnav .nav-icons .iconbtn {
-    flex-basis: 43px;
-    min-width: 43px;
+    flex-basis: 48px;
+    min-width: 48px;
+    min-height: 44px;
   }
 
   .topnav .nav-icons .ico {
-    transform: scale(0.84);
+    transform: scale(0.9);
   }
 
-  .center > .viewport,
-  .center .training-viewport,
-  .city-lobby .scene-host,
-  .center > .viewport canvas,
-  .center .training-viewport canvas,
-  .city-lobby .scene-host canvas {
-    max-height: 255px;
-    height: 255px !important;
-    min-height: 205px;
+  .topnav .top-right .btn {
+    min-height: 36px;
   }
 
-  .chat-console {
-    max-height: 145px;
+  .viewport,
+  .training-viewport,
+  .city-lobby {
+    max-height: 48vh;
+    min-height: 250px;
+  }
+
+  .center canvas {
+    max-height: 48vh !important;
   }
 
   .chat-console__log {
-    height: 68px !important;
-    min-height: 68px;
-    max-height: 68px;
+    max-height: 86px;
+    min-height: 64px;
   }
 }
