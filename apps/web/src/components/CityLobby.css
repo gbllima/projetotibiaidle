@@ -7,6 +7,11 @@
   box-shadow: 0 14px 36px rgba(0,0,0,.42);
 }
 
+/* Hunt selector / wave / loop controls do not apply while the player is in the city. */
+.center:has(.city-lobby--thais) .arena-head {
+  display: none !important;
+}
+
 .city-lobby--thais .city-lobby__map {
   position: relative;
   overflow: hidden;
