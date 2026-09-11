@@ -6,9 +6,9 @@ import { storedToken } from '../api/client.js';
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
 type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
 
-const SWORD_HOME = new URL('../../../../home/swordhome.gif', import.meta.url).href;
-const HUNTS_HOME = new URL('../../../../home/hunts.png', import.meta.url).href;
-const KNOCK_LOGO = new URL('../../../../home/knock-idle-br-logo.png', import.meta.url).href;
+const SWORD_HOME = '/home/swordhome.gif';
+const HUNTS_HOME = '/home/hunts.png';
+const KNOCK_LOGO = '/home/knock-idle-br-logo.png';
 
 export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
