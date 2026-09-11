@@ -3,7 +3,7 @@ import { ApiError, api, storeToken } from '../api/client.js';
 import { AuthLogo, AuthShell } from '../components/AuthShell.js';
 import { useLocale } from '../i18n/Locale.js';
 
-export function AuthScreen({ onReady }: { onReady: () => void }) {
+export function AuthScreen({ onReady, onHome }: { onReady: () => void; onHome: () => void }) {
   const { t } = useLocale();
   const [mode, setMode] = useState<'login' | 'register'>('register');
   const [username, setUsername] = useState('');
@@ -51,7 +51,8 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
   }
 
   return (
-    <AuthShell footer={<span>Tibia Idle 15.30 · hunts oficiais · sim determinístico</span>}>
+    <AuthShell footer={<span>Knock Idle BR · hunts oficiais · progressão idle</span>}>
+      <button className="auth-back-home" type="button" onClick={onHome}>← VOLTAR AO INÍCIO</button>
       <div className="auth-card auth-card-enter">
         <AuthLogo subtitle={t('authLede')} />
 
