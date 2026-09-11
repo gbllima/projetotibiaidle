@@ -1,3 +1,4 @@
+import { CITY_WIDTH, CITY_HEIGHT, CITY_SPAWN, cityPath, cityWalkable, type CityPosition } from '@tibia-idle/data';
 import { AnimatedSprite, Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { itemsById, monstersById, mountsByServerId } from '@tibia-idle/data';
 import type { SimEvent } from '@tibia-idle/sim';
@@ -76,6 +77,8 @@ interface SpriteEntry {
 }
 
 export interface PlayerView {
+  cityNpc?: 'merchant';
+  cityPosition?: CityPosition;
   id?: number;
   name: string;
   vocationId: number;
@@ -160,6 +163,14 @@ export class CombatScene {
   private host: HTMLElement | null = null;
   private mounting: Promise<void> | null = null;
   private cityLobby = false;
+  private cityPending = false;
+  private cityGeneration = 0;
+  private cityMove?: (position: CityPosition) => Promise<{ position: CityPosition; accepted: boolean }>;
+  private cityMerchant?: () => void;
+
+  setCityMerchant(handler?: () => void): void { this.cityMerchant = handler; }
+
+  setCityMove(handler?: (position: CityPosition) => Promise<{ position: CityPosition; accepted: boolean }>): void { this.cityMove = handler; }
 
   private alive(): boolean {
     return !this.dead && Boolean(this.app && this.world && this.actors && !this.actors.destroyed);
@@ -232,11 +243,23 @@ export class CombatScene {
     world.addChild(this.fx);
     world.eventMode = 'static';
     world.hitArea = new Rectangle(0, 0, COLS * TILE, ROWS * TILE);
+    app.canvas.tabIndex = 0;
+    app.canvas.setAttribute('aria-label', 'Cidade: clique para andar ou use WASD e as setas');
+    app.canvas.addEventListener('keydown', (event) => {
+      if (!this.cityLobby || !this.player || document.querySelector('.modal')) return;
+      const offsets: Record<string, [number, number]> = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
+      const offset = offsets[event.key] ?? offsets[event.key.toLowerCase()];
+      if (!offset) return;
+      event.preventDefault();
+      const x = this.player.destX + offset[0], y = this.player.destY + offset[1];
+      if (cityWalkable(x, y)) { this.player.clickGoalX = x; this.player.clickGoalY = y; }
+    });
     world.on('pointertap', (event) => {
       if (!this.cityLobby || !this.player) return;
       const position = event.getLocalPosition(world);
-      this.player.clickGoalX = Math.max(1, Math.min(COLS - 2, Math.floor(position.x / TILE)));
-      this.player.clickGoalY = Math.max(1, Math.min(ROWS - 2, Math.floor(position.y / TILE)));
+      app.canvas.focus({ preventScroll: true });
+      const x = Math.floor(position.x / TILE), y = Math.floor(position.y / TILE);
+      if (cityWalkable(x, y)) { this.player.clickGoalX = x; this.player.clickGoalY = y; }
     });
 
     const [creatures, outfits, mounts, tiles, effects, missiles] = await Promise.all([
@@ -278,6 +301,9 @@ export class CombatScene {
 
   setHunt(huntId: string): void {
     this.cityLobby = false;
+    this.cityGeneration++;
+    this.cityPending = false;
+    if (this.world) { this.world.position.set(0); this.world.hitArea = new Rectangle(0, 0, COLS * TILE, ROWS * TILE); }
     const changed = this.huntId !== huntId;
     this.huntId = huntId;
     if (!this.alive()) return;
@@ -292,7 +318,10 @@ export class CombatScene {
 
   setCityLobby(): void {
     this.cityLobby = true;
+    this.cityGeneration++;
+    this.cityPending = false;
     if (!this.alive() || !this.world) return;
+    this.world.hitArea = new Rectangle(0, 0, CITY_WIDTH * TILE, CITY_HEIGHT * TILE);
     this.floor?.destroy({ children: true });
     const floor = new Container();
     if (this.tiles) paintCityScene(floor, this.tiles);
@@ -446,7 +475,7 @@ export class CombatScene {
     const next = [...ids].sort().join(',');
     if (next === this.decorations.slice().sort().join(',')) return;
     this.decorations = ids.slice();
-    if (this.world && this.huntId) this.paintFloor(this.huntId);
+    if (this.world && this.huntId && !this.cityLobby) this.paintFloor(this.huntId);
   }
 
   private syncAllies(allies: PlayerView[]): void {
@@ -457,9 +486,9 @@ export class CombatScene {
       this.allies.delete(name);
     }
     const spots: Array<[number, number]> = [[4, 6], [8, 6], [5, 7], [7, 7]];
-    allies.slice(0, spots.length).forEach((ally, index) => {
+    (this.cityLobby ? allies : allies.slice(0, spots.length)).forEach((ally, index) => {
       const existing = this.allies.get(ally.name);
-      const [x, y] = spots[index]!;
+      const [x, y] = this.cityLobby ? [ally.cityPosition?.x ?? CITY_SPAWN.x, ally.cityPosition?.y ?? CITY_SPAWN.y] : spots[index]!;
       if (!existing) {
         const look = ally.appearance?.outfit || VOCATION_LOOK[ally.vocationId] || 128;
         const created = this.spawnLook(
@@ -469,15 +498,31 @@ export class CombatScene {
           y,
           DIRECTION_SOUTH,
           ally.name,
-          { appearance: ally.appearance, stepMs: PLAYER_STEP_MS, fill: 0x60c8ff },
+          { appearance: ally.appearance, stepMs: PLAYER_STEP_MS, fill: this.cityLobby ? 0x00ff00 : 0x60c8ff, vitals: this.cityLobby, health: 1 },
         );
         if (created) {
           created.vocationId = ally.vocationId;
           created.characterId = ally.id;
+          if (this.cityLobby && ally.cityNpc === 'merchant') {
+            created.root.eventMode = 'static';
+            created.root.cursor = 'pointer';
+            created.root.on('pointertap', (event) => {
+              event.stopPropagation();
+              if (!this.cityLobby) return;
+              if (this.player) {
+                this.player.clickGoalX = undefined;
+                this.player.clickGoalY = undefined;
+              }
+              this.cityMerchant?.();
+            });
+          }
           this.allies.set(ally.name, created);
           void this.drawMount(created, ally.appearance);
         }
         return;
+      }
+      if (this.cityLobby && ally.cityPosition) {
+        existing.clickGoalX = ally.cityPosition.x; existing.clickGoalY = ally.cityPosition.y;
       }
       existing.vocationId = ally.vocationId;
       existing.appearance = ally.appearance;
@@ -511,7 +556,10 @@ export class CombatScene {
         player.name,
         { vitals: true, health: player.health, stepMs: PLAYER_STEP_MS },
       );
-      if (created) this.player = created;
+      if (created) {
+        this.player = created;
+        if (this.cityLobby) this.placeAt(created, player.cityPosition?.x ?? CITY_SPAWN.x, player.cityPosition?.y ?? CITY_SPAWN.y);
+      }
     }
     if (!this.player) return;
     this.player.lastHealth = player.health;
@@ -1226,26 +1274,32 @@ export class CombatScene {
     const player = this.player;
     if (player) this.advanceWalk(player, delta);
     if (this.cityLobby) {
-      if (player && player.walkLeft <= 0
-        && player.clickGoalX !== undefined && player.clickGoalY !== undefined) {
-        if (player.tileX === player.clickGoalX && player.tileY === player.clickGoalY) {
-          player.clickGoalX = undefined;
-          player.clickGoalY = undefined;
-          this.face(player, 0, 1, false);
-        } else {
-          const next = stepToward(
-            player.tileX,
-            player.tileY,
-            player.clickGoalX,
-            player.clickGoalY,
-            this.occupiedTiles(player),
-          );
-          if (next) this.beginStep(player, next.x, next.y);
-          else {
-            player.clickGoalX = undefined;
-            player.clickGoalY = undefined;
-          }
+      for (const ally of this.allies.values()) {
+        this.advanceWalk(ally, delta);
+        if (ally.walkLeft <= 0 && ally.clickGoalX !== undefined && ally.clickGoalY !== undefined) {
+          const next = cityPath({ x: ally.tileX, y: ally.tileY }, { x: ally.clickGoalX, y: ally.clickGoalY })[0];
+          if (next) this.beginStep(ally, next.x, next.y);
         }
+      }
+      if (player && player.walkLeft <= 0 && !this.cityPending && this.cityMove
+        && player.clickGoalX !== undefined && player.clickGoalY !== undefined) {
+        const next = cityPath({ x: player.tileX, y: player.tileY }, { x: player.clickGoalX, y: player.clickGoalY })[0];
+        if (!next) { player.clickGoalX = undefined; player.clickGoalY = undefined; }
+        else {
+          this.cityPending = true;
+          const generation = this.cityGeneration;
+          void this.cityMove(next).then((result) => {
+            if (!this.cityLobby || this.player !== player || generation !== this.cityGeneration) return;
+            if (result.accepted) this.beginStep(player, result.position.x, result.position.y);
+            else { this.placeAt(player, result.position.x, result.position.y); player.clickGoalX = undefined; player.clickGoalY = undefined; }
+          }).catch(() => { if (this.player === player) { player.clickGoalX = undefined; player.clickGoalY = undefined; } })
+            .finally(() => { if (generation === this.cityGeneration) this.cityPending = false; });
+        }
+      }
+      if (player && this.world) {
+        const cameraX = Math.max(0, Math.min((CITY_WIDTH - COLS) * TILE, player.root.x - COLS * TILE / 2));
+        const cameraY = Math.max(0, Math.min((CITY_HEIGHT - ROWS) * TILE, player.root.y - ROWS * TILE / 2 - TILE * 2));
+        this.world.position.set(-cameraX * SCALE, -cameraY * SCALE);
       }
       this.sortActors();
       return;

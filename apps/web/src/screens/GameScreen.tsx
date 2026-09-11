@@ -1,3 +1,4 @@
+import { CITY_MERCHANT } from '@tibia-idle/data';
 import { PartyManagerModal } from '../components/PartyManagerModal.js';
 import { PartyMemberModal } from '../components/PartyMemberModal.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -141,18 +142,22 @@ export function GameScreen({
 
   useEffect(() => {
     let cancelled = false;
+    if (character.session || trainingRoomId) return;
+    let inFlight = false;
     const refresh = () => {
-      void api.lobby().then((payload) => {
+      if (inFlight) return;
+      inFlight = true;
+      void api.lobby(character.id).then((payload) => {
         if (!cancelled) setLobbyPlayers(payload.players);
-      }).catch(() => undefined);
+      }).catch(() => undefined).finally(() => { inFlight = false; });
     };
     refresh();
-    const timer = window.setInterval(refresh, 10_000);
+    const timer = window.setInterval(refresh, 500);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [character.id]);
+  }, [character.id, Boolean(character.session), trainingRoomId]);
 
   useEffect(() => {
     const serverChannel = chatTab === 'combat' || chatTab === 'loot'
@@ -575,14 +580,20 @@ export function GameScreen({
                   }]}
                   selfId={character.id}
                   scene={(
-                    <CombatScene
+                    !lobbyPlayers.some((entry) => entry.id === character.id) ? <p className="lede">Entrando na cidade…</p> : <CombatScene
                       key={`city-${character.id}`}
                       characterId={character.id}
                       huntId="city-lobby"
                       cityLobby
+                      onCityMerchant={() => setOverlay('market')}
+                      onCityMove={async ({ x, y }) => {
+                        try { return await api.cityMove(character.id, x, y); }
+                        catch (error) { pushLog('Não foi possível mover na cidade. Tente novamente.'); throw error; }
+                      }}
                       active={[]}
                       events={[]}
                       player={{
+                        cityPosition: lobbyPlayers.find((entry) => entry.id === character.id)?.cityPosition,
                         name: character.name,
                         vocationId: character.vocation.id,
                         health: character.health,
@@ -594,6 +605,7 @@ export function GameScreen({
                       allies={[
                         ...lobbyPlayers.filter((player) => player.id !== character.id).map((player) => ({
                           id: player.id,
+                          cityPosition: player.cityPosition,
                           name: player.name,
                           vocationId: player.vocationId,
                           health: 1,
@@ -603,7 +615,9 @@ export function GameScreen({
                           appearance: player.appearance,
                         })),
                         {
-                          name: 'Mercado',
+                          name: 'Mercador',
+                          cityNpc: 'merchant',
+                          cityPosition: CITY_MERCHANT,
                           vocationId: 4,
                           health: 1,
                           maxHealth: 1,

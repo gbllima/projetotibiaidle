@@ -1,3 +1,4 @@
+import { enterCity, moveCity } from './city.js';
 import { partyPrincipal } from './party-access.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { meta } from '@tibia-idle/data';
@@ -126,8 +127,28 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
 
   app.get('/api/lobby', async (request, reply) => {
     try {
-      requireAccount(db, request);
-      return reply.send({ players: lobbyPlayers(db) });
+      const accountId = requireAccount(db, request);
+      const id = Number((request.query as { characterId?: string }).characterId);
+      let position;
+      if (Number.isInteger(id) && id > 0) {
+        const row = db.findCharacter(id);
+        if (!row || row.accountId !== accountId) throw new GameError('Personagem inválido.', 404);
+        if (row.session && JSON.parse(row.session).status === 'active') throw new GameError('Saia da hunt para entrar na cidade.', 409);
+        position = enterCity(db, id);
+      }
+      return reply.send({ players: lobbyPlayers(db), position });
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.post('/api/lobby/move', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const body = request.body as { characterId?: number; x?: number; y?: number } | null;
+      if (!body || !Number.isInteger(body.characterId) || !Number.isInteger(body.x) || !Number.isInteger(body.y)) throw new GameError('Posição inválida.');
+      const row = db.findCharacter(body.characterId!);
+      if (!row || row.accountId !== accountId) throw new GameError('Personagem inválido.', 404);
+      if (row.session && JSON.parse(row.session).status === 'active') throw new GameError('Saia da hunt para andar na cidade.', 409);
+      return reply.send(moveCity(db, body.characterId!, { x: body.x!, y: body.y! }));
     } catch (error) { return fail(reply, error); }
   });
 

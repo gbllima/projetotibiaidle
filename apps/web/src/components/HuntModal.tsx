@@ -4,6 +4,7 @@ import { buildHuntRegions, sortHunts } from '../huntLocations.js';
 import { formatNumber, formatRate } from '../format.js';
 import { useLocale } from '../i18n/Locale.js';
 import type { MessageKey } from '../i18n/strings.js';
+import { HuntDetailsModal } from './HuntDetailsModal.js';
 import { CreatureIcon } from './CreatureIcon.js';
 import { WindowHead } from './WindowHead.js';
 import { itemIconUrl } from '../render/itemIcon.js';
@@ -78,6 +79,7 @@ export function HuntModal({
   useEffect(() => {
     setTab(initialTab);
   }, [initialTab]);
+  const [detailHunt, setDetailHunt] = useState<HuntView | null>(null);
   const [query, setQuery] = useState('');
   const [hours, setHours] = useState(1);
   const [regionName, setRegionName] = useState<string | null>(null);
@@ -169,6 +171,7 @@ export function HuntModal({
   };
 
   return (
+    <>
     <div className="modal" onClick={onClose}>
       <div className="modal-card wide hunt-modal" onClick={(event) => event.stopPropagation()}>
         <WindowHead title={t('hunts')} onClose={onClose} closeLabel={t('close')} />
@@ -395,6 +398,7 @@ export function HuntModal({
                 <HuntRow
                   key={hunt.id}
                   hunt={hunt}
+                  onDetail={() => setDetailHunt(hunt)}
                   hours={hours}
                   character={character}
                   currentId={currentId}
@@ -410,6 +414,8 @@ export function HuntModal({
         </div>
       </div>
     </div>
+    {detailHunt && <HuntDetailsModal hunt={detailHunt} onClose={() => setDetailHunt(null)} />}
+    </>
   );
 }
 
@@ -475,6 +481,7 @@ function BossRow({
 
 function HuntRow({
   hunt,
+  onDetail,
   hours,
   character,
   currentId,
@@ -484,6 +491,7 @@ function HuntRow({
   onStart,
 }: {
   hunt: HuntView;
+  onDetail: () => void;
   hours: number;
   character: CharacterView;
   currentId: string | null;
@@ -505,6 +513,7 @@ function HuntRow({
   const extraMonsters = hunt.monsters.slice(1, 4);
 
   return (
+    <div className="hunt-row-entry">
     <button
       type="button"
       className={`hunt-row ${here ? 'on' : ''}${locked ? ' locked' : ''}`}
@@ -555,6 +564,8 @@ function HuntRow({
         </div>
       </div>
     </button>
+    <button type="button" className="btn gold hunt-detail-button" aria-label={`Detalhe de ${hunt.name}`} onClick={onDetail}>Detalhe</button>
+    </div>
   );
 }
 

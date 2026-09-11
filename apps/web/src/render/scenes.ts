@@ -1,5 +1,5 @@
 import { AnimatedSprite, Container, Graphics, Sprite } from 'pixi.js';
-import { huntMaps, huntsById, type HuntMapRoom } from '@tibia-idle/data';
+import { cityTiles, huntMaps, huntsById, type HuntMapRoom } from '@tibia-idle/data';
 import { trainingRoom, type TrainingRoom } from '../trainingRooms.js';
 import { GROUP_GROUND, type Atlas } from './atlas.js';
 
@@ -213,12 +213,14 @@ export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string):
 
 /** Render the real Thais Depot cut generated from the project's OTBM map. */
 export function paintCityScene(parent: Container, tiles: Atlas): void {
-  const room = huntMaps['thais-depot'];
-  if (room && room.filled >= 40) {
-    paintOtbmRoom(parent, tiles, room, 'thais-depot');
-    return;
+  const ground = new Container();
+  const props = new Container();
+  parent.addChild(ground, props);
+  for (const tile of cityTiles) {
+    placeGround(ground, tiles, tile.ground, tile.x, tile.y);
+    if (tile.ground === 870 && ground.children.length) ground.children[ground.children.length - 1]!.tint = 0xb49b77;
+    for (const id of tile.props) placeProp(props, tiles, id, tile.x, tile.y);
   }
-  paintProceduralRoom(parent, tiles, 'training-dojo');
 }
 
 const HOUSE_DECO: Record<string, Array<{ id: number; x: number; y: number; ground?: boolean }>> = {

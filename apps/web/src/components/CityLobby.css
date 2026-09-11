@@ -43,6 +43,10 @@
   font-size: 11px;
 }
 
+.city-lobby__controls { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
+.city-lobby__map canvas { cursor: crosshair; touch-action: none; }
+.city-lobby__map canvas:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
+
 .city-lobby__bar--thais .eyebrow {
   color: #7bcf79;
   font-size: 9px;

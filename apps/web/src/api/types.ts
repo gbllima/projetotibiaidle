@@ -299,6 +299,7 @@ export interface CharacterView {
 }
 
 export interface LobbyPlayer {
+  cityPosition?: { x: number; y: number };
   id: number;
   name: string;
   level: number;

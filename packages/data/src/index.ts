@@ -19,6 +19,7 @@ import type {
 } from './types.js';
 
 export * from './types.js';
+export * from './city.js';
 
 export const monsters = monstersJson as unknown as Monster[];
 export const items = itemsJson as unknown as Item[];

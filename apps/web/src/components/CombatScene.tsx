@@ -81,6 +81,8 @@ export function CombatScene({
   huntId,
   decorations = [],
   cityLobby = false,
+  onCityMove,
+  onCityMerchant,
 }: {
   characterId: number;
   active: ActiveMonsterView[];
@@ -90,6 +92,8 @@ export function CombatScene({
   huntId: string;
   decorations?: string[];
   cityLobby?: boolean;
+  onCityMerchant?: () => void;
+  onCityMove?: (position: { x: number; y: number }) => Promise<{ position: { x: number; y: number }; accepted: boolean }>;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<ReturnType<typeof acquireCombatScene> | null>(null);
@@ -130,6 +134,8 @@ export function CombatScene({
     let cancelled = false;
     const renderer = acquireCombatScene();
     scene.current = renderer;
+    renderer.setCityMove(onCityMove);
+    renderer.setCityMerchant(onCityMerchant);
     void renderer.mount(node).then(() => {
       if (cancelled || scene.current !== renderer) return;
       ready.current = true;
@@ -152,19 +158,20 @@ export function CombatScene({
       booted.current = false;
       pending.current = [];
       if (scene.current === renderer) scene.current = null;
+      renderer.setCityMerchant(undefined);
       releaseCombatScene(renderer);
     };
   }, [characterId, cityLobby]);
 
   useEffect(() => {
-    if (ready.current) {
+    if (ready.current && !cityLobby) {
       try {
         scene.current?.setHunt(huntId);
       } catch (error) {
         console.error('combat hunt', error);
       }
     }
-  }, [huntId]);
+  }, [huntId, cityLobby]);
 
   useEffect(() => {
     if (ready.current) {

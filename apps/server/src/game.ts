@@ -1,3 +1,4 @@
+import { cityPresence } from './city.js';
 import { partyPrincipal } from './party-access.js';
 import { getMonster, getVocation, hunts, itemsById, recommendedLevelFor } from '@tibia-idle/data';
 import {
@@ -81,14 +82,10 @@ export function lobbyPlayers(db: Database): Array<{
   vocationId: number;
   appearance?: CharacterState['appearance'];
   active: boolean;
+  cityPosition?: { x: number; y: number };
 }> {
   const rows = db.allCharacters();
-  const hidden = new Set<number>();
-  for (const row of rows) {
-    for (const memberId of storedPartyIds(db, row.id).slice(1)) hidden.add(memberId);
-  }
   return rows.flatMap((row) => {
-    if (hidden.has(row.id)) return [];
     let state: CharacterState;
     let active = false;
     try {
@@ -98,7 +95,10 @@ export function lobbyPlayers(db: Database): Array<{
     } catch {
       return [];
     }
+    const presence = cityPresence(db, row.id);
+    if (active || !presence) return [];
     return [{
+      cityPosition: { x: presence.x, y: presence.y },
       id: row.id,
       name: state.name,
       level: state.level,

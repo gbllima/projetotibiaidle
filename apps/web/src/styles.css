@@ -607,6 +607,20 @@ input, select {
   animation-duration: 1.6s;
 }
 .iconbtn.nav-helper .ico img { animation-name: nav-helper-pulse; }
+.iconbtn.nav-guild .ico svg {
+  width: 22px;
+  height: 22px;
+  transform-origin: center;
+  animation: nav-guild-pulse 2.2s ease-in-out infinite;
+}
+.iconbtn.nav-guild.on .ico svg { animation-duration: 1.6s; }
+@keyframes nav-guild-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 1px rgba(91, 196, 125, .45)); }
+  50% { transform: scale(1.1); filter: brightness(1.15) drop-shadow(0 0 4px rgba(232, 197, 71, .7)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iconbtn.nav-guild .ico svg { animation: none; }
+}
 .iconbtn.nav-cyclopedia .ico img { animation-name: nav-cyclopedia-bounce; }
 .iconbtn.nav-market .ico img { animation-name: nav-market-shine; }
 .iconbtn.nav-loja .ico img { animation-name: nav-loja-spin; width: 22px; height: 22px; }
@@ -2706,6 +2720,36 @@ h2.window-head-title { font-size: 13px; }
   font-size: 11px;
   font-weight: 700;
 }
+.hunt-row-entry { position: relative; margin-bottom: 7px; }
+.hunt-row-entry > .hunt-row { margin-bottom: 0; padding-bottom: 43px; }
+.hunt-detail-button { position: absolute; right: 11px; bottom: 9px; padding: 4px 12px; font-size: 11px; }
+.hunt-details-overlay { z-index: 150; }
+.hunt-details:focus { outline: none; }
+.hunt-details-summary { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0 0 14px; }
+.hunt-monster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(225px, 1fr)); gap: 12px; align-items: start; }
+.hunt-monster-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.hunt-monster-portrait { display: flex; justify-content: center; padding: 8px; background: radial-gradient(ellipse, rgba(232, 197, 71, .08), transparent 70%); }
+.hunt-monster-card h3 { text-align: center; font-size: 14px; color: var(--ink); margin: 8px 0 16px; }
+.hunt-monster-card h4 { margin: 18px 0 10px; color: var(--gold); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.hunt-monster-card h4 span { color: var(--muted); }
+.hunt-monster-stats { margin: 0; font-size: 12px; }
+.hunt-monster-stats > div { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.hunt-monster-stats dt { color: var(--muted); }
+.hunt-monster-stats dd { margin: 0; font-weight: 600; }
+.hunt-resistances { display: grid; gap: 7px; }
+.hunt-resistance { display: grid; grid-template-columns: 86px 1fr 43px; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+.hunt-resistance strong { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hunt-resistance-track { height: 5px; border-radius: 3px; background: var(--bg); overflow: hidden; }
+.hunt-resistance-track > span { display: block; height: 100%; background: var(--gold-dim); }
+.hunt-resistance-track.weak > span { background: var(--danger); }
+.hunt-monster-loot { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.hunt-monster-loot li { display: flex; align-items: center; gap: 8px; padding: 5px; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; }
+.hunt-monster-loot .cell { flex-shrink: 0; }
+.hunt-monster-loot li > div:last-child { min-width: 0; }
+.hunt-monster-loot li span { font-size: 11px; overflow-wrap: anywhere; }
+.hunt-monster-loot small { display: block; margin-top: 3px; color: var(--gold); font-size: 10px; }
+.hunt-details-footer { display: flex; justify-content: flex-end; padding: 10px 16px; border-top: 1px solid var(--line); }
+@media (max-width: 540px) { .hunt-monster-grid { grid-template-columns: 1fr; } }
 .hunt-row {
   width: 100%;
   text-align: left;

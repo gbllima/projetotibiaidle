@@ -35,6 +35,7 @@ export function CityLobby({
         <div className="city-lobby__place">
           <span className="eyebrow">SAFE ZONE</span>
           <h2>Cidade</h2>
+          <span className="city-lobby__controls">Clique no chão para andar · WASD / setas</span>
           <p>{players.length} aventureiro{players.length === 1 ? '' : 's'} na cidade · fora da hunt</p>
         </div>
         <div className="city-lobby__self">
