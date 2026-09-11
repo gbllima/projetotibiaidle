@@ -7,6 +7,7 @@ import './landing.css';
 import './party.css';
 import './party-items.css';
 import './mobile.css';
+import './mobile-hunt.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
