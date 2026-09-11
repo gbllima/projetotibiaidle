@@ -11,6 +11,7 @@ import './mobile-hunt.css';
 import './mobile-topmenus.css';
 import './mobile-chat.css';
 import './mobile-nav-icons.css';
+import './mobile-training.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
