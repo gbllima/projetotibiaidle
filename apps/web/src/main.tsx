@@ -8,6 +8,7 @@ import './party.css';
 import './party-items.css';
 import './mobile.css';
 import './mobile-hunt.css';
+import './mobile-topmenus.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
