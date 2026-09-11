@@ -36,10 +36,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 
       <div className="landing-glow landing-glow-a" aria-hidden /><div className="landing-glow landing-glow-b" aria-hidden />
       <header className="landing-nav">
-        <div className="landing-brand">
-          <img src={KNOCK_LOGO} alt="Knock Idle BR" />
-          <div><strong>KNOCK IDLE BR</strong><small>O RPG IDLE BRASILEIRO</small></div>
-        </div>
+        <div className="landing-brand"><img src={KNOCK_LOGO} alt="Knock Idle BR" /><div><strong>KNOCK IDLE BR</strong><small>O RPG IDLE BRASILEIRO</small></div></div>
         <nav><a href="#servidor">SERVIDOR</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a><button className="landing-nav-link" onClick={onWiki}>WIKI</button><button className="landing-nav-link" onClick={onAccount}>MINHA CONTA</button></nav>
         <button className="landing-nav-play" onClick={onPlay}>{actionLabel}</button>
       </header>
@@ -52,35 +49,27 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
           <div className="landing-br-badge"><span>BR</span><div><strong>FEITO PARA QUEM GOSTA DE RPG</strong><small>Progressão idle, hunts, loot e evolução constante.</small></div></div>
         </div>
-        <div className="landing-hero-art">
-          <div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Idle BR — O RPG Idle Brasileiro" /></div>
-        </div>
+        <div className="landing-hero-art"><div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Idle BR — O RPG Idle Brasileiro" /></div></div>
+      </section>
+
+      <section className="landing-fair-economy" aria-label="Economia justa">
+        <div className="landing-fair-seal"><span>⚖</span><strong>FAIR PLAY</strong></div>
+        <div className="landing-fair-copy"><small>ECONOMIA JUSTA</small><h2>NÃO É <em>PAY-TO-WIN</em></h2><p>Seu progresso vem do jogo. Evolução, hunts, loot e conquistas são construídos jogando — dinheiro não compra vitória.</p></div>
+        <div className="landing-fair-points"><span>✓ PROGRESSÃO PELO JOGO</span><span>✓ ECONOMIA EQUILIBRADA</span><span>✓ COMPETIÇÃO JUSTA</span></div>
       </section>
 
       <section id="servidor" className="landing-stats">
-        <Stat label="STATUS" value={stats?.beta === 'open' ? 'ONLINE' : 'OFFLINE'} accent={stats?.beta === 'open'} />
-        <Stat label="PERSONAGENS" value={stats ? stats.characters.toLocaleString('pt-BR') : '—'} />
-        <Stat label="CONTAS" value={stats ? stats.accounts.toLocaleString('pt-BR') : '—'} />
-        <Stat label="CAÇANDO AGORA" value={stats ? stats.hunting.toLocaleString('pt-BR') : '—'} />
+        <Stat label="STATUS" value={stats?.beta === 'open' ? 'ONLINE' : 'OFFLINE'} accent={stats?.beta === 'open'} /><Stat label="PERSONAGENS" value={stats ? stats.characters.toLocaleString('pt-BR') : '—'} /><Stat label="CONTAS" value={stats ? stats.accounts.toLocaleString('pt-BR') : '—'} /><Stat label="CAÇANDO AGORA" value={stats ? stats.hunting.toLocaleString('pt-BR') : '—'} />
       </section>
 
       <section id="ranking" className="landing-section">
         <div className="landing-section-heading"><div><span>01</span><h2>O MUNDO ESTÁ VIVO</h2></div><p>Dados públicos do servidor atualizados diretamente pelo jogo.</p></div>
-        <div className="landing-data-grid">
-          <DataCard sprite={<LandingItemSprite itemId={3351} size={48} />} value={stats?.characters} label="PERSONAGENS CRIADOS" text="Aventureiros que já começaram sua jornada no Knock Idle BR." large />
-          <DataCard sprite={<LandingItemSprite itemId={3350} size={48} />} value={stats?.hunting} label="EM CAÇADA" text="Personagens enfrentando criaturas neste momento." />
-          <DataCard sprite={<CreatureIcon lookType={34} size={48} />} value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Criaturas espalhadas pelas áreas e hunts do servidor." />
-        </div>
+        <div className="landing-data-grid"><DataCard sprite={<LandingItemSprite itemId={3351} size={48} />} value={stats?.characters} label="PERSONAGENS CRIADOS" text="Aventureiros que já começaram sua jornada no Knock Idle BR." large /><DataCard sprite={<LandingItemSprite itemId={3350} size={48} />} value={stats?.hunting} label="EM CAÇADA" text="Personagens enfrentando criaturas neste momento." /><DataCard sprite={<CreatureIcon lookType={34} size={48} />} value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Criaturas espalhadas pelas áreas e hunts do servidor." /></div>
       </section>
 
       <section id="sistemas" className="landing-features">
         <div className="landing-section-heading"><div><span>02</span><h2>CONSTRUA SUA LENDA</h2></div><p>Um RPG idle com alma de MMORPG clássico e progressão que continua com você offline.</p></div>
-        <div className="landing-feature-grid">
-          <Feature sprite={<LandingSprite src={SWORD_HOME} />} title="VOCAÇÕES" text="Escolha seu estilo de combate e desenvolva seu personagem." />
-          <Feature sprite={<LandingSprite src={HUNTS_HOME} />} title="HUNTS" text="Explore áreas, enfrente criaturas e evolua continuamente." />
-          <Feature sprite={<LandingItemSprite itemId={3031} />} title="LOOT & GOLD" text="Colete recursos, negocie itens e fortaleça seu equipamento." />
-          <Feature sprite={<LandingSprite src="/assets/item-icons/2979.webp" />} title="MUNDO ONLINE" text="Compartilhe o servidor com outros aventureiros brasileiros." />
-        </div>
+        <div className="landing-feature-grid"><Feature sprite={<LandingSprite src={SWORD_HOME} />} title="VOCAÇÕES" text="Escolha seu estilo de combate e desenvolva seu personagem." /><Feature sprite={<LandingSprite src={HUNTS_HOME} />} title="HUNTS" text="Explore áreas, enfrente criaturas e evolua continuamente." /><Feature sprite={<LandingItemSprite itemId={3031} />} title="LOOT & GOLD" text="Colete recursos, negocie itens e fortaleça seu equipamento." /><Feature sprite={<LandingSprite src="/assets/item-icons/2979.webp" />} title="MUNDO ONLINE" text="Compartilhe o servidor com outros aventureiros brasileiros." /></div>
       </section>
 
       <section className="landing-cta"><div><span>PRONTO PARA COMEÇAR?</span><h2>ENTRE NO MUNDO DO<br /><em>KNOCK IDLE BR.</em></h2></div><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button></section>
@@ -91,21 +80,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 }
 
 function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) { return <div className="landing-stat"><span className={accent ? 'online-dot' : ''} /><small>{label}</small><strong>{value}</strong></div>; }
-function LandingSprite({ src, size = 32 }: { src: string; size?: number }) {
-  return <img className="landing-title-sprite" src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />;
-}
-function LandingItemSprite({ itemId, size = 32 }: { itemId: number; size?: number }) {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => {
-    let live = true;
-    void itemIconUrl(itemId).then((url) => { if (live) setSrc(url); }).catch(() => {});
-    return () => { live = false; };
-  }, [itemId]);
-  return src ? <LandingSprite src={src} size={size} /> : <span className="landing-title-sprite" aria-hidden />;
-}
-function DataCard({ value, label, text, sprite, large = false }: { value?: number; label: string; text: string; sprite: ReactNode; large?: boolean }) {
-  return <div className={`landing-data-card${large ? ' large' : ''}`}><div className="landing-data-value-row"><span className="landing-title-sprite" aria-hidden>{sprite}</span><strong>{value === undefined ? '?' : value.toLocaleString('pt-BR')}</strong></div><small>{label}</small><p>{text}</p></div>;
-}
-function Feature({ sprite, title, text }: { sprite: ReactNode; title: string; text: string }) {
-  return <article className="landing-feature"><div className="landing-title-row"><h3>{title}</h3><span className="landing-title-sprite" aria-hidden>{sprite}</span></div><p>{text}</p></article>;
-}
+function LandingSprite({ src, size = 32 }: { src: string; size?: number }) { return <img className="landing-title-sprite" src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />; }
+function LandingItemSprite({ itemId, size = 32 }: { itemId: number; size?: number }) { const [src, setSrc] = useState<string | null>(null); useEffect(() => { let live = true; void itemIconUrl(itemId).then((url) => { if (live) setSrc(url); }).catch(() => {}); return () => { live = false; }; }, [itemId]); return src ? <LandingSprite src={src} size={size} /> : <span className="landing-title-sprite" aria-hidden />; }
+function DataCard({ value, label, text, sprite, large = false }: { value?: number; label: string; text: string; sprite: ReactNode; large?: boolean }) { return <div className={`landing-data-card${large ? ' large' : ''}`}><div className="landing-data-value-row"><span className="landing-title-sprite" aria-hidden>{sprite}</span><strong>{value === undefined ? '?' : value.toLocaleString('pt-BR')}</strong></div><small>{label}</small><p>{text}</p></div>; }
+function Feature({ sprite, title, text }: { sprite: ReactNode; title: string; text: string }) { return <article className="landing-feature"><div className="landing-title-row"><h3>{title}</h3><span className="landing-title-sprite" aria-hidden>{sprite}</span></div><p>{text}</p></article>; }
