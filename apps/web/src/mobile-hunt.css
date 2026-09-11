@@ -1,0 +1,247 @@
+/* Mobile-only hunt browser corrections.
+   Keeps the desktop HuntModal unchanged while making every control reachable on phones. */
+@media (max-width: 768px) {
+  /* The fixed game header sits at z-index 1200, so mobile modals must render above it. */
+  .modal {
+    z-index: 2000 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100dvh;
+    padding: 6px !important;
+    place-items: stretch !important;
+    overflow: hidden !important;
+  }
+
+  .modal-card.hunt-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc(100dvh - 12px) !important;
+    max-height: calc(100dvh - 12px) !important;
+    min-height: 0;
+    margin: 0;
+    overflow: hidden !important;
+    border-radius: 10px;
+  }
+
+  .hunt-modal > .window-head {
+    position: relative;
+    z-index: 5;
+    flex: 0 0 auto;
+  }
+
+  .hunt-modal-body {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 8px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* The main hunt categories must always be visible at the top of the modal. */
+  .hunt-tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px !important;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 8px;
+    padding: 4px 0 7px;
+    background: linear-gradient(180deg, #161a22 82%, rgba(22, 26, 34, .94));
+  }
+
+  .hunt-tab {
+    min-width: 0 !important;
+    width: 100%;
+    min-height: 42px !important;
+    padding: 5px 3px !important;
+    font-size: 9px !important;
+    line-height: 1.1;
+    white-space: normal !important;
+    overflow: hidden;
+  }
+
+  .hunt-tab span {
+    display: inline-flex;
+    margin-left: 2px;
+    font-size: 8px;
+  }
+
+  .hunt-modal-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Hunt navigation becomes horizontal instead of stealing a desktop-sized column. */
+  .hunt-browser,
+  .hunt-browser-search {
+    display: block !important;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hunt-nav {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 8px;
+  }
+
+  .hunt-region-tabs,
+  .hunt-location-list {
+    display: flex !important;
+    gap: 5px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .hunt-region-tabs::-webkit-scrollbar,
+  .hunt-location-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hunt-region-tab,
+  .hunt-location-btn,
+  .hunt-nav-all {
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+
+  .hunt-list,
+  .boss-browser,
+  .training-browser {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hunt-list-head {
+    min-width: 0;
+  }
+
+  /* Hunt cards use a phone-friendly vertical structure and keep the detail button visible. */
+  .hunt-row-entry {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 8px;
+  }
+
+  .hunt-row-entry > .hunt-row,
+  .boss-row,
+  .hunt-row {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .hunt-row-entry > .hunt-row {
+    padding: 9px 9px 46px !important;
+  }
+
+  .hunt-row,
+  .boss-row {
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    text-align: left;
+  }
+
+  .hunt-row-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hunt-row-body {
+    min-width: 0;
+  }
+
+  .hunt-row-title,
+  .hunt-row-meta,
+  .hunt-row-creatures,
+  .boss-row-desc {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .hunt-row-stats {
+    width: 100%;
+    min-width: 0;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3px 8px;
+    text-align: left !important;
+  }
+
+  .hunt-detail-button {
+    left: 9px !important;
+    right: 9px !important;
+    bottom: 8px !important;
+    width: auto !important;
+    min-height: 32px !important;
+    padding: 5px 10px !important;
+  }
+
+  /* Detail overlay must also sit above the fixed game header. */
+  .hunt-details-overlay {
+    z-index: 2200 !important;
+  }
+
+  .hunt-details,
+  .hunt-details-overlay .modal-card {
+    width: calc(100vw - 12px) !important;
+    max-width: calc(100vw - 12px) !important;
+    max-height: calc(100dvh - 12px) !important;
+  }
+
+  .training-row {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .training-enter {
+    grid-column: 1 / -1;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 430px) {
+  .modal {
+    padding: 3px !important;
+  }
+
+  .modal-card.hunt-modal {
+    height: calc(100dvh - 6px) !important;
+    max-height: calc(100dvh - 6px) !important;
+    border-radius: 7px;
+  }
+
+  .hunt-modal-body {
+    padding: 6px !important;
+  }
+
+  .hunt-tab-bar {
+    gap: 2px !important;
+  }
+
+  .hunt-tab {
+    min-height: 40px !important;
+    padding-inline: 2px !important;
+    font-size: 8px !important;
+  }
+
+  .hunt-row-icons {
+    transform: scale(.9);
+    transform-origin: left center;
+    margin-right: -4px;
+  }
+}
