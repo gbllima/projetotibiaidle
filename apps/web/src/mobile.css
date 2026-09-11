@@ -1,0 +1,257 @@
+/* Mobile layout foundation
+   Keeps the desktop interface untouched and reorganizes the existing game panels
+   into a vertical, touch-friendly flow on phones. */
+
+@media (max-width: 768px) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .shell {
+    display: block;
+    height: auto;
+    min-height: 100%;
+    padding-bottom: 20px;
+  }
+
+  /* Compact account/resources header, inspired by the mobile reference. */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px 8px;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: 8px 10px;
+    background: rgba(13, 16, 22, 0.97);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(10px);
+  }
+
+  .topnav .logo,
+  .topnav .top-vitals {
+    display: none;
+  }
+
+  .topnav .who {
+    min-width: 0;
+    padding: 0;
+  }
+
+  .topnav .who strong {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+
+  .topnav .who small {
+    font-size: 10px;
+  }
+
+  .topnav .pill {
+    min-width: 0;
+    height: 34px;
+    padding: 0 9px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Main feature shortcuts remain available without widening the page. */
+  .topnav .nav-icons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    padding: 2px 0 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .topnav .nav-icons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topnav .nav-icons .iconbtn {
+    flex: 0 0 52px;
+    min-width: 52px;
+    min-height: 48px;
+  }
+
+  .topnav .nav-icons .iconbtn small {
+    max-width: 50px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+
+  .topnav .top-right {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    padding-top: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topnav .top-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topnav .top-right > * {
+    flex: 0 0 auto;
+  }
+
+  .topnav .top-right .btn {
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+
+  /* Desktop: left stats | game | party/inventory.
+     Mobile: game first, party/inventory second, stats/skills last. */
+  .board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-rows: auto;
+    gap: 10px;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    padding: 10px;
+    overflow: visible !important;
+  }
+
+  .board > .center {
+    order: 1;
+  }
+
+  .board > .dock.right {
+    order: 2;
+  }
+
+  .board > .dock:not(.right) {
+    order: 3;
+  }
+
+  .center,
+  .dock,
+  .dock.right {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible;
+    border: 0;
+  }
+
+  .center {
+    display: grid;
+    grid-template-rows: auto;
+    gap: 8px;
+  }
+
+  .center-head {
+    min-width: 0;
+  }
+
+  /* Combat/city/training should use the full phone width instead of a desktop column. */
+  .combat-scene,
+  .training-scene,
+  .city-lobby,
+  .scene,
+  .game-scene,
+  canvas {
+    max-width: 100%;
+  }
+
+  .center canvas {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain;
+  }
+
+  /* Dock boxes become stacked mobile cards. */
+  .dockbox,
+  .dock-box,
+  .panel,
+  .window {
+    max-width: 100%;
+  }
+
+  .dock > * + * {
+    margin-top: 10px;
+  }
+
+  /* Inventory/pouch rows are allowed to wrap instead of overflowing sideways. */
+  .item-grid,
+  .inventory-grid,
+  .backpack-grid,
+  .loot-grid,
+  .supply-grid {
+    max-width: 100%;
+  }
+
+  /* Chat/action controls stay usable with a finger. */
+  .chat-console button,
+  .actionbar button,
+  .action-bar button,
+  .center button,
+  .dock button {
+    min-height: 40px;
+  }
+
+  /* Overlays/modals must fit inside the phone viewport. */
+  .modal,
+  .modal-card,
+  .window-modal,
+  .overlay-card {
+    width: min(100% - 16px, 680px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    overflow: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .board {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .topnav {
+    padding-inline: 8px;
+  }
+
+  .topnav .pill {
+    padding-inline: 7px;
+  }
+
+  .topnav .nav-icons .iconbtn {
+    flex-basis: 48px;
+    min-width: 48px;
+  }
+
+  .topnav .nav-icons .ico {
+    transform: scale(0.94);
+  }
+}
