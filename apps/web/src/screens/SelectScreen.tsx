@@ -86,7 +86,7 @@ export function SelectScreen({
     <AuthShell wide>
       <div className="select-card auth-card-enter">
         <div className="select-topbar">
-          <AuthLogo subtitle={t('createCharLede')} />
+          <AuthLogo compact subtitle={t('createCharLede')} />
           <div className="select-topbar-actions">
             <span className="select-slots-pill">
               {t('charSlots')} <strong>{used}/{slots}</strong>

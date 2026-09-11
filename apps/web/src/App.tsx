@@ -69,7 +69,7 @@ export function App() {
   }
 
   if (screen === 'auth') {
-    return <AuthScreen onReady={() => { void loadRoster().then(() => setScreen(afterAuth)); }} />;
+    return <AuthScreen onHome={() => setScreen('home')} onReady={() => { void loadRoster().then(() => setScreen(afterAuth)); }} />;
   }
 
   if (screen === 'select') {

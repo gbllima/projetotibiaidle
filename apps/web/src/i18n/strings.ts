@@ -4,7 +4,7 @@ export const STRINGS = {
   pt: {
     boot: 'Carregando…',
     brand: 'TIBIA IDLE',
-    authLede: 'MMO idle com as fórmulas, monstros e hunts do Tibia Idle 15.30.',
+    authLede: 'Entre no mundo de Knock Idle BR e construa sua lenda.',
     account: 'Conta',
     password: 'Senha',
     invite: 'Convite (beta)',
@@ -175,7 +175,7 @@ export const STRINGS = {
   en: {
     boot: 'Loading…',
     brand: 'TIBIA IDLE',
-    authLede: 'Idle MMO using Tibia Idle 15.30 formulas, monsters and hunts.',
+    authLede: 'Enter the world of Knock Idle BR and build your legend.',
     account: 'Account',
     password: 'Password',
     invite: 'Invite (beta)',

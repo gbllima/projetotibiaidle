@@ -21,12 +21,12 @@ export function AuthShell({
   );
 }
 
-export function AuthLogo({ subtitle }: { subtitle?: string }) {
+export function AuthLogo({ subtitle, compact = false }: { subtitle?: string; compact?: boolean }) {
   return (
-    <header className="auth-logo">
-      <h1>
-        TIBIA <span>IDLE</span>
-      </h1>
+    <header className={`auth-logo${compact ? ' auth-logo-compact' : ''}`}>
+      <img src="/home/knock-idle-br-logo.png" alt="Knock Idle BR" />
+      <div className="auth-logo-title">KNOCK IDLE BR</div>
+      <div className="auth-logo-kicker">O RPG IDLE BRASILEIRO</div>
       {subtitle ? <p>{subtitle}</p> : null}
     </header>
   );
