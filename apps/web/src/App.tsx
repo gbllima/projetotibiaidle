@@ -8,6 +8,7 @@ import { AuthScreen } from './screens/AuthScreen.js';
 import { GameScreen } from './screens/GameScreen.js';
 import { SelectScreen } from './screens/SelectScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
+import { KnockRadio } from './components/KnockRadio.js';
 
 type Screen = 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'select' | 'game';
 
@@ -52,10 +53,10 @@ export function App() {
   }, [screen, character?.id]);
 
   if (screen === 'home') {
-    return <HomeScreen onWiki={() => setScreen('wiki')} onAccount={() => { setAfterAuth('account'); setScreen(storedToken() ? 'account' : 'auth'); }} onPlay={() => {
+    return <><KnockRadio /><HomeScreen onWiki={() => setScreen('wiki')} onAccount={() => { setAfterAuth('account'); setScreen(storedToken() ? 'account' : 'auth'); }} onPlay={() => {
       if (!storedToken()) { setAfterAuth('select'); setScreen('auth'); }
       else void loadRoster().then(() => setScreen('select')).catch(() => { storeToken(null); setScreen('auth'); });
-    }} />;
+    }} /></>;
   }
 
   if (screen === 'wiki') return <WikiScreen onHome={() => setScreen('home')} onPlay={() => { setAfterAuth('select'); if (storedToken()) void loadRoster().then(() => setScreen('select')); else setScreen('auth'); }} />;
