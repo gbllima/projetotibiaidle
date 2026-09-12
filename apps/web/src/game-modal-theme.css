@@ -1,6 +1,21 @@
 /* Visual-only overrides for in-game overlays/modals.
    Preserve gameplay semantics (HP/MP/XP/status colors) and change only interface chrome. */
 
+/* Base game background: neutral olive-black, no blue tint */
+.shell,
+.shell .dock {
+  background: #0d100d;
+}
+.shell .dock {
+  border-color: #4b3d26;
+}
+.shell .dock::-webkit-scrollbar-track {
+  background: #0d100d;
+}
+.shell .dock::-webkit-scrollbar-thumb {
+  background: #4b3d26;
+}
+
 /* Helper */
 .shell .helper-card,
 .shell .helper-main,
