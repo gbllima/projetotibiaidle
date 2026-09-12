@@ -60,6 +60,10 @@ import {
 } from './waves.js';
 import { isBossHunt } from './bossEncounters.js';
 
+const NORMAL_WAVE_DELAY_MS = 3_000;
+const BOSS_WAVE_DELAY_MS = 5_000;
+type WaveTimingSession = HuntSession & { nextWaveAtTick?: number };
+
 function sessionNow(session: HuntSession): number {
   return (session.startedAt ?? 0) + session.tick * TICK_MS;
 }
@@ -535,14 +539,12 @@ function applyPolicy(
       session.healCooldownTicks = msToTicks(HEAL_EXHAUST_MS);
       emit({ tick: session.tick, type: 'potion', itemId: potion.itemId, amount: healed });
     } else if (policy.stopWhenOutOfSupplies) {
-      // No potion left and hurt: leaving beats dying and losing experience.
       session.status = 'out_of_supplies';
       emit({ tick: session.tick, type: 'out_of_supplies' });
       return;
     }
   }
 
-  // Retreat threshold, checked after potions so a successful heal cancels it.
   if (character.health / stats.maxHealth < policy.fleeAt) {
     session.status = 'fled';
     emit({ tick: session.tick, type: 'fled' });
@@ -563,8 +565,10 @@ function applyPolicy(
 }
 
 /**
- * Keep each wave pack fixed: spawn only when the floor is empty, filling the
- * entire remaining wave in one shot. Mid-wave drip spawns felt like constant resets.
+ * Keep each wave pack fixed. Once the floor is clear, normal waves wait 3s and
+ * the skull/boss wave waits 5s before the next complete pack is released.
+ * Spawn credits still accrue for compatibility and balancing telemetry, but
+ * they no longer create long empty-floor waits for fast characters or parties.
  */
 function refillPack(
   session: HuntSession,
@@ -576,13 +580,29 @@ function refillPack(
 ): void {
   if (isBossHunt(session.huntId)) return;
   const progress = waveProgress(session.totals.kills);
-  // Accrue while fighting, but bank at most one wave so idle time cannot fund a burst.
-  session.spawnCredits = Math.min(progress.size, session.spawnCredits + killsPerHour * Math.max(0, spawnRate) / TICKS_PER_HOUR);
-  if (session.active.length > 0) return;
-  const toSpawn = Math.max(0, progress.size - progress.killed);
-  if (toSpawn <= 0 || session.spawnCredits + 1e-9 < toSpawn) return;
-  session.spawnCredits = Math.max(0, session.spawnCredits - toSpawn);
+  const timed = session as WaveTimingSession;
 
+  session.spawnCredits = Math.min(
+    progress.size,
+    session.spawnCredits + killsPerHour * Math.max(0, spawnRate) / TICKS_PER_HOUR,
+  );
+
+  if (session.active.length > 0) {
+    timed.nextWaveAtTick = undefined;
+    return;
+  }
+
+  const toSpawn = Math.max(0, progress.size - progress.killed);
+  if (toSpawn <= 0) return;
+
+  if (timed.nextWaveAtTick === undefined) {
+    const delayMs = isBossWave(progress.waveIndex) ? BOSS_WAVE_DELAY_MS : NORMAL_WAVE_DELAY_MS;
+    timed.nextWaveAtTick = session.tick + msToTicks(delayMs) - 1;
+  }
+  if (session.tick < timed.nextWaveAtTick) return;
+
+  timed.nextWaveAtTick = undefined;
+  session.spawnCredits = Math.max(0, session.spawnCredits - Math.min(session.spawnCredits, toSpawn));
   session.initialPackCredit = 0;
   for (let i = 0; i < toSpawn; i += 1) {
     const monster = pickSpawnMonster(session, pool, rng);
@@ -604,7 +624,6 @@ function tryChallenge(
 ): void {
   if (isBossHunt(session.huntId)) return;
   if (!policy.taunt) return;
-  // exeta res needs a living pack — never pull onto an empty floor between waves.
   if (session.active.length === 0) return;
   const voc = session.character.vocationId;
   if (voc !== 4 && voc !== 8) return;
@@ -628,13 +647,6 @@ function tryChallenge(
   layoutPackMonsters(session.active);
 }
 
-/**
- * The player's actions for one tick.
- *
- * Auto-attack and spells run on independent cooldowns, as they do in Tibia, so
- * a knight swings every two seconds *and* lands an exori on top. Collapsing
- * them into one cooldown would roughly halve melee throughput.
- */
 function setSpellGroupCooldown(session: HuntSession, group: SpellGroup, cooldownMs: number): void {
   session.spellCooldowns ??= {};
   session.spellCooldowns[group] = msToTicks(cooldownMs);
@@ -687,7 +699,6 @@ function playerTurn(
 
   if (throwRune && rune) {
     const range = runeDamage(rune, character.level, procs.magicLevel);
-    // Tibia: SD/HMM = one focus target; GFB/explosion = every creature in range (the pack).
     const focus = session.active[0]!;
     const targets = rune.area ? [...session.active] : [focus];
     emit({
@@ -764,7 +775,6 @@ function playerTurn(
         emit,
         rates,
         now,
-        // Missile already launched on the cast event — do not spam one bolt per victim.
         undefined,
         undefined,
         spell.area ? { area: true } : undefined,
@@ -827,7 +837,6 @@ function playerTurn(
       return;
     }
 
-    // Crystal maxHitChance — miss still burns the arrow.
     const hitChance = distanceHitChance(character, stats, profile);
     if (hitChance < 100 && rng.uniform(1, 100) > hitChance) {
       session.totals.misses ??= 0;
@@ -842,9 +851,6 @@ function playerTurn(
     }
 
     const range = ammoDamageRange(character, stats, profile);
-    // Crystal weapons/scripts/*arrow*.lua:
-    // - normal ammo = single focus target
-    // - burst/diamond/storm = createCombatArea centered on the impact tile
     const areaAmmo = Boolean(profile.area && profile.areaShape);
     layoutPackMonsters(session.active);
     const victims = areaAmmo
@@ -886,10 +892,8 @@ function playerTurn(
           emit,
           rates,
           now,
-          // Single-target: shoot here. AoE: missile + area FX already on the announce.
           !areaAmmo && firstVictim && firstPart ? profile.shoot : undefined,
           ammoId,
-          // Per-victim: mark area for numbers only — full EXPLOSIONAREA is painted once on impact.
           areaAmmo
             ? { area: true }
             : (firstPart && profile.effect ? { effect: profile.effect } : undefined),
@@ -926,7 +930,6 @@ function playerTurn(
     return;
   }
 
-  // Melee auto-attacks — whirlwind missile + weapon attack effect.
   const rolled = rng.normal(weaponRange.min, weaponRange.max);
   damageMonster(
     session, target, rolled, 'COMBAT_PHYSICALDAMAGE', rng, emit, rates, now,
@@ -1169,8 +1172,6 @@ function damageMonster(
     return;
   }
 
-  // Crystal runOnHealth is absolute HP (Monster::isFleeing: health <= runAwayHealth),
-  // scaled by the same healthMultiplier used on boss waves — not a percentage.
   let fleeAt = monster.runOnHealth ?? 0;
   if (fleeAt > 0 && isBossWave(huntWave(session))) {
     fleeAt = Math.max(1, Math.round(fleeAt * BOSS_HEALTH_MULT));
@@ -1227,7 +1228,6 @@ function killMonster(
   }
   emit({ tick: session.tick, type: 'monster_death', uid: target.uid, monsterId: monster.id });
 
-
   if (bossFight) {
     session.status = 'boss_cleared';
     emit({ tick: session.tick, type: 'boss_cleared', monsterId: monster.id });
@@ -1283,7 +1283,6 @@ function rollLoot(
     const roll = rollLootEntry(drop.chance, factor, 1, rng);
     if (roll === null) continue;
     const item = itemsById.get(drop.itemId);
-    // Only stackables roll a count; everything else drops singly.
     const count = item?.stackable ? lootCount(roll, 1, drop.maxCount) : 1;
     const money = isMoneyItem(item);
     const unitValue = money && item ? moneyUnitValue(item) : (item?.sellPrice ?? 0);
@@ -1293,7 +1292,6 @@ function rollLoot(
 
     session.totals.lootValue += value;
     const junk = minKeep > 0 && unitValue < minKeep;
-    // Coin drops bank on the character immediately, like Tibia — not the loot pouch.
     if (money || junk || !pouchHasRoom(session, drop.itemId)) {
       session.character.gold += value;
     } else {
@@ -1312,9 +1310,6 @@ function monsterTurn(
 ): void {
   const character = session.character;
   const wavePolicy = policyForWave(character, huntWave(session));
-  // Melee and monk vocations stand in the monsters' faces; everyone else kites.
-  // Haste is movement in Tibia; here it cuts how often melee swings land.
-  // Paralyze locks walking speed — ranged can't kite while locked.
   const playerParalyzed = (session.playerParalyzeTicks ?? 0) > 0;
   if (playerParalyzed) {
     session.playerParalyzeTicks = Math.max(0, (session.playerParalyzeTicks ?? 0) - 1);
@@ -1349,8 +1344,6 @@ function monsterTurn(
       }
       active.attackCooldowns[i] = msToTicks(attack.interval);
 
-      // A monster that has to close the distance lands fewer hits on a ranged
-      // character; one with its own ranged attack is unaffected.
       const reach = attack.range !== null && attack.range > 1 ? 1 : exposure;
       if (!rng.chance(attack.chance * reach)) continue;
 
@@ -1455,13 +1448,11 @@ function monsterTurn(
       }
       if (attack.kind === 'combat' && final > 0) applyCondition(session, attack.damageType, final);
 
-      // Taking a physical hit while holding a shield trains shielding.
       if (attack.damageType === 'COMBAT_PHYSICALDAMAGE') {
         addSkillTries(character, 'shield', 1, stageMultiplier(stages.skills, character.skills.shield.level));
       }
     }
 
-    // Monster self-healing.
     for (const heal of monster.heals) {
       if (active.healCooldown > 0) {
         active.healCooldown -= 1;
@@ -1476,7 +1467,6 @@ function monsterTurn(
   }
 }
 
-/** Everything the client needs to render the current state of a hunt. */
 export function describeSession(session: HuntSession | null) {
   if (!session) return null;
   const rates = hourlyRates(session);
@@ -1536,7 +1526,6 @@ export function describeSession(session: HuntSession | null) {
   };
 }
 
-/** Per-hour projections from the totals so far, for the Hunt Analyser. */
 export function hourlyRates(session: HuntSession): {
   xpPerHour: number;
   lootPerHour: number;
