@@ -1,0 +1,40 @@
+.loot-config-overlay{background:rgba(5,8,6,.78);backdrop-filter:blur(2px)}
+.loot-config-window{width:min(760px,94vw);max-height:88vh;overflow:hidden;border:1px solid #6f5728;background:linear-gradient(180deg,#141812 0%,#0d110d 100%);box-shadow:0 18px 50px rgba(0,0,0,.6),inset 0 0 0 1px rgba(212,166,66,.08)}
+.loot-config-window .window-head{border-bottom:1px solid #493b20;background:linear-gradient(180deg,#24291f,#171b15)}
+.loot-config-window .window-head-title{color:#e0bd62;letter-spacing:.08em}
+.loot-config-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px;border-bottom:1px solid #393427;background:#11140f}
+.loot-config-tabs button{min-height:44px;border:1px solid #3b3b2f;background:#171b16;color:#a9a99a;font-weight:700;border-radius:4px;cursor:pointer}
+.loot-config-tabs button:hover{border-color:#75602f;color:#d8c88d}
+.loot-config-tabs button.active{border-color:#d6a63d;color:#f2d47d;background:linear-gradient(180deg,#41361d,#282416);box-shadow:inset 0 0 0 1px rgba(255,220,126,.08)}
+.loot-config-error{margin:10px 12px 0}
+.loot-config-content{padding:14px 18px;overflow:auto;max-height:62vh}
+.loot-config-content h3{margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #3f3928;color:#e9e4d2;font-size:14px;letter-spacing:.08em}
+.loot-config-content h4{margin:0 0 8px;color:#e4d7a9;font-size:13px}
+.loot-config-help{margin:6px 0 12px;color:#8f9487;line-height:1.45;font-size:12px}
+.loot-config-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(115,104,72,.2)}
+.loot-config-row>span,.loot-config-slider-row label{color:#c9c8bb}
+.loot-config-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;min-width:220px}
+.loot-config-toggle button,.loot-add-line button,.loot-container-add button{border:1px solid #4a493a;background:#1a1e18;color:#c9c9ba;padding:8px 12px;border-radius:4px;font-weight:700}
+.loot-config-toggle button.active{background:#dfd8c4;color:#181914;border-color:#e7d89c}
+.loot-config-slider-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:14px 0}
+.loot-config-slider-row input{accent-color:#c89a35}
+.loot-config-slider-row strong{color:#f0d378;font-size:18px;min-width:48px;text-align:right}
+.loot-config-search,.loot-add-line input,.loot-container-add input,.loot-container-add select,.loot-container-item select{width:100%;box-sizing:border-box;border:1px solid #49483a;background:#0b0e0b;color:#dedecf;padding:9px 10px;border-radius:4px}
+.loot-config-search{margin:0 0 10px}
+.loot-manage-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.loot-manage-card{border:1px solid #3c3a2f;background:#11140f;padding:10px;border-radius:4px;min-width:0}
+.loot-add-line{display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:8px}
+.loot-rule-list,.loot-container-list,.loot-history-list{display:grid;gap:6px;max-height:290px;overflow:auto}
+.loot-rule-item,.loot-container-item,.loot-history-item{display:grid;align-items:center;gap:8px;border:1px solid #34362d;background:#151914;padding:8px;border-radius:3px}
+.loot-rule-item{grid-template-columns:1fr auto}
+.loot-rule-item button,.loot-container-item button{border:0;background:transparent;color:#d6c488;font-size:18px;cursor:pointer}
+.loot-container-add{display:grid;grid-template-columns:1fr 170px auto;gap:8px;margin-bottom:8px}
+.loot-container-item{grid-template-columns:1fr 180px auto}
+.loot-history-current{display:grid;gap:5px;padding:10px;margin-bottom:10px;border:1px solid #3c3a2f;background:#11140f}
+.loot-history-current strong{color:#e3c96d}
+.loot-history-current span{color:#aeb0a3;font-size:12px}
+.loot-history-item{grid-template-columns:140px 1fr auto;color:#a9ad9f;font-size:12px}
+.loot-history-item strong{color:#dfd7b6}
+.loot-empty{display:block;padding:10px;color:#777d71;font-style:italic}
+.loot-config-footer{display:flex;justify-content:flex-end;padding:10px 14px;border-top:1px solid #393427;background:#11140f}
+@media(max-width:720px){.loot-config-tabs{grid-template-columns:1fr 1fr}.loot-manage-columns{grid-template-columns:1fr}.loot-container-add{grid-template-columns:1fr}.loot-container-item{grid-template-columns:1fr 1fr auto}.loot-history-item{grid-template-columns:1fr}.loot-config-toggle{min-width:180px}.loot-config-content{max-height:64vh}}
