@@ -425,7 +425,7 @@ export function GameScreen({
             <div className={`wave ${character.session?.bossWave ? 'boss' : ''}`}>
               <div className="label">
                 {character.session?.bossWave ? t('bossWave') : `Wave ${character.session?.wave ?? 0}/${wavesTotal}`}
-                {character.session ? ` · ${character.session.packAlive ?? character.session.active.length}/${character.session.packSize}` : ''}
+                {character.session ? ` · Inimigos ${character.session.packAlive ?? character.session.active.length}/${character.session.packSize}` : ''}
               </div>
               <div className="waves">
                 {Array.from({ length: wavesTotal }, (_, index) => (
