@@ -1,11 +1,30 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { addItemStack, backpackCapacity, removeWorn, wearItem, type CharacterState, type EquipSlot } from '@tibia-idle/sim';
+import { itemsById } from '@tibia-idle/data';
+import { addItemStack, backpackCapacity, isConsumableItem, removeWorn, wearItem, type CharacterState, type EquipSlot } from '@tibia-idle/sim';
 import { accountFromHeader, AuthError } from './auth.js';
 import type { Database } from './db.js';
 import { describeCharacter, loadCharacter, type LoadedCharacter } from './game.js';
 import { GameError } from './settle.js';
 
-type LootPrefsCharacter = CharacterState & { lootIgnoredItemIds?: number[] };
+type LootContainerTarget = 'pouch' | 'backpack' | 'supply' | 'warehouse';
+type LootHistoryEntry = {
+  at: number;
+  kind: 'auto-sell' | 'route';
+  itemId: number;
+  count: number;
+  gold?: number;
+  target?: LootContainerTarget;
+};
+
+type LootPrefsCharacter = CharacterState & {
+  lootIgnoredItemIds?: number[];
+  lootProtectedItemIds?: number[];
+  lootAutoSell?: boolean;
+  lootAutoSellPercent?: number;
+  lootSort?: boolean;
+  lootContainerByItem?: Record<string, LootContainerTarget>;
+  lootHistory?: LootHistoryEntry[];
+};
 
 function requireAccount(db: Database, request: FastifyRequest): number {
   const accountId = accountFromHeader(db, request.headers.authorization);
@@ -67,18 +86,45 @@ function mergedMemberView(owner: LoadedCharacter, member: LoadedCharacter, db: D
   return memberView;
 }
 
-function ignoredLootIds(character: CharacterState): number[] {
-  const raw = (character as LootPrefsCharacter).lootIgnoredItemIds ?? [];
-  return [...new Set(raw.filter((id) => Number.isInteger(id) && id > 0))];
+function normalizedIds(raw: unknown): number[] {
+  return [...new Set((Array.isArray(raw) ? raw : []).map(Number).filter((id) => Number.isInteger(id) && id > 0))];
 }
 
-function setIgnoredLootIds(character: CharacterState, ids: number[]): void {
-  (character as LootPrefsCharacter).lootIgnoredItemIds = [...new Set(ids.filter((id) => Number.isInteger(id) && id > 0))];
+function prefs(character: CharacterState) {
+  const state = character as LootPrefsCharacter;
+  return {
+    ignoredItemIds: normalizedIds(state.lootIgnoredItemIds),
+    protectedItemIds: normalizedIds(state.lootProtectedItemIds),
+    autoSell: Boolean(state.lootAutoSell),
+    autoSellPercent: Math.max(10, Math.min(100, Math.floor(Number(state.lootAutoSellPercent) || 90))),
+    sort: Boolean(state.lootSort),
+    containers: { ...(state.lootContainerByItem ?? {}) },
+    history: Array.isArray(state.lootHistory) ? state.lootHistory.slice(-100) : [],
+  };
 }
 
-function syncIgnoredLootToSession(loaded: LoadedCharacter): void {
+function applyPrefs(character: CharacterState, next: ReturnType<typeof prefs>): void {
+  const state = character as LootPrefsCharacter;
+  state.lootIgnoredItemIds = normalizedIds(next.ignoredItemIds);
+  state.lootProtectedItemIds = normalizedIds(next.protectedItemIds);
+  state.lootAutoSell = Boolean(next.autoSell);
+  state.lootAutoSellPercent = Math.max(10, Math.min(100, Math.floor(next.autoSellPercent || 90)));
+  state.lootSort = Boolean(next.sort);
+  state.lootContainerByItem = { ...next.containers };
+  state.lootHistory = next.history.slice(-100);
+}
+
+function syncPrefsToSession(loaded: LoadedCharacter): void {
   if (!loaded.session) return;
-  setIgnoredLootIds(loaded.session.character, ignoredLootIds(loaded.character));
+  applyPrefs(loaded.session.character, prefs(loaded.character));
+  loaded.session.character.policy.lootMinValue = 0;
+}
+
+function addHistory(character: CharacterState, entry: LootHistoryEntry): void {
+  const state = character as LootPrefsCharacter;
+  const history = Array.isArray(state.lootHistory) ? state.lootHistory : [];
+  history.push(entry);
+  state.lootHistory = history.slice(-100);
 }
 
 function pouchDistinctStacks(loaded: LoadedCharacter): number {
@@ -86,27 +132,85 @@ function pouchDistinctStacks(loaded: LoadedCharacter): number {
   return Object.values(loaded.session.totals.lootByItem ?? {}).filter((count) => count > 0).length;
 }
 
+function tryRoute(sessionCharacter: CharacterState, itemId: number, count: number, target: LootContainerTarget): boolean {
+  if (target === 'pouch') return false;
+  if (target === 'warehouse') {
+    sessionCharacter.warehouse ??= [];
+    addItemStack(sessionCharacter.warehouse, itemId, count);
+    return true;
+  }
+  if (target === 'backpack') {
+    sessionCharacter.backpackContents ??= [];
+    const bag = sessionCharacter.backpackContents;
+    if (!bag.some((entry) => entry.itemId === itemId) && bag.length >= backpackCapacity(sessionCharacter)) return false;
+    addItemStack(bag, itemId, count);
+    return true;
+  }
+  const item = itemsById.get(itemId);
+  if (!item || !isConsumableItem(item)) return false;
+  sessionCharacter.supplies ??= [];
+  const supplies = sessionCharacter.supplies;
+  const cap = Math.max(1, sessionCharacter.supplySlots ?? 20);
+  if (!supplies.some((entry) => entry.itemId === itemId) && supplies.filter((entry) => entry.count > 0).length >= cap) return false;
+  addItemStack(supplies, itemId, count);
+  return true;
+}
+
 export function sweepIgnoredLoot(db: Database): void {
   const now = Date.now();
   for (const row of db.allCharacters()) {
     if (!row.session) continue;
     try {
-      const character = JSON.parse(row.state) as CharacterState;
-      const ignored = ignoredLootIds(character);
-      if (ignored.length === 0) continue;
+      const storedCharacter = JSON.parse(row.state) as CharacterState;
+      const currentPrefs = prefs(storedCharacter);
+      const ignored = new Set(currentPrefs.ignoredItemIds);
+      const protectedIds = new Set(currentPrefs.protectedItemIds);
       const session = JSON.parse(row.session) as any;
       const lootByItem = session?.totals?.lootByItem as Record<number, number> | undefined;
-      if (!lootByItem) continue;
+      if (!lootByItem || !session.character) continue;
+      applyPrefs(session.character, currentPrefs);
+      session.character.policy.lootMinValue = 0;
       let changed = false;
-      for (const itemId of ignored) {
-        if ((lootByItem[itemId] ?? 0) > 0) {
+      let stateChanged = false;
+
+      for (const [rawId, rawCount] of Object.entries(lootByItem)) {
+        const itemId = Number(rawId);
+        const count = Number(rawCount) || 0;
+        if (count <= 0) continue;
+        if (ignored.has(itemId)) {
           delete lootByItem[itemId];
           changed = true;
+          continue;
+        }
+
+        const target = currentPrefs.containers[String(itemId)] ?? 'pouch';
+        if (target !== 'pouch' && tryRoute(session.character, itemId, count, target)) {
+          delete lootByItem[itemId];
+          const entry: LootHistoryEntry = { at: now, kind: 'route', itemId, count, target };
+          addHistory(session.character, entry);
+          addHistory(storedCharacter, entry);
+          changed = true;
+          stateChanged = true;
+          continue;
+        }
+
+        if (currentPrefs.autoSell && !protectedIds.has(itemId)) {
+          const unit = Number(itemsById.get(itemId)?.sellPrice ?? 0);
+          if (unit > 0) {
+            const gold = Math.floor(unit * count * currentPrefs.autoSellPercent / 100);
+            session.character.gold += gold;
+            delete lootByItem[itemId];
+            const entry: LootHistoryEntry = { at: now, kind: 'auto-sell', itemId, count, gold };
+            addHistory(session.character, entry);
+            addHistory(storedCharacter, entry);
+            changed = true;
+            stateChanged = true;
+          }
         }
       }
-      if (!changed) continue;
-      if (session.character) setIgnoredLootIds(session.character, ignored);
-      db.saveCharacter(row.id, row.state, JSON.stringify(session), now);
+
+      if (!changed && !stateChanged) continue;
+      db.saveCharacter(row.id, stateChanged ? JSON.stringify(storedCharacter) : row.state, JSON.stringify(session), now);
     } catch {
       // A malformed legacy row should never stop the sweep for everyone else.
     }
@@ -199,7 +303,50 @@ export function registerPartyItemRoutes(app: FastifyInstance, db: Database): voi
       const accountId = requireAccount(db, request);
       const id = Number((request.params as { id: string }).id);
       const { loaded } = loadCharacter(db, accountId, id);
-      return reply.send({ ignoredItemIds: ignoredLootIds(loaded.character) });
+      return reply.send(prefs(loaded.character));
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+
+  app.post('/api/characters/:id/loot-preferences', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      const body = (request.body ?? {}) as Record<string, unknown>;
+      const { loaded } = loadCharacter(db, accountId, id);
+      const next = prefs(loaded.character);
+
+      if (typeof body.autoSell === 'boolean') next.autoSell = body.autoSell;
+      if (body.autoSellPercent !== undefined) next.autoSellPercent = Math.max(10, Math.min(100, Math.floor(Number(body.autoSellPercent) || 90)));
+      if (typeof body.sort === 'boolean') next.sort = body.sort;
+
+      const itemId = Number(body.itemId);
+      if (Number.isInteger(itemId) && itemId > 0) {
+        if (typeof body.ignored === 'boolean') {
+          const set = new Set(next.ignoredItemIds);
+          if (body.ignored) set.add(itemId); else set.delete(itemId);
+          next.ignoredItemIds = [...set];
+        }
+        if (typeof body.protected === 'boolean') {
+          const set = new Set(next.protectedItemIds);
+          if (body.protected) set.add(itemId); else set.delete(itemId);
+          next.protectedItemIds = [...set];
+        }
+        if (body.container !== undefined) {
+          const target = String(body.container);
+          if (target === 'pouch') delete next.containers[String(itemId)];
+          else if (target === 'backpack' || target === 'supply' || target === 'warehouse') next.containers[String(itemId)] = target;
+          else throw new GameError('Container inválido.', 400);
+        }
+      }
+
+      applyPrefs(loaded.character, next);
+      loaded.character.policy.lootMinValue = 0;
+      syncPrefsToSession(loaded);
+      if (next.ignoredItemIds.includes(itemId) && loaded.session) delete loaded.session.totals.lootByItem[itemId];
+      persist(db, loaded);
+      return reply.send({ ...prefs(loaded.character), character: describeCharacter(loaded, db) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -215,7 +362,7 @@ export function registerPartyItemRoutes(app: FastifyInstance, db: Database): voi
       const { loaded } = loadCharacter(db, accountId, id);
       if (!loaded.session || loaded.session.status !== 'active') throw new GameError('Entre em uma hunt para usar o Loot Pouch.', 409);
       if (!Number.isInteger(itemId) || itemId <= 0) throw new GameError('Unknown item.', 400);
-      if (ignoredLootIds(loaded.character).includes(itemId)) throw new GameError('Este item está marcado como não coletar.', 409);
+      if (prefs(loaded.character).ignoredItemIds.includes(itemId)) throw new GameError('Este item está marcado como não coletar.', 409);
 
       loaded.character.backpackContents ??= [];
       const alreadyInPouch = (loaded.session.totals.lootByItem[itemId] ?? 0) > 0;
@@ -225,9 +372,9 @@ export function registerPartyItemRoutes(app: FastifyInstance, db: Database): voi
       takeStack(loaded.character.backpackContents, itemId, count);
       loaded.session.totals.lootByItem[itemId] = (loaded.session.totals.lootByItem[itemId] ?? 0) + count;
       loaded.session.character.backpackContents = loaded.character.backpackContents;
-      syncIgnoredLootToSession(loaded);
+      syncPrefsToSession(loaded);
       persist(db, loaded);
-      return reply.send({ character: describeCharacter(loaded, db), ignoredItemIds: ignoredLootIds(loaded.character) });
+      return reply.send({ character: describeCharacter(loaded, db), ...prefs(loaded.character) });
     } catch (error) {
       return fail(reply, error);
     }
@@ -242,14 +389,15 @@ export function registerPartyItemRoutes(app: FastifyInstance, db: Database): voi
       const ignored = body.ignored !== false;
       if (!Number.isInteger(itemId) || itemId <= 0) throw new GameError('Unknown item.', 400);
       const { loaded } = loadCharacter(db, accountId, id);
-      const set = new Set(ignoredLootIds(loaded.character));
-      if (ignored) set.add(itemId);
-      else set.delete(itemId);
-      setIgnoredLootIds(loaded.character, [...set]);
-      syncIgnoredLootToSession(loaded);
+      const next = prefs(loaded.character);
+      const set = new Set(next.ignoredItemIds);
+      if (ignored) set.add(itemId); else set.delete(itemId);
+      next.ignoredItemIds = [...set];
+      applyPrefs(loaded.character, next);
+      syncPrefsToSession(loaded);
       if (ignored && loaded.session) delete loaded.session.totals.lootByItem[itemId];
       persist(db, loaded);
-      return reply.send({ character: describeCharacter(loaded, db), ignoredItemIds: [...set] });
+      return reply.send({ character: describeCharacter(loaded, db), ...prefs(loaded.character) });
     } catch (error) {
       return fail(reply, error);
     }
