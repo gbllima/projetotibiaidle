@@ -83,7 +83,7 @@ function partyMonsterSnapshot(sessions: Map<number, HuntSession>): PartyMonsterV
         maxHealth: monster.maxHealth,
         tileX: monster.tileX,
         tileY: monster.tileY,
-        paralyzed: monster.paralyzed,
+        paralyzed: (monster.paralyzeTicks ?? 0) > 0,
       });
     }
   }
