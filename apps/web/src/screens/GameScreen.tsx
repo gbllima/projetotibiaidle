@@ -67,6 +67,8 @@ export function GameScreen({
   const [overlay, setOverlay] = useState<OverlayId>('none');
   const [helperSection, setHelperSection] = useState<'cura' | 'magias'>('cura');
   const [settings, setSettings] = useState(false);
+  const [replayTutorial, setReplayTutorial] = useState(false);
+  const [dismissedTutorial, setDismissedTutorial] = useState<number | null>(null);
   const [pickingHunt, setPickingHunt] = useState(false);
   const [huntModalTab, setHuntModalTab] = useState<'hunts' | 'training'>('hunts');
   const [trainingRoomId, setTrainingRoomId] = useState<string | null>(
@@ -172,14 +174,6 @@ export function GameScreen({
     }).catch(() => undefined);
   }, [chatTab, character.id]);
 
-  useEffect(() => {
-    if ((character.onboardingStep ?? 0) !== 0 || character.session || character.queue) return;
-    void act(() => api.act(character.id, { type: 'tutorial-start' }).then((result) => {
-      onCharacter(result.character);
-      pushLog(t('firstHunt'));
-    }));
-  }, [character.id, character.onboardingStep, character.session, character.queue]);
-
   const trainingExercise = (server.exerciseCharges ?? 0) > 0;
   const trainingIntervalMs = trainingExercise ? 2000 : 8000;
   const trainingTickBusy = useRef(false);
@@ -209,16 +203,6 @@ export function GameScreen({
     const timer = window.setInterval(tick, trainingIntervalMs);
     return () => window.clearInterval(timer);
   }, [trainingRoomId, server.id, server.session, server.queue, trainingIntervalMs, onCharacter]);
-
-  useEffect(() => {
-    const step = character.onboardingStep ?? 0;
-    if (step <= 0 || step >= 99 || busy) return;
-    let next = step;
-    if (step === 1 && (character.session?.totals.kills ?? 0) >= 3) next = 2;
-    if (step <= 2 && character.level > 8) next = 3;
-    if (next === step) return;
-    void act(() => api.act(character.id, { type: 'onboard', step: next }).then((result) => onCharacter(result.character)));
-  }, [character.onboardingStep, character.session?.totals.kills, character.level, busy]);
 
   useEffect(() => {
     if (!settlement) return;
@@ -373,6 +357,25 @@ export function GameScreen({
 
   return (
     <div className="shell">
+      {(((server.onboardingStep ?? 0) < 99 && dismissedTutorial !== server.id) || replayTutorial) && (
+        <Onboarding
+          key={server.id}
+          character={server}
+          guest={guest}
+          replay={replayTutorial}
+          helperOpen={overlay === 'helper' || Boolean(helperCharacter)}
+          huntsOpen={pickingHunt}
+          gameBusy={busy}
+          onSave={async (step) => {
+            const result = await api.act(server.id, { type: 'onboard', step });
+            onCharacter(result.character);
+          }}
+          onClose={() => { setDismissedTutorial(server.id); setReplayTutorial(false); }}
+          onCloseHelper={() => { setOverlay('none'); setHelperCharacter(null); }}
+          onOpenHelper={() => { setHelperSection('cura'); setOverlay('helper'); }}
+          onOpenHunts={() => { setHuntError(''); setHuntModalTab('hunts'); setPickingHunt(true); }}
+        />
+      )}
       <TopNav
         onCity={goCity}
         onTraining={() => { setHuntModalTab('training'); setPickingHunt(true); }}
@@ -415,8 +418,8 @@ export function GameScreen({
               </div>
             )}
             <div className="arena-head">
-            <button className="hunt-pick" onClick={() => { setHuntError(''); setPickingHunt(true); }}>
-              {hunt?.name ?? '—'}
+            <button className="hunt-pick" data-tutorial="hunts" onClick={() => { setHuntError(''); setPickingHunt(true); }}>
+              {hunt?.name ?? t('hunts')}
               <small>▾</small>
             </button>
             <div className={`wave ${character.session?.bossWave ? 'boss' : ''}`}>
@@ -482,11 +485,6 @@ export function GameScreen({
                 }}
               />
               {banner && <div className="banner">{banner}</div>}
-              <Onboarding
-                character={character}
-                onAdvance={(step) => void act(() => api.act(character.id, { type: 'onboard', step }).then((result) => onCharacter(result.character)))}
-                onSkip={() => void act(() => api.act(character.id, { type: 'onboard', step: 99 }).then((result) => onCharacter(result.character)))}
-              />
               {guest && (character.onboardingStep ?? 0) >= 99 && (
                 <form className="onboard claim-banner" onSubmit={(event) => {
                   event.preventDefault();
@@ -632,11 +630,6 @@ export function GameScreen({
                   onTraining={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}
                 />
               )}
-              <Onboarding
-                character={character}
-                onAdvance={(step) => void act(() => api.act(character.id, { type: 'onboard', step }).then((result) => onCharacter(result.character)))}
-                onSkip={() => void act(() => api.act(character.id, { type: 'onboard', step: 99 }).then((result) => onCharacter(result.character)))}
-              />
               {guest && (character.onboardingStep ?? 0) >= 99 && (
                 <form className="onboard claim-banner" onSubmit={(event) => {
                   event.preventDefault();
@@ -1043,6 +1036,10 @@ export function GameScreen({
               </div>
             </div>
             <p className="lede modal-lede-left">{t('settingsHint')}</p>
+            <button className="btn" style={{ width: '100%', marginBottom: 12 }} onClick={() => {
+              setSettings(false);
+              setReplayTutorial(true);
+            }}>{locale === 'pt' ? 'Rever tutorial de primeiros passos' : 'Replay the beginner tutorial'}</button>
             <button className="btn gold" style={{ width: '100%' }} onClick={() => setSettings(false)}>{t('gotIt')}</button>
             </div>
           </div>

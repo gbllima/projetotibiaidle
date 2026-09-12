@@ -129,13 +129,19 @@ export function SelectScreen({
               <p className="select-empty">{t('selectEmpty')}</p>
             ) : (
               <ul className="select-char-list">
-                {characters.map((character) => (
+                {characters.map((character) => {
+                  const principalId = character.partyMemberIds?.[0] ?? character.id;
+                  const isPrincipal = principalId === character.id;
+                  const principal = characters.find((entry) => entry.id === principalId);
+                  return (
                   <li key={character.id}>
                     <button
                       type="button"
                       className="select-char-card"
+                      disabled={!isPrincipal}
+                      title={!isPrincipal ? `Entre pelo personagem principal${principal ? `: ${principal.name}` : ''}.` : undefined}
                       style={{ '--voc-accent': VOC_ACCENT[character.vocation.id] ?? '#e8c547' } as CSSProperties}
-                      onClick={() => onEnter(character.id)}
+                      onClick={() => { if (isPrincipal) onEnter(character.id); }}
                     >
                       <div className="select-char-main">
                         <strong>{character.name}</strong>
@@ -145,10 +151,13 @@ export function SelectScreen({
                         <span className="select-char-level">Lv {character.level}</span>
                         <span className="select-char-gold">{character.gold.toLocaleString('pt-BR')} gp</span>
                       </div>
-                      <span className="select-char-enter">{t('selectEnter')} →</span>
+                      <span className="select-char-enter">
+                        {isPrincipal ? `${t('selectEnter')} →` : 'Membro da party'}
+                      </span>
                     </button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>
@@ -177,8 +186,8 @@ export function SelectScreen({
                 </button>
               </div>
 
-              <label>{t('vocation')}</label>
-              <div className="select-voc-grid">
+              <span id="char-vocation-label">{t('vocation')}</span>
+              <div className="select-voc-grid" role="group" aria-labelledby="char-vocation-label">
                 {PLAYABLE_VOCATION_IDS.map((id) => {
                   const vocation = vocationsById.get(id);
                   if (!vocation) return null;
@@ -187,6 +196,7 @@ export function SelectScreen({
                       type="button"
                       key={id}
                       className={`select-voc ${vocationId === id ? 'active' : ''}`}
+                      aria-pressed={vocationId === id}
                       style={{ '--voc-accent': VOC_ACCENT[id] ?? '#e8c547' } as CSSProperties}
                       onClick={() => setVocationId(id)}
                     >

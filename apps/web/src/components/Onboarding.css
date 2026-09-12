@@ -1,0 +1,45 @@
+.guided-tutorial {
+  position: fixed;
+  z-index: 10001;
+  width: min(360px, calc(100vw - 28px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid #c5a453;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #20291f, #111820 70%);
+  color: #edf0e9;
+  box-shadow: 0 12px 40px #0009;
+  line-height: 1.5;
+}
+.guided-tutorial header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.guided-tutorial header > span { color: #e7c56d; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.guided-tutorial button { min-height: 40px; padding: 8px 10px; border: 1px solid #55604f; border-radius: 7px; background: #1b241d; color: #e9ece5; font: inherit; cursor: pointer; }
+.guided-tutorial header button { font-size: 11px; background: transparent; border-color: transparent; white-space: nowrap; }
+.guided-tutorial header button:hover { border-color: #9b864e; }
+.guided-tutorial button:disabled { opacity: .5; cursor: default; }
+.guided-tutorial button:focus-visible { outline: 2px solid #f4d575; outline-offset: 2px; }
+.guided-tutorial h2 { margin: 14px 0 8px; font-size: 19px; line-height: 1.25; color: #f2ead6; overflow-wrap: anywhere; }
+.guided-tutorial p { margin: 0 0 14px; font-size: 13px; color: #c8d0d2; }
+.guided-tutorial__progress { height: 3px; background: #3b4538; margin-top: 8px; border-radius: 4px; overflow: hidden; }
+.guided-tutorial__progress i { display: block; height: 100%; background: #e7c56d; transition: width .2s; }
+.guided-tutorial footer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.guided-tutorial .guided-tutorial__primary { background: linear-gradient(#efce75, #ba8832); color: #191406; border-color: #cba34e; font-weight: 700; }
+.guided-tutorial__waiting { font-size: 11px; color: #e7c56d; }
+.guided-tutorial .guided-tutorial__error { color: #ffb7b7; }
+.guided-highlight {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  border: 2px solid #ffdc72;
+  border-radius: 9px;
+  box-shadow: 0 0 0 4px #e4b34a25, 0 0 20px #e4b34a66;
+  animation: guided-pulse 1.5s ease-in-out infinite;
+}
+@keyframes guided-pulse { 50% { box-shadow: 0 0 0 8px #e4b34a50, 0 0 26px #e4b34aaa; border-color: #fff1be; } }
+@media (prefers-reduced-motion: reduce) { .guided-highlight { animation: none; } .guided-tutorial__progress i { transition: none; } }
+@media (max-width: 600px) {
+  .guided-tutorial { padding: 12px; }
+  .guided-tutorial h2 { font-size: 17px; margin-top: 10px; }
+  .guided-tutorial p { font-size: 12px; margin-bottom: 10px; }
+}

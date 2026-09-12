@@ -129,6 +129,7 @@ export function usePredictedCharacter(server: CharacterView): { character: Chara
     server.mana,
     server.gold,
     server.stamina,
+    server.onboardingStep,
     serverSyncKey,
   ]);
 

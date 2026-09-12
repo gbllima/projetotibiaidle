@@ -516,6 +516,8 @@ function HuntRow({
     <div className="hunt-row-entry">
     <button
       type="button"
+      data-tutorial="hunt-option"
+      data-tutorial-level={hunt.recommendedLevel ?? hunt.statedLevel ?? 0}
       className={`hunt-row ${here ? 'on' : ''}${locked ? ' locked' : ''}`}
       disabled={busy || locked || here || broke}
       onClick={() => onStart(hunt.id, hours)}
