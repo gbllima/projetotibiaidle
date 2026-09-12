@@ -4,7 +4,7 @@ import {
   advance, deriveStats, describeSession, TICK_MS, clonePolicy,
   type CharacterState, type EquipSlot, type HuntSession, type SimEvent, type HuntPolicy,
 } from '@tibia-idle/sim';
-import type { CharacterView } from '../api/types.js';
+import type { ActiveMonsterView, CharacterView } from '../api/types.js';
 
 function suppliesKey(stacks: Array<{ itemId: number; count: number }>): string {
   return stacks.map((stack) => `${stack.itemId}:${stack.count}`).join('|');
@@ -71,6 +71,12 @@ function viewTiersToState(tiers: CharacterView['equipmentTiers']): CharacterStat
   return out;
 }
 
+type PartyCombatView = CharacterView & { partyMonsters?: ActiveMonsterView[] };
+
+function partyMonsters(server: CharacterView): ActiveMonsterView[] {
+  return ((server as PartyCombatView).partyMonsters ?? []).map((monster) => ({ ...monster }));
+}
+
 /**
  * Fill the gap between server snapshots.
  *
@@ -131,6 +137,7 @@ export function usePredictedCharacter(server: CharacterView): { character: Chara
     server.stamina,
     server.onboardingStep,
     serverSyncKey,
+    (server as PartyCombatView).partyMonsters?.length,
   ]);
 
   useEffect(() => {
@@ -233,6 +240,11 @@ function overlay(server: CharacterView, session: HuntSession | null): CharacterV
   // Without this, the local tick loop keeps rendering stale paperdoll slots.
   applyServerSnapshot(session, server);
   const stats = deriveStats(session.character);
+  const localSession = describeSession(session);
+  const extraPartyMonsters = partyMonsters(server);
+  const visibleSession = extraPartyMonsters.length > 0
+    ? { ...localSession, active: [...localSession.active, ...extraPartyMonsters] }
+    : localSession;
 
   return {
     ...server,
@@ -259,9 +271,10 @@ function overlay(server: CharacterView, session: HuntSession | null): CharacterV
     appearance: session.character.appearance,
     unlockedMounts: session.character.unlockedMounts ?? [],
     unlockedOutfits: session.character.unlockedOutfits ?? [],
-    // Always derive the viewport pack from the local tick — server.session lags
-    // by ~2s and desyncs uids, so damage floaters never find their sprites.
-    session: describeSession(session),
+    // The local session owns the principal pack. Party members are simulated by
+    // the server in their own sessions, so merge their authoritative monsters
+    // only for rendering; they are never fed back into the local simulation.
+    session: visibleSession,
     live: session,
   };
 }
