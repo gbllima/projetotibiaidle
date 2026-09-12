@@ -105,6 +105,7 @@ export function RightDock({
   const [partyView, setPartyView] = useState(character);
   const [partyBusy, setPartyBusy] = useState(false);
   const [blessOpen, setBlessOpen] = useState(false);
+  const [lootConfigOpen, setLootConfigOpen] = useState(false);
   const [lootPage, setLootPage] = useState(0);
   const [supplyPage, setSupplyPage] = useState(0);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -158,6 +159,12 @@ export function RightDock({
     name: itemsById.get(stack.itemId)?.name ?? `#${stack.itemId}`,
   })), rare);
   const backpackSlots = pad(backpackItems, backpackCapacity, empty);
+
+  const configItemIds = [...new Set([
+    ...lootItems.map((item) => item.itemId),
+    ...backpackItems.map((item) => item.itemId),
+    ...ignoredItemIds,
+  ])].filter((itemId) => itemId > 0);
 
   const partyIds = partyView.partyMemberIds ?? [partyView.id];
   const partyEquipTargets: PartyEquipTarget[] = partyIds.map((id) => {
@@ -266,6 +273,53 @@ export function RightDock({
     }
   };
 
+  const restoreAllIgnoredItems = async () => {
+    if (lootActionBusy || ignoredItemIds.length === 0) return;
+    setLootActionBusy(true);
+    setLootActionError('');
+    try {
+      let latest = view;
+      let ids = ignoredItemIds;
+      for (const itemId of [...ignoredItemIds]) {
+        const result = await api.setLootIgnored(character.id, itemId, false);
+        latest = result.character;
+        ids = result.ignoredItemIds;
+      }
+      setView(latest);
+      setPartyView(latest);
+      setIgnoredItemIds(ids);
+    } catch (error) {
+      setLootActionError(error instanceof Error ? error.message : 'Não foi possível restaurar a coleta dos itens.');
+    } finally {
+      setLootActionBusy(false);
+    }
+  };
+
+  const applyAutoSellNow = async () => {
+    const threshold = view.policy.lootMinValue;
+    if (lootActionBusy || threshold <= 0) return;
+    const eligible = lootItems.filter((item) => {
+      const unitValue = itemValue(item.itemId);
+      return item.count > 0 && unitValue > 0 && unitValue < threshold && !ignoredItemIds.includes(item.itemId);
+    });
+    if (eligible.length === 0) return;
+    setLootActionBusy(true);
+    setLootActionError('');
+    try {
+      let latest = view;
+      for (const item of eligible) {
+        const result = await api.act(character.id, { type: 'sell-item', itemId: item.itemId, source: 'pouch', count: item.count });
+        latest = result.character;
+      }
+      setView(latest);
+      setPartyView(latest);
+    } catch (error) {
+      setLootActionError(error instanceof Error ? error.message : 'Não foi possível aplicar a auto-venda aos itens atuais.');
+    } finally {
+      setLootActionBusy(false);
+    }
+  };
+
   const def = menu ? itemsById.get(menu.itemId) : null;
   const consumable = def ? isConsumableItem(def) : false;
   const equipable = def ? isEquipableItem(def) : false;
@@ -308,9 +362,9 @@ export function RightDock({
       </div>
     </DockBox>
 
-    <DockBox id="loot-pouch" title="Loot Pouch" extra={<span>Slots {lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots}</span>}>
+    <DockBox id="loot-pouch" title="Loot Pouch" extra={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span>Slots {lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots}</span><button type="button" className="btn" disabled={busy || lootActionBusy} onClick={() => setLootConfigOpen(true)}>Config</button></span>}>
       {!lootEnabledByStamina && <div className="loot-status-warning">Loot desativado: sua stamina chegou a 0. Descanse para voltar a gerar loot.</div>}
-      {lootEnabledByStamina && view.policy.lootMinValue > 0 && <div className="loot-status-note">Auto-venda ativa: itens abaixo de {view.policy.lootMinValue} gold viram gold e não aparecem no pouch.</div>}
+      {lootEnabledByStamina && view.policy.lootMinValue > 0 && <div className="loot-status-note">Auto-venda ativa: itens abaixo de {view.policy.lootMinValue} gold são vendidos automaticamente. Itens que já estavam no pouch podem ser vendidos pelo Config.</div>}
       <div className="grid8 supply-grid">
         {lootPaged.visible.map((item, index) => <ItemSlot
           key={`loot-${lootPaged.safePage}-${index}-${item.itemId}`}
@@ -325,10 +379,6 @@ export function RightDock({
       <div className="box-tools">
         <button className="btn gold" disabled={busy || !lootItems.length} onClick={onSell}>{t('sell')}</button>
         <button className="btn" disabled={busy || lootSlots >= LOOT_SLOT_CAP || view.gold < lootSlotCost} onClick={() => onLootSlot('gold')}>+slot {formatNumber(lootSlotCost)}g</button>
-      </div>
-      <div className="pouch-filter-label">Auto-vender abaixo de (gold):</div>
-      <div className="box-tools">
-        {([0, 10, 50, 200, 1000] as const).map((value) => <button key={value} type="button" className={`btn ${view.policy.lootMinValue === value ? 'gold' : ''}`} disabled={busy} onClick={() => onLootFilter(value)}>{value === 0 ? t('lootFilterOff') : value}</button>)}
       </div>
     </DockBox>
 
@@ -370,6 +420,52 @@ export function RightDock({
       </>}
       {sellable && <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onSellItem(menu.itemId, menu.from, menu.count))}>Vender ({formatNumber(unit * menu.count)}g)</button>}
       <button type="button" className="danger" disabled={busy || lootActionBusy} onClick={() => run(() => onDestroyItem(menu.itemId, menu.from, menu.count))}>Destruir</button>
+    </div>}
+
+    {lootConfigOpen && <div className="modal" onClick={() => setLootConfigOpen(false)}>
+      <div className="modal-card wide" style={{ maxWidth: 620 }} onClick={(event) => event.stopPropagation()}>
+        <div className="modal-card-body" style={{ display: 'grid', gap: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div>
+              <strong style={{ display: 'block' }}>Loot Pouch — Config</strong>
+              <span className="compact-hint">Slots {lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots} · Ignorados {ignoredItemIds.length}</span>
+            </div>
+            <button type="button" className="btn" onClick={() => setLootConfigOpen(false)}>Fechar</button>
+          </div>
+
+          {lootActionError && <div className="party-inline-error" role="alert">{lootActionError}</div>}
+
+          <div>
+            <div className="pouch-filter-label">Auto-vender itens com valor unitário abaixo de:</div>
+            <div className="box-tools" style={{ flexWrap: 'wrap' }}>
+              {([0, 10, 50, 200, 1000, 5000] as const).map((value) => <button key={value} type="button" className={`btn ${view.policy.lootMinValue === value ? 'gold' : ''}`} disabled={busy || lootActionBusy} onClick={() => onLootFilter(value)}>{value === 0 ? 'Desativado' : `${formatNumber(value)}g`}</button>)}
+            </div>
+            <div className="compact-hint" style={{ marginTop: 6 }}>A auto-venda vale para novos drops. Use “Aplicar agora” para vender também os itens que já estão no pouch.</div>
+            <div className="box-tools" style={{ marginTop: 8 }}>
+              <button type="button" className="btn gold" disabled={busy || lootActionBusy || view.policy.lootMinValue <= 0 || !lootItems.some((item) => itemValue(item.itemId) > 0 && itemValue(item.itemId) < view.policy.lootMinValue)} onClick={() => void applyAutoSellNow()}>Aplicar auto-venda agora</button>
+            </div>
+          </div>
+
+          <div>
+            <div className="pouch-filter-label">Itens que serão coletados</div>
+            <div className="compact-hint">Use os botões abaixo para impedir ou liberar a coleta. Os itens ignorados deixam de ocupar espaço no Loot Pouch.</div>
+            <div style={{ display: 'grid', gap: 6, maxHeight: 280, overflow: 'auto', marginTop: 8 }}>
+              {configItemIds.length === 0 && <div className="compact-hint">Nenhum item conhecido ainda. Inicie uma hunt e os drops aparecerão aqui.</div>}
+              {configItemIds.map((itemId) => {
+                const item = itemsById.get(itemId);
+                const ignored = ignoredItemIds.includes(itemId);
+                const value = itemValue(itemId);
+                return <div key={`loot-config-${itemId}`} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 8, padding: '6px 8px', border: '1px solid rgba(150, 125, 70, .25)', borderRadius: 4 }}>
+                  <span>{item?.name ?? `#${itemId}`}</span>
+                  <span className="compact-hint">{value > 0 ? `${formatNumber(value)}g` : 'sem venda'}</span>
+                  <button type="button" className={`btn ${ignored ? '' : 'gold'}`} disabled={busy || lootActionBusy} onClick={() => void setItemIgnored(itemId, !ignored)}>{ignored ? 'Não coletar' : 'Coletar'}</button>
+                </div>;
+              })}
+            </div>
+            {ignoredItemIds.length > 0 && <div className="box-tools" style={{ marginTop: 8 }}><button type="button" className="btn" disabled={busy || lootActionBusy} onClick={() => void restoreAllIgnoredItems()}>Voltar a coletar todos</button></div>}
+          </div>
+        </div>
+      </div>
     </div>}
 
     {inspectItemId != null && <ItemInspectModal itemId={inspectItemId} onClose={() => setInspectItemId(null)} />}
