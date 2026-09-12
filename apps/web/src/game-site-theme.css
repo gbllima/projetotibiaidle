@@ -12,7 +12,7 @@
   --gold: #d7a43f;
   --gold-dim: #8e6b2d;
   --hp: #49ad68;
-  --mana: #57b875;
+  --mana: #3b82f6;
   --xp: #e1ad45;
   --danger: #d66b5f;
   background: #090c0b;
@@ -30,18 +30,14 @@
 .shell .box-head,
 .shell .dock-head,
 .shell h2,
-.shell h3 {
-  color: #e6dfcf;
-}
+.shell h3 { color: #e6dfcf; }
 
 .shell .logo span,
 .shell .iconbtn,
 .shell .iconbtn small,
 .shell .modal-card h2,
 .shell .party-compact-name strong,
-.shell .party-manager > h2 {
-  color: var(--gold);
-}
+.shell .party-manager > h2 { color: var(--gold); }
 
 .shell .pill,
 .shell .iconbtn.mini,
@@ -97,16 +93,12 @@
 }
 
 .shell .modal,
-.shell .party-manager-backdrop {
-  background: rgba(4, 7, 5, 0.82);
-}
+.shell .party-manager-backdrop { background: rgba(4, 7, 5, 0.82); }
 
 .shell .modal-card-body,
 .shell .box .body,
 .shell .chat-console,
-.shell .chat-console__body {
-  background-color: #11140f;
-}
+.shell .chat-console__body { background-color: #11140f; }
 
 .shell input,
 .shell select,
@@ -139,27 +131,18 @@
 
 .shell .cell:hover,
 .shell .item-slot:hover,
-.shell .paper-slot:hover {
-  border-color: #7f642f;
-}
+.shell .paper-slot:hover { border-color: #7f642f; }
 
 .shell .party-formation-slot,
 .shell .party-manager-footer,
 .shell .party-create,
 .shell .party-locked-member,
 .shell .modal-actions,
-.shell .hunt-modal-footer {
-  border-color: rgba(215, 164, 63, 0.18);
-}
+.shell .hunt-modal-footer { border-color: rgba(215, 164, 63, 0.18); }
 
 .shell .iconbtn.on,
-.shell .iconbtn:hover {
-  background: rgba(215, 164, 63, 0.06);
-}
-
-.shell .iconbtn.on small {
-  color: #f2cf73;
-}
+.shell .iconbtn:hover { background: rgba(215, 164, 63, 0.06); }
+.shell .iconbtn.on small { color: #f2cf73; }
 
 .shell .who small,
 .shell .inspect,
@@ -169,31 +152,19 @@
 .shell .party-manager-scroll > p,
 .shell .party-manager-scroll .party-manager-hint,
 .shell .party-compact-vocation,
-.shell .party-locked-member {
-  color: var(--muted);
-}
+.shell .party-locked-member { color: var(--muted); }
 
-.shell ::-webkit-scrollbar-thumb {
-  background: #4d4029;
-  border-color: #171a15;
-}
+.shell ::-webkit-scrollbar-thumb { background: #4d4029; border-color: #171a15; }
+.shell ::-webkit-scrollbar-track { background: #0d100d; }
 
-.shell ::-webkit-scrollbar-track {
-  background: #0d100d;
-}
-
-/* Remove remaining blue/steel UI chrome from the central game area. */
+/* Structural chrome only: central game area follows the site palette. */
 .shell .center,
 .shell .scene-host,
 .shell .viewport,
 .shell .city-lobby--thais,
-.shell .city-lobby--thais .city-lobby__map {
-  background-color: #090c0b;
-}
+.shell .city-lobby--thais .city-lobby__map { background-color: #090c0b; }
 
-.shell .city-lobby--thais {
-  border-color: #4b3d26;
-}
+.shell .city-lobby--thais { border-color: #4b3d26; }
 
 .shell .city-lobby__bar--thais,
 .shell .city-lobby__bar--thais.city-lobby__bar--minimal {
@@ -202,23 +173,12 @@
   border-bottom-color: #5b4828;
 }
 
-.shell .city-lobby__place h2 {
-  color: #e6dfcf;
-}
-
-.shell .city-lobby__bar--thais .eyebrow {
-  color: #57b875;
-}
-
+.shell .city-lobby__place h2 { color: #e6dfcf; }
+.shell .city-lobby__bar--thais .eyebrow { color: #57b875; }
 .shell .city-lobby__place p,
 .shell .city-lobby__bar--thais .city-lobby__self span,
-.shell .city-lobby__controls {
-  color: #8f958b;
-}
-
-.shell .city-lobby__bar--thais .city-lobby__self {
-  border-left-color: #4d4029;
-}
+.shell .city-lobby__controls { color: #8f958b; }
+.shell .city-lobby__bar--thais .city-lobby__self { border-left-color: #4d4029; }
 
 .shell .arena-head {
   background: linear-gradient(180deg, #1c211b 0%, #121611 100%);
@@ -239,18 +199,8 @@
   box-shadow: 0 0 0 1px rgba(91, 72, 40, 0.45), 0 -6px 24px rgba(0, 0, 0, 0.25);
 }
 
-.shell .chat-console__tabs button {
-  color: #9b9d91;
-  background: #10140f;
-  border-color: transparent;
-}
-
-.shell .chat-console__tabs button:hover {
-  color: #f2cf73;
-  background: #191d16;
-  border-color: #4d4029;
-}
-
+.shell .chat-console__tabs button { color: #9b9d91; background: #10140f; border-color: transparent; }
+.shell .chat-console__tabs button:hover { color: #f2cf73; background: #191d16; border-color: #4d4029; }
 .shell .chat-console__tabs button.on {
   color: #f2cf73;
   background: linear-gradient(180deg, #26271c 0%, #171a14 100%);
@@ -259,10 +209,7 @@
 
 .shell .chat-console__log,
 .shell .chat-console__composer,
-.shell .chat-console__input {
-  background: #0d100d;
-  border-color: #4a3e28;
-}
+.shell .chat-console__input { background: #0d100d; border-color: #4a3e28; }
 
 .shell .action-bar__panel {
   background: rgba(14, 17, 13, 0.94);
@@ -286,29 +233,12 @@
 
 .shell .action-bar__plus,
 .shell .action-bar__rank,
-.shell .action-bar__portrait-tag {
-  color: #e1ad45;
-}
+.shell .action-bar__portrait-tag { color: #e1ad45; }
 
-/* Blue semantic bars are also mapped to the site's green/gold palette. */
-.shell .meter.mana > i,
-.shell .party-compact-bar.mana > div i {
-  background: linear-gradient(180deg, #69c98a 0%, #328253 100%);
-}
+/* Preserve semantic gameplay colors (HP/MP/XP, coins and skill/status bars).
+   Only structural interface chrome is recolored by this theme. */
 
-.shell .party-compact-bar.mana > span {
-  color: #69c98a;
-}
-
-.shell .pill.coin {
-  color: #f2cf73;
-}
-
-.shell .crystal-dot {
-  background: radial-gradient(circle at 35% 30%, #dff3d9 0%, #57b875 45%, #245c3b 100%);
-}
-
-/* Inline blue nav tones are intentionally overridden only visually. */
+/* Inline blue nav tones are overridden visually because they are menu chrome, not gameplay status. */
 .shell .nav-helper .ico,
 .shell .nav-cyclopedia .ico,
 .shell .nav-build .ico,
@@ -320,13 +250,7 @@
 .shell .nav-helper .ico img,
 .shell .nav-cyclopedia .ico img,
 .shell .nav-build .ico img,
-.shell .nav-progressao .ico img {
-  filter: drop-shadow(0 0 2px rgba(87,184,117,.48));
-}
-
-.shell .build-skill-bar-track > i {
-  background: linear-gradient(90deg, #2d7b4a, #d7a43f);
-}
+.shell .nav-progressao .ico img { filter: drop-shadow(0 0 2px rgba(87,184,117,.48)); }
 
 .shell .party-formation-card.selected,
 .shell .party-manager-tabs button[aria-selected='true'] {
