@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { itemsById } from '@tibia-idle/data';
-import { isConsumableItem } from '@tibia-idle/sim';
+import { itemsById, monstersById } from '@tibia-idle/data';
+import { isConsumableItem, isEquipableItem } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { storedToken } from '../api/client.js';
 import { formatNumber, itemValue } from '../format.js';
@@ -168,9 +168,20 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
   const [containerTarget, setContainerTarget] = useState<ContainerTarget>('backpack');
   const [listFilter, setListFilter] = useState('');
 
-  const allItems = useMemo(() => Array.from(itemsById.values())
-    .filter((item) => item.id > 0)
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')), []);
+  const allItems = useMemo(() => {
+    const dropIds = new Set<number>();
+    for (const monster of monstersById.values()) {
+      for (const drop of monster.loot) {
+        if (drop.itemId > 0 && drop.chance > 0) dropIds.add(drop.itemId);
+      }
+    }
+    return [...dropIds]
+      .map((itemId) => itemsById.get(itemId))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .filter((item) => isEquipableItem(item) || isConsumableItem(item) || item.marketCategory === 16)
+      .map((item) => ({ id: item.id, name: item.name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -265,7 +276,7 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
 
         {tab === 'gerenciar' && <section>
           <h3>GERENCIAR LOOT</h3>
-          <p className="loot-config-help">Selecione os itens diretamente nas listas. “Não coletar” descarta o drop antes de ocupar slot. “Não vender” protege o item da auto-venda.</p>
+          <p className="loot-config-help">A lista mostra apenas equipamentos e supplies que realmente aparecem nos drops dos monstros do servidor. “Não coletar” descarta o drop antes de ocupar slot. “Não vender” protege o item da auto-venda.</p>
           <input className="loot-config-search" placeholder="Buscar nas listas adicionadas..." value={listFilter} onChange={(event) => setListFilter(event.target.value)} />
           <div className="loot-manage-columns">
             <div className="loot-manage-card">
