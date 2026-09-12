@@ -36,17 +36,23 @@ export function settleParty(sessions: PartySession[], now: number, remainderCurs
             && (other.session === source || (other.session.status === 'active' && other.session.character.health > 0))
             && (other.session.startedAt ?? other.settledAt) <= next && next <= other.until);
           if (recipients.length === 0) return;
-          const share = Math.floor(amount / recipients.length);
-          const remainder = amount % recipients.length;
-          for (let index = 0; index < recipients.length; index += 1) {
-            const recipient = recipients[index]!;
-            const extra = (index - remainderCursor % recipients.length + recipients.length) % recipients.length < remainder ? 1 : 0;
-            const xp = share + extra;
-            recipient.session.totals.experience += xp;
-            const levelUp = addExperience(recipient.session.character, xp);
+
+          // Keep party members exactly tied in XP instead of assigning indivisible
+          // remainder points to one member at a time. Any fraction that cannot yet
+          // be shared equally stays in this tiny pool and is released on later kills.
+          // Existing persisted cursors from the old rotating-remainder system are
+          // safely reduced to a valid pending remainder on first use.
+          const pending = ((remainderCursor % recipients.length) + recipients.length) % recipients.length;
+          const pooled = amount + pending;
+          const share = Math.floor(pooled / recipients.length);
+          remainderCursor = pooled % recipients.length;
+
+          if (share <= 0) return;
+          for (const recipient of recipients) {
+            recipient.session.totals.experience += share;
+            const levelUp = addExperience(recipient.session.character, share);
             if (levelUp.levels > 0) emit({ tick: source.tick, type: 'level_up', level: levelUp.newLevel, actorId: recipient.id });
           }
-          remainderCursor += remainder;
         },
       });
       entry.cursor = next;
