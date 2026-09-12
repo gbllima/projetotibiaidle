@@ -113,7 +113,7 @@ export function beginHunt(character: CharacterState, huntId: string, seed: bigin
     }
     character.lastHuntId = huntId; const stats = deriveStats(character); character.health = stats.maxHealth; character.mana = stats.maxMana;
     character.staminaRestMs = 0; character.staminaRegenCreditMs = 0;
-  const session = startSession(character, huntId, seed); session.boostedMonsterId = dailyBoostedMonster()?.id; session.startedAt = Date.now(); return session;
+    const session = startSession(character, huntId, seed); session.boostedMonsterId = dailyBoostedMonster()?.id; session.startedAt = Date.now(); return session;
   }
   const required = recommendedLevelFor(huntId, principal.vocationId);
   if (required === null) throw new GameError('No vocation can sustain that hunt yet.', 422);
@@ -134,7 +134,10 @@ export function endHunt(session: HuntSession): { gold: number; refund: number; c
   if (stash) movePouchToWarehouse(session); else session.totals.lootByItem = {};
   character.gold += pouch + refund; character.supplies = [];
   if (session.status === 'boss_cleared') { const encounterId = parseBossHuntId(session.huntId); if (encounterId) recordBossKill(character, encounterId, Date.now()); }
-  if (session.status === 'died') { const stats = deriveStats(character); character.health = stats.maxHealth; character.mana = stats.maxMana; }
+  // Returning to the city always restores the character's vitals. This keeps
+  // the persistent party HUD in sync and prevents a stopped hunt snapshot from
+  // leaving the principal (or another member) with stale partial HP/MP.
+  const stats = deriveStats(character); character.health = stats.maxHealth; character.mana = stats.maxMana;
   return { gold: pouch, refund, character };
 }
 export const summarise = describeSession;
