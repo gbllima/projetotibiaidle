@@ -86,7 +86,7 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
         </article>;
       })}
       {members.length < character.partySlots && <button type="button" className="party-empty-member" onClick={onConfig}>＋ Adicionar personagem à formação</button>}
-      {character.partySlots < 3 && <div className="party-locked-member"><div><span aria-hidden>⚔</span> SLOT BLOQUEADO</div><button type="button" disabled={busy||character.gold<prices.gold} onClick={()=>onUnlock('gold')}>Desbloquear por gold — {prices.gold.toLocaleString('pt-BR')}</button><button type="button" disabled={busy||character.coins<prices.coins} onClick={()=>onUnlock('coins')}>Desbloquear na Store — {prices.coins} coins</button></div>}
+      {character.partySlots < 3 && <div className="party-locked-member"><div><span aria-hidden>⚔</span> SLOT BLOQUEADO</div><button type="button" disabled={busy||character.gold<prices.gold} onClick={()=>onUnlock('gold')}>Desbloquear por Gold — {prices.gold.toLocaleString('pt-BR')}</button></div>}
     </DockBox>
 
     {itemsTarget && <PartyItemsModal character={itemsTarget} controllerCharacterId={character.id} busy={menuBusy} onClose={()=>setItemsTarget(null)} />}
