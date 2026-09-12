@@ -12,6 +12,7 @@ import './mobile-topmenus.css';
 import './mobile-chat.css';
 import './mobile-nav-icons.css';
 import './mobile-training.css';
+import './game-site-theme.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
