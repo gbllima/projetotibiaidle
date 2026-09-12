@@ -165,6 +165,13 @@
 .shell .dock::-webkit-scrollbar-track { background: #0d100d; }
 .shell .dock::-webkit-scrollbar-thumb { background: #4d4029; }
 
+/* Replace legacy #0a0c10 meter/skill tracks with the project palette. */
+.shell .meter,
+.shell .skillbar .track {
+  background: #0d100d;
+  border-color: #4a3e28;
+}
+
 /* Structural chrome only: central game area follows the site palette. */
 .shell .center,
 .shell .scene-host,
