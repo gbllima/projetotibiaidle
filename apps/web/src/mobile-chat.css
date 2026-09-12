@@ -24,7 +24,6 @@
     margin-top: 0;
   }
 
-  /* Compact chat strip directly under the game map. */
   .chat-console {
     order: 1;
     display: grid;
@@ -140,7 +139,6 @@
     color: var(--gold);
   }
 
-  /* Minimized state resembles the reference: just the channel bar under the map. */
   .chat-console.is-minimized {
     display: block;
     height: 35px;
@@ -198,87 +196,145 @@
   }
 }
 
-/* Desktop: keep the chat useful, but make it much less intrusive and allow it to collapse. */
+/* Desktop: compact MMO-style lower HUD inspired by classic browser RPGs. */
 @media (min-width: 769px) {
-  .chat-console {
+  .bottom-console {
     position: relative;
-    grid-template-rows: 30px minmax(58px, 76px) 31px;
-    max-height: 137px;
-    border-radius: 7px;
+    display: block;
+    min-height: 70px;
+    height: 70px;
+    padding: 0 8px 6px;
+    border-top: 1px solid rgba(92, 73, 38, .72);
+    background:
+      linear-gradient(180deg, rgba(41, 44, 36, .78) 0%, rgba(18, 22, 17, .96) 46%, rgba(10, 13, 10, .98) 100%);
+    box-shadow: inset 0 1px 0 rgba(238, 199, 101, .045), 0 -7px 18px rgba(0,0,0,.26);
+  }
+
+  .chat-console {
+    position: absolute;
+    left: 8px;
+    bottom: 66px;
+    z-index: 46;
+    display: grid;
+    grid-template-rows: 28px minmax(64px, 84px) 30px;
+    width: min(390px, calc(100% - 16px));
+    max-height: 142px;
+    min-height: 0 !important;
+    overflow: hidden;
+    border: 1px solid #594725;
+    border-radius: 5px 5px 0 0;
+    background: rgba(10, 13, 10, .965);
+    box-shadow: 0 -6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(242,207,115,.04);
   }
 
   .chat-console__head {
-    min-height: 30px;
-    height: 30px;
-    padding: 0 0 0 6px;
+    position: relative;
+    display: flex;
     align-items: stretch;
+    min-width: 0;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 29px 0 0;
+    border-bottom: 1px solid #4d4029;
+    background: linear-gradient(180deg, #25291f 0%, #151914 100%);
   }
 
   .chat-console__tabs {
+    display: flex;
+    flex: 1;
+    min-width: 0;
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
-    padding-right: 36px;
   }
 
   .chat-console__tabs::-webkit-scrollbar { display: none; }
 
   .chat-console__tabs button {
     flex: 0 0 auto;
-    height: 29px;
+    height: 27px;
+    min-height: 27px;
     padding: 0 10px;
-    border-radius: 4px 4px 0 0;
+    border: 0;
+    border-right: 1px solid rgba(83, 70, 41, .68);
+    border-radius: 0;
+    background: rgba(13,16,13,.7);
+    color: #9b9d91;
     font-size: 10px;
+    font-weight: 700;
     white-space: nowrap;
   }
 
+  .chat-console__tabs button:hover {
+    color: #f2cf73;
+    background: #20241b;
+  }
+
+  .chat-console__tabs button.on {
+    color: #f5d67e;
+    background: linear-gradient(180deg, #343522 0%, #202317 100%);
+    box-shadow: inset 0 -2px 0 #c49537;
+  }
+
   .chat-console__log {
-    min-height: 58px;
-    max-height: 76px;
-    padding: 5px 9px;
+    min-height: 64px;
+    max-height: 84px;
+    padding: 5px 8px;
+    overflow-y: auto;
+    background: rgba(8, 11, 8, .98);
+    color: #c9cbbb;
     font-size: 10px;
-    line-height: 1.3;
+    line-height: 1.28;
   }
 
   .chat-console__input {
-    min-height: 31px;
-    height: 31px;
-    padding: 3px 6px;
-    grid-template-columns: 1fr 32px;
+    grid-template-columns: 1fr 30px;
     gap: 4px;
+    height: 30px;
+    min-height: 30px;
+    padding: 3px 5px;
+    border-top: 1px solid #45391f;
+    background: #0b0f0b;
   }
 
   .chat-console__input input {
-    height: 25px;
-    min-height: 25px;
-    padding: 3px 8px;
+    height: 23px;
+    min-height: 23px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    border-color: #493d27;
+    background: #090c09;
     font-size: 10px;
   }
 
   .chat-console__send {
-    width: 32px;
-    height: 25px;
-    min-height: 25px;
+    width: 30px;
+    height: 23px;
+    min-height: 23px;
+    border-radius: 3px;
+    border-color: #594725;
+    background: linear-gradient(180deg, #292d22, #171b15);
   }
 
   .chat-console__minimize {
     display: grid !important;
     place-items: center;
     position: absolute;
-    top: 1px;
-    right: 1px;
+    top: 0;
+    right: 0;
     z-index: 60;
-    width: 30px;
-    min-width: 30px;
-    height: 28px;
-    min-height: 28px;
+    width: 29px;
+    min-width: 29px;
+    height: 27px;
+    min-height: 27px;
     padding: 0;
-    border: 1px solid #4f4529;
-    border-radius: 4px;
+    border: 0;
+    border-left: 1px solid #594725;
+    border-radius: 0;
     background: linear-gradient(180deg, #2a2d24, #171a15);
     color: #e0bd62;
-    box-shadow: 0 1px 4px rgba(0,0,0,.35);
-    font-size: 18px;
+    font-size: 17px;
     line-height: 1;
     font-weight: 800;
     cursor: pointer;
@@ -286,16 +342,17 @@
 
   .chat-console__minimize:hover {
     background: #353728;
-    border-color: #8d7439;
     color: #ffe08a;
   }
 
   .chat-console.is-minimized {
     display: block;
-    height: 31px;
-    min-height: 31px !important;
-    max-height: 31px;
+    bottom: 66px;
+    height: 28px;
+    min-height: 28px !important;
+    max-height: 28px;
     overflow: hidden;
+    border-radius: 4px 4px 0 0;
   }
 
   .chat-console.is-minimized .chat-console__log,
@@ -304,8 +361,81 @@
   }
 
   .chat-console.is-minimized .chat-console__head {
-    height: 30px;
-    min-height: 30px;
+    height: 27px;
+    min-height: 27px;
     border-bottom: 0;
+  }
+
+  .action-bar,
+  .actionbar {
+    position: absolute;
+    left: 50%;
+    bottom: 7px;
+    z-index: 48;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    transform: translateX(-50%);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0;
+    scrollbar-width: none;
+  }
+
+  .action-bar::-webkit-scrollbar,
+  .actionbar::-webkit-scrollbar { display: none; }
+
+  .action-bar__panel {
+    min-height: 52px;
+    margin: 0 auto;
+    padding: 4px 7px;
+    border: 1px solid #5c4928;
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(36,40,31,.98), rgba(14,18,13,.98));
+    box-shadow: 0 3px 12px rgba(0,0,0,.48), inset 0 1px 0 rgba(242,207,115,.06);
+  }
+
+  .action-bar__character-group {
+    gap: 3px;
+  }
+
+  .action-bar__character-group + .action-bar__character-group {
+    margin-left: 5px;
+    padding-left: 6px;
+    border-left-color: #66512b;
+  }
+
+  .action-bar__portrait,
+  .action-bar__party-portrait,
+  .action-bar__skill {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 3px;
+  }
+
+  .action-bar__portrait img,
+  .action-bar__party-portrait img,
+  .action-bar__skill-img {
+    image-rendering: pixelated;
+  }
+
+  .action-bar__skill-label {
+    font-size: 8px;
+  }
+
+  .action-bar__rank {
+    top: 1px;
+    right: 2px;
+    font-size: 8px;
+  }
+
+  .action-bar__portrait-tag {
+    right: 1px;
+    bottom: 1px;
+    font-size: 8px;
+  }
+
+  .action-bar__plus {
+    font-size: 21px;
   }
 }
