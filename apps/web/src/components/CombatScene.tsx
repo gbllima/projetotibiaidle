@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { SimEvent } from '@tibia-idle/sim';
 import type { ActiveMonsterView } from '../api/types.js';
 import { acquireCombatScene, releaseCombatScene, type PlayerView } from '../render/combat.js';
+import '../render/partyCombatPatch.js';
 
 const PENDING_CAP = 80;
 const RENDER_CAP = 40;
