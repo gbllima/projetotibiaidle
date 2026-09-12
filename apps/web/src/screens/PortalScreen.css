@@ -57,7 +57,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px clamp(24px, 5vw, 72px);
+  min-height: 86px;
+  padding: 12px clamp(24px, 5vw, 72px);
   border-bottom: 1px solid rgba(201,159,74,.18);
   background: rgba(6,9,6,.58);
   backdrop-filter: blur(10px);
@@ -74,50 +75,17 @@
 .kock-games-logo {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  width: clamp(180px, 19vw, 285px);
   user-select: none;
 }
-.kock-games-logo__mark {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  transform: rotate(45deg);
-  border: 1px solid #a47c35;
-  background: linear-gradient(135deg, #2e3327 0%, #121711 55%, #473816 100%);
-  box-shadow: 0 0 0 3px rgba(197,151,55,.06), 0 8px 24px rgba(0,0,0,.4);
-}
-.kock-games-logo__mark::after {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(243,206,120,.17);
-}
-.kock-games-logo__mark span {
-  transform: rotate(-45deg);
-  color: #edc464;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 25px;
-  font-weight: 900;
-  text-shadow: 0 2px 8px #000;
-}
-.kock-games-logo > div {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-.kock-games-logo strong {
-  color: #f4e4b7;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 25px;
-  letter-spacing: .08em;
-}
-.kock-games-logo > div > span {
-  color: #c69a43;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .22em;
+
+.kock-games-logo img {
+  display: block;
+  width: 100%;
+  height: 64px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 5px 14px rgba(0,0,0,.48));
 }
 
 .kock-portal__content {
@@ -408,17 +376,13 @@ button.kock-game-card {
 .kock-portal__footer-dot { color: #8e7138; }
 
 @media (max-width: 760px) {
-  .kock-portal__header { padding: 18px 18px; }
+  .kock-portal__header { padding: 10px 18px; min-height: 72px; }
   .kock-portal__header > p { display: none; }
-  .kock-games-logo strong { font-size: 21px; }
-  .kock-games-logo__mark { width: 40px; height: 40px; }
-  .kock-portal__content { width: min(100% - 24px, 560px); padding: 36px 0 34px; }
-  .kock-portal__intro { margin-bottom: 24px; }
-  .kock-game-grid { grid-template-columns: 1fr; gap: 16px; }
+  .kock-games-logo { width: 190px; }
+  .kock-games-logo img { height: 52px; }
+  .kock-portal__content { width: min(calc(100% - 24px), 560px); padding: 38px 0 34px; }
+  .kock-game-grid { grid-template-columns: 1fr; }
   .kock-game-card { min-height: 390px; }
-  .kock-game-card__art { height: 166px; }
-  .kock-game-card__art--poke { gap: 15px; }
-  .poke-orb { width: 60px; height: 60px; }
-  .poke-wordmark strong { font-size: 25px; }
+  .kock-game-card__art { height: 165px; }
   .kock-portal__footer { flex-wrap: wrap; text-align: center; }
 }
