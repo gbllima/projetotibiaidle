@@ -44,8 +44,8 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
       <section className="landing-hero">
         <div className="landing-hero-copy">
           <div className="landing-eyebrow"><span /> O RPG IDLE BRASILEIRO</div>
-          <h1>JOGUE EM QUALQUER LUGAR.<br /><em>SEM DOWNLOADS. SEM INSTALAÇÃO.</em></h1>
-          <p>PC • ANDROID • iOS</p>
+          <h1>JOGUE EM<br />QUALQUER LUGAR.</h1>
+          <p><strong>SEM DOWNLOADS. SEM INSTALAÇÃO.</strong><br />PC • ANDROID • iOS</p>
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
           <div className="landing-br-badge"><span>BR</span><div><strong>FEITO PARA QUEM GOSTA DE RPG</strong><small>Progressão idle, hunts, loot e evolução constante.</small></div></div>
         </div>
