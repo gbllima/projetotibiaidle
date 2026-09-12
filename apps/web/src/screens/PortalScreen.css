@@ -1,0 +1,424 @@
+.kock-portal {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #f6efd9;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(74, 126, 76, .18), transparent 34%),
+    radial-gradient(circle at 82% 30%, rgba(186, 137, 47, .11), transparent 28%),
+    linear-gradient(180deg, #0b100c 0%, #0a0d0a 48%, #070907 100%);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.kock-portal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 82%);
+}
+
+.kock-portal__grid {
+  position: absolute;
+  left: 50%;
+  bottom: -24%;
+  width: 1200px;
+  height: 520px;
+  transform: translateX(-50%) perspective(520px) rotateX(63deg);
+  background:
+    linear-gradient(rgba(194,150,66,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(194,150,66,.08) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: .26;
+  pointer-events: none;
+}
+
+.kock-portal__mist {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 999px;
+  filter: blur(75px);
+  opacity: .18;
+  pointer-events: none;
+}
+.kock-portal__mist--one { left: -180px; top: 8%; background: #375c38; }
+.kock-portal__mist--two { right: -180px; top: 22%; background: #765d28; }
+
+.kock-portal__header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px clamp(24px, 5vw, 72px);
+  border-bottom: 1px solid rgba(201,159,74,.18);
+  background: rgba(6,9,6,.58);
+  backdrop-filter: blur(10px);
+}
+
+.kock-portal__header > p {
+  margin: 0;
+  color: #968d72;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .22em;
+}
+
+.kock-games-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+.kock-games-logo__mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  transform: rotate(45deg);
+  border: 1px solid #a47c35;
+  background: linear-gradient(135deg, #2e3327 0%, #121711 55%, #473816 100%);
+  box-shadow: 0 0 0 3px rgba(197,151,55,.06), 0 8px 24px rgba(0,0,0,.4);
+}
+.kock-games-logo__mark::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(243,206,120,.17);
+}
+.kock-games-logo__mark span {
+  transform: rotate(-45deg);
+  color: #edc464;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 25px;
+  font-weight: 900;
+  text-shadow: 0 2px 8px #000;
+}
+.kock-games-logo > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.kock-games-logo strong {
+  color: #f4e4b7;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 25px;
+  letter-spacing: .08em;
+}
+.kock-games-logo > div > span {
+  color: #c69a43;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .22em;
+}
+
+.kock-portal__content {
+  position: relative;
+  z-index: 2;
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding: 62px 0 52px;
+}
+.kock-portal__intro {
+  max-width: 690px;
+  margin: 0 auto 34px;
+  text-align: center;
+}
+.kock-portal__eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #c79c45;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .25em;
+}
+.kock-portal__intro h1 {
+  margin: 0;
+  color: #f4ead0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1.02;
+  text-shadow: 0 4px 24px #000;
+}
+.kock-portal__intro p {
+  margin: 15px auto 0;
+  max-width: 620px;
+  color: #9da293;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.kock-game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.kock-game-card {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  text-align: left;
+  border: 1px solid #51442c;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(26,31,24,.98), rgba(10,13,10,.99));
+  box-shadow: 0 18px 50px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.025);
+  color: inherit;
+}
+button.kock-game-card {
+  cursor: pointer;
+  font: inherit;
+}
+.kock-game-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(240,199,104,.02);
+}
+.kock-game-card__glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .25s ease;
+  pointer-events: none;
+}
+.kock-game-card--tibia .kock-game-card__glow {
+  background: radial-gradient(circle at 50% 24%, rgba(83,145,74,.19), transparent 42%);
+}
+.kock-game-card--poke .kock-game-card__glow {
+  background: radial-gradient(circle at 50% 24%, rgba(194,153,63,.14), transparent 42%);
+}
+.kock-game-card--tibia:hover {
+  transform: translateY(-3px);
+  border-color: #8c6b34;
+  box-shadow: 0 23px 60px rgba(0,0,0,.5), 0 0 24px rgba(85,130,67,.08);
+}
+.kock-game-card--tibia:hover .kock-game-card__glow { opacity: 1; }
+.kock-game-card { transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+
+.kock-game-card__status {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .13em;
+}
+.kock-game-card__status--online {
+  color: #a8e49e;
+  border: 1px solid rgba(91,160,84,.35);
+  background: rgba(26,63,27,.75);
+}
+.kock-game-card__status--online i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #65d45e;
+  box-shadow: 0 0 8px #65d45e;
+}
+.kock-game-card__status--soon {
+  color: #d1bc84;
+  border: 1px solid rgba(189,151,67,.27);
+  background: rgba(62,50,22,.7);
+}
+
+.kock-game-card__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 200px;
+  padding: 32px;
+  border-bottom: 1px solid rgba(99,81,45,.55);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(83,109,66,.16), transparent 42%),
+    linear-gradient(180deg, #151b14, #10130f);
+}
+.kock-game-card__art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .35;
+  background: linear-gradient(120deg, transparent 0 42%, rgba(255,255,255,.018) 42% 44%, transparent 44% 100%);
+  background-size: 34px 34px;
+}
+.kock-game-card__art img {
+  position: relative;
+  z-index: 1;
+  max-width: 78%;
+  max-height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 9px 18px rgba(0,0,0,.5));
+}
+.kock-game-card__art--poke {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(149,112,39,.15), transparent 42%),
+    linear-gradient(180deg, #191711, #11120e);
+}
+
+.poke-orb {
+  position: relative;
+  display: block;
+  width: 74px;
+  height: 74px;
+  border: 5px solid #d9c88f;
+  border-radius: 50%;
+  background: linear-gradient(#9a342b 0 46%, #181b17 46% 54%, #e9e0c7 54% 100%);
+  box-shadow: 0 7px 18px rgba(0,0,0,.45), 0 0 22px rgba(187,144,55,.08);
+}
+.poke-orb::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: 50%;
+  height: 7px;
+  transform: translateY(-50%);
+  background: #181b17;
+}
+.poke-orb i {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  border: 5px solid #181b17;
+  border-radius: 50%;
+  background: #d6caa9;
+}
+.poke-wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: .86;
+  transform: rotate(-2deg);
+}
+.poke-wordmark small {
+  color: #c79a43;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .28em;
+}
+.poke-wordmark strong {
+  color: #eee2b7;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 31px;
+  text-shadow: 2px 3px 0 #553f1c;
+}
+.poke-wordmark em {
+  align-self: flex-end;
+  margin-top: 7px;
+  padding: 3px 6px;
+  color: #d7bb73;
+  border: 1px solid #6d5428;
+  background: #1d2119;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.kock-game-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 22px 24px 17px;
+}
+.kock-game-card__genre {
+  margin-bottom: 8px;
+  color: #aa8744;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+.kock-game-card__body > strong {
+  margin-bottom: 8px;
+  color: #f1dfb1;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 23px;
+}
+.kock-game-card__body > span:last-child {
+  color: #9ea396;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.kock-game-card__cta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 49px;
+  padding: 0 24px;
+  border-top: 1px solid rgba(95,78,43,.55);
+  background: linear-gradient(180deg, rgba(49,53,37,.92), rgba(27,31,22,.96));
+  color: #efcd78;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.kock-game-card__cta b {
+  font-size: 24px;
+  font-weight: 400;
+  transition: transform .2s ease;
+}
+.kock-game-card--tibia:hover .kock-game-card__cta b { transform: translateX(4px); }
+.kock-game-card__cta--disabled {
+  justify-content: center;
+  color: #777667;
+  background: linear-gradient(180deg, rgba(29,31,26,.9), rgba(20,22,19,.95));
+}
+.kock-game-card--poke { opacity: .88; }
+
+.kock-portal__footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 24px 24px;
+  color: #686e63;
+  font-size: 10px;
+  letter-spacing: .05em;
+}
+.kock-portal__footer-dot { color: #8e7138; }
+
+@media (max-width: 760px) {
+  .kock-portal__header { padding: 18px 18px; }
+  .kock-portal__header > p { display: none; }
+  .kock-games-logo strong { font-size: 21px; }
+  .kock-games-logo__mark { width: 40px; height: 40px; }
+  .kock-portal__content { width: min(100% - 24px, 560px); padding: 36px 0 34px; }
+  .kock-portal__intro { margin-bottom: 24px; }
+  .kock-game-grid { grid-template-columns: 1fr; gap: 16px; }
+  .kock-game-card { min-height: 390px; }
+  .kock-game-card__art { height: 166px; }
+  .kock-game-card__art--poke { gap: 15px; }
+  .poke-orb { width: 60px; height: 60px; }
+  .poke-wordmark strong { font-size: 25px; }
+  .kock-portal__footer { flex-wrap: wrap; text-align: center; }
+}
