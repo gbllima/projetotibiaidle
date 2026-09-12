@@ -157,6 +157,14 @@
 .shell ::-webkit-scrollbar-thumb { background: #4d4029; border-color: #171a15; }
 .shell ::-webkit-scrollbar-track { background: #0d100d; }
 
+/* Replace legacy #0c0f15 surfaces from the base stylesheet with the project palette. */
+.shell .dock {
+  background: #0d100d;
+  border-right-color: #4d4029;
+}
+.shell .dock::-webkit-scrollbar-track { background: #0d100d; }
+.shell .dock::-webkit-scrollbar-thumb { background: #4d4029; }
+
 /* Structural chrome only: central game area follows the site palette. */
 .shell .center,
 .shell .scene-host,
