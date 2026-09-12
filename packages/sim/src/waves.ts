@@ -2,16 +2,16 @@
  * Hunt wave ladder.
  *
  * Ten discrete packs with a fixed size each. Count climbs until the cap, then
- * wave 10 is a single cave creature with ×10 health / XP / loot (skull pip).
+ * wave 10 is a single cave creature with ×5 health / XP / loot (skull pip).
  */
 
 export const WAVES_TOTAL = 10;
 export const WAVE_PACK_CAP = 14;
 export const BOSS_WAVE_INDEX = 9;
 /** HP of the wave-10 creature relative to its normal form. */
-export const BOSS_HEALTH_MULT = 10;
+export const BOSS_HEALTH_MULT = 5;
 /** XP and loot multiplier for the skull wave (matches HP mult). */
-export const BOSS_REWARD_MULT = 10;
+export const BOSS_REWARD_MULT = 5;
 
 /** Fixed monsters on waves 1–10 (last entry is the skull boss). */
 export const WAVE_PACK = [3, 5, 7, 9, 11, 13, 14, 14, 14, 1] as const;
