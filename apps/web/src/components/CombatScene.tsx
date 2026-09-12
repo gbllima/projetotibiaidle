@@ -190,13 +190,21 @@ export function CombatScene({
 
   useEffect(() => {
     if (events.length) {
-      pending.current.push(...events);
+      // The principal simulation does not need actorId internally because damage
+      // always applies to its own character. The shared renderer does: without
+      // it, its presentation AI may draw that hit over a different party member.
+      const targeted = events.map((event) => (
+        event.type === 'monster_attack' && event.actorId === undefined
+          ? { ...event, actorId: characterId }
+          : event
+      ));
+      pending.current.push(...targeted);
       if (pending.current.length > PENDING_CAP) {
         pending.current = pending.current.slice(-PENDING_CAP);
       }
     }
     present();
-  }, [events]);
+  }, [events, characterId]);
 
   useEffect(() => {
     present();
