@@ -230,16 +230,41 @@ export function GameScreen({
   }, [character.session?.huntId]);
 
   useEffect(() => {
-    if (character.session || character.queue || !loop || userStopped.current || busy) return;
-    const huntId = lastHunt.current;
-    if (!huntId) return;
+    if (character.session || character.queue || userStopped.current || busy) return;
+    const previousHuntId = lastHunt.current;
+    if (!previousHuntId) return;
     lastHunt.current = null;
-    void act(() => api.startHunt(character.id, huntId, lastHours.current).then((result) => {
+
+    void act(async () => {
+      let targetHuntId = previousHuntId;
+      let targetLabel = huntLabel(previousHuntId);
+
+      if (!loop) {
+        const payload = await api.hunts(character.id);
+        setHunts(payload.hunts);
+        const ordered = [...payload.hunts].sort((a, b) => (
+          a.statedLevel - b.statedLevel || a.name.localeCompare(b.name, 'pt-BR')
+        ));
+        const currentIndex = ordered.findIndex((entry) => entry.id === previousHuntId);
+        const next = currentIndex >= 0
+          ? ordered.slice(currentIndex + 1).find((entry) => entry.unlocked && entry.statedLevel <= character.level)
+          : undefined;
+
+        if (!next) {
+          pushLog('Progressão automática: nenhuma próxima hunt compatível com seu nível está liberada.');
+          return;
+        }
+        targetHuntId = next.id;
+        targetLabel = next.name;
+      }
+
+      const result = await api.startHunt(character.id, targetHuntId, lastHours.current);
       onCharacter(result.character);
       if (result.character.queue) pushLog(t('queueWait'));
-      else pushLog(`${t('loop')}: ${huntLabel(huntId)}.`);
-    }));
-  }, [character.session, character.queue, loop]);
+      else if (loop) pushLog(`${t('loop')}: ${targetLabel}.`);
+      else pushLog(`Próxima hunt: ${targetLabel}.`);
+    });
+  }, [character.session, character.queue, loop, busy, character.id, character.level]);
 
   useEffect(() => {
     for (const event of events) {
@@ -436,7 +461,16 @@ export function GameScreen({
                 ))}
               </div>
             </div>
-            <button className={`loop ${loop ? 'on' : ''}`} onClick={() => setLoop(!loop)}>{t('loop')}</button>
+            <button
+              className={`loop ${loop ? 'on' : ''}`}
+              aria-pressed={loop}
+              title={loop
+                ? 'Loop ativo: ao terminar, repete a mesma hunt.'
+                : 'Loop desativado: ao terminar, avança para a próxima hunt compatível com seu nível.'}
+              onClick={() => setLoop(!loop)}
+            >
+              {t('loop')}
+            </button>
           </div>
           </div>
 
@@ -780,7 +814,7 @@ export function GameScreen({
             onCharacter(r.character);
             pushLog('Item movido para a backpack.');
           }))}
-          onBackpackWithdraw={(itemId, count, target) => void act(() => api.act(character.id, { type: 'backpack-withdraw', itemId, count, target }).then((r) => {
+          onBackpackWithdraw={(itemId, count, target) => void act(() => api.act(character.id, { type: 'backpack-withdraw', itemId, source: count, target }).then((r) => {
             onCharacter(r.character);
             pushLog(target === 'warehouse' ? 'Item movido pro armazém.' : 'Item movido pra supply pouch.');
           }))}
