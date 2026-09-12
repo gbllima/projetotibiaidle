@@ -1,0 +1,185 @@
+/* Visual-only overrides for in-game overlays/modals.
+   Preserve gameplay semantics (HP/MP/XP/status colors) and change only interface chrome. */
+
+/* Helper */
+.shell .helper-card,
+.shell .helper-main,
+.shell .helper-body {
+  background: #11140f;
+  border-color: #4b3d26;
+}
+.shell .helper-nav {
+  background: #151916;
+  border-color: #4b3d26;
+}
+.shell .helper-nav button,
+.shell .helper-modes button {
+  background: #151916;
+  border-color: #4a3e28;
+  color: #d8d2bf;
+}
+.shell .helper-nav button:hover,
+.shell .helper-modes button:hover {
+  background: #1c211b;
+  border-color: #7f642f;
+  color: #f2cf73;
+}
+.shell .helper-nav button.on,
+.shell .helper-modes button.on {
+  background: linear-gradient(180deg,#2b2a20,#181a14);
+  border-color: #8e6b2d;
+  color: #f2cf73;
+}
+.shell .helper-row {
+  background: #151916;
+  border-color: #5b4828;
+}
+.shell .helper-row select,
+.shell .helper-row input,
+.shell .helper-row button {
+  background: #0d100d;
+  border-color: #5b4828;
+}
+
+/* Cyclopedia */
+.shell .cy-cats button,
+.shell .compact-tabs button {
+  background: #151916;
+  border-color: #4a3e28;
+  color: #c9c5b9;
+}
+.shell .cy-cats button:hover,
+.shell .compact-tabs button:hover {
+  background: #1c211b;
+  border-color: #7f642f;
+  color: #f2cf73;
+}
+.shell .cy-cats button.on,
+.shell .compact-tabs button.on {
+  background: linear-gradient(180deg,#342b18,#1d1a12);
+  border-color: #9a742f;
+  color: #f2cf73;
+}
+.shell .cy-list,
+.shell .cy-detail,
+.shell .cy-items {
+  background: #11140f;
+  border-color: #4b3d26;
+}
+.shell .cy-list > * {
+  border-color: #403720;
+}
+
+/* Store */
+.shell .store-panel,
+.shell .store-filters,
+.shell .store-wallet-pane {
+  background: #11140f;
+}
+.shell .store-wallet-tabs button,
+.shell .store-category-tabs button,
+.shell .store-addon-row button {
+  background: #151916;
+  border-color: #4a3e28;
+  color: #ddd8cb;
+}
+.shell .store-wallet-tabs button:hover,
+.shell .store-category-tabs button:hover,
+.shell .store-addon-row button:hover {
+  background: #1c211b;
+  border-color: #7f642f;
+  color: #f2cf73;
+}
+.shell .store-wallet-tabs button.on,
+.shell .store-category-tabs button.on,
+.shell .store-addon-row button.on {
+  background: linear-gradient(180deg,#3b311c,#201b12);
+  border-color: #9a742f;
+  color: #f2cf73;
+}
+.shell .store-offer-row {
+  background: linear-gradient(180deg,#181b17,#11140f);
+  border-color: #4b3d26;
+}
+.shell .store-offer-row button {
+  background: linear-gradient(180deg,#2e2819,#1b1811);
+  border-color: #6b542b;
+  color: #e1ad45;
+}
+.shell .store-preview {
+  background: #151916;
+  border-color: #4b3d26;
+}
+
+/* Build */
+.shell .build-panel .build-hero,
+.shell .build-panel .build-dps-block,
+.shell .build-panel [class*='build-section'],
+.shell .build-panel [class*='build-card'],
+.shell .build-panel [class*='build-block'] {
+  background: linear-gradient(180deg,#181b17,#11140f);
+  border-color: #4b3d26;
+}
+.shell .build-panel .build-hero {
+  box-shadow: inset 0 1px 0 rgba(242,207,115,.035);
+}
+.shell .build-panel .build-dps-block strong,
+.shell .build-panel .build-hero-highlight strong {
+  color: #f2cf73;
+}
+.shell .build-panel button {
+  background: #151916;
+  border-color: #4a3e28;
+}
+.shell .build-panel button:hover {
+  border-color: #8e6b2d;
+  color: #f2cf73;
+}
+/* Keep the real MP/skill bars blue: no overrides target meter fills here. */
+
+/* Progression hub */
+.shell .progressao-panel {
+  background: #11140f;
+}
+.shell .progressao-menu-card {
+  background: linear-gradient(180deg,#181b17,#11140f) !important;
+  border-color: #4b3d26 !important;
+  color: #ddd8cb;
+}
+.shell .progressao-menu-card:hover {
+  background: linear-gradient(180deg,#23261e,#171a15) !important;
+  border-color: #8e6b2d !important;
+}
+.shell .progressao-menu-card strong {
+  color: #e1ad45;
+}
+
+/* Roulette */
+.shell .roleta-panel {
+  background: #11140f;
+}
+.shell .roleta-stage,
+.shell .roleta-viewport {
+  background: linear-gradient(180deg,#181b17,#11140f) !important;
+  border-color: #4b3d26 !important;
+}
+.shell .roleta-stage button,
+.shell .roleta-panel button {
+  background: linear-gradient(180deg,#2e2819,#1b1811);
+  border-color: #6b542b;
+  color: #e1ad45;
+}
+
+/* Generic modal chrome: remove leftover blue/steel surfaces without touching status bars. */
+.shell .modal-card .tabs button,
+.shell .modal-card [role='tab'] {
+  background: #151916;
+  border-color: #4a3e28;
+  color: #d8d2bf;
+}
+.shell .modal-card .tabs button.on,
+.shell .modal-card [role='tab'][aria-selected='true'] {
+  background: linear-gradient(180deg,#342b18,#1d1a12);
+  border-color: #9a742f;
+  color: #f2cf73;
+}
