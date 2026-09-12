@@ -199,6 +199,7 @@
 /* Desktop: compact MMO-style lower HUD inspired by classic browser RPGs. */
 @media (min-width: 769px) {
   .bottom-console {
+    --bottom-hud-width: min(920px, calc(100% - 32px));
     position: relative;
     display: block;
     min-height: 70px;
@@ -212,14 +213,15 @@
 
   .chat-console {
     position: absolute;
-    left: 8px;
+    left: 50%;
     bottom: 66px;
     z-index: 46;
     display: grid;
-    grid-template-rows: 28px minmax(64px, 84px) 30px;
-    width: min(390px, calc(100% - 16px));
-    max-height: 142px;
+    grid-template-rows: 30px minmax(64px, 84px) 30px;
+    width: var(--bottom-hud-width);
+    max-height: 144px;
     min-height: 0 !important;
+    transform: translateX(-50%);
     overflow: hidden;
     border: 1px solid #594725;
     border-radius: 5px 5px 0 0;
@@ -232,9 +234,9 @@
     display: flex;
     align-items: stretch;
     min-width: 0;
-    height: 28px;
-    min-height: 28px;
-    padding: 0 29px 0 0;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 31px 0 0;
     border-bottom: 1px solid #4d4029;
     background: linear-gradient(180deg, #25291f 0%, #151914 100%);
   }
@@ -252,10 +254,13 @@
   .chat-console__tabs::-webkit-scrollbar { display: none; }
 
   .chat-console__tabs button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
-    height: 27px;
-    min-height: 27px;
-    padding: 0 10px;
+    height: 29px;
+    min-height: 29px;
+    padding: 0 11px;
     border: 0;
     border-right: 1px solid rgba(83, 70, 41, .68);
     border-radius: 0;
@@ -263,6 +268,7 @@
     color: #9b9d91;
     font-size: 10px;
     font-weight: 700;
+    line-height: 1;
     white-space: nowrap;
   }
 
@@ -324,10 +330,10 @@
     top: 0;
     right: 0;
     z-index: 60;
-    width: 29px;
-    min-width: 29px;
-    height: 27px;
-    min-height: 27px;
+    width: 31px;
+    min-width: 31px;
+    height: 29px;
+    min-height: 29px;
     padding: 0;
     border: 0;
     border-left: 1px solid #594725;
@@ -348,9 +354,9 @@
   .chat-console.is-minimized {
     display: block;
     bottom: 66px;
-    height: 28px;
-    min-height: 28px !important;
-    max-height: 28px;
+    height: 31px;
+    min-height: 31px !important;
+    max-height: 31px;
     overflow: hidden;
     border-radius: 4px 4px 0 0;
   }
@@ -361,9 +367,14 @@
   }
 
   .chat-console.is-minimized .chat-console__head {
-    height: 27px;
-    min-height: 27px;
+    height: 30px;
+    min-height: 30px;
     border-bottom: 0;
+  }
+
+  .chat-console.is-minimized .chat-console__tabs button {
+    height: 30px;
+    min-height: 30px;
   }
 
   .action-bar,
@@ -372,7 +383,7 @@
     left: 50%;
     bottom: 7px;
     z-index: 48;
-    width: max-content;
+    width: var(--bottom-hud-width);
     max-width: calc(100% - 32px);
     transform: translateX(-50%);
     overflow-x: auto;
@@ -385,6 +396,10 @@
   .actionbar::-webkit-scrollbar { display: none; }
 
   .action-bar__panel {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: max-content;
     min-height: 52px;
     margin: 0 auto;
     padding: 4px 7px;
