@@ -12,7 +12,7 @@
   --gold: #d7a43f;
   --gold-dim: #8e6b2d;
   --hp: #49ad68;
-  --mana: #4aa7d8;
+  --mana: #57b875;
   --xp: #e1ad45;
   --danger: #d66b5f;
   background: #090c0b;
@@ -180,4 +180,156 @@
 
 .shell ::-webkit-scrollbar-track {
   background: #0d100d;
+}
+
+/* Remove remaining blue/steel UI chrome from the central game area. */
+.shell .center,
+.shell .scene-host,
+.shell .viewport,
+.shell .city-lobby--thais,
+.shell .city-lobby--thais .city-lobby__map {
+  background-color: #090c0b;
+}
+
+.shell .city-lobby--thais {
+  border-color: #4b3d26;
+}
+
+.shell .city-lobby__bar--thais,
+.shell .city-lobby__bar--thais.city-lobby__bar--minimal {
+  background: linear-gradient(180deg, #20251e 0%, #151a15 100%);
+  border-color: #4d4029;
+  border-bottom-color: #5b4828;
+}
+
+.shell .city-lobby__place h2 {
+  color: #e6dfcf;
+}
+
+.shell .city-lobby__bar--thais .eyebrow {
+  color: #57b875;
+}
+
+.shell .city-lobby__place p,
+.shell .city-lobby__bar--thais .city-lobby__self span,
+.shell .city-lobby__controls {
+  color: #8f958b;
+}
+
+.shell .city-lobby__bar--thais .city-lobby__self {
+  border-left-color: #4d4029;
+}
+
+.shell .arena-head {
+  background: linear-gradient(180deg, #1c211b 0%, #121611 100%);
+  border-color: #4d4029;
+}
+
+.shell .hunt-pick,
+.shell .arena-head button,
+.shell .arena-head select {
+  background: linear-gradient(180deg, #20231d 0%, #131612 100%);
+  border-color: #4f422b;
+  color: #ece9df;
+}
+
+.shell .chat-console {
+  background: rgba(13, 16, 13, 0.96);
+  border-color: #4d4029;
+  box-shadow: 0 0 0 1px rgba(91, 72, 40, 0.45), 0 -6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.shell .chat-console__tabs button {
+  color: #9b9d91;
+  background: #10140f;
+  border-color: transparent;
+}
+
+.shell .chat-console__tabs button:hover {
+  color: #f2cf73;
+  background: #191d16;
+  border-color: #4d4029;
+}
+
+.shell .chat-console__tabs button.on {
+  color: #f2cf73;
+  background: linear-gradient(180deg, #26271c 0%, #171a14 100%);
+  border-color: #6b542b;
+}
+
+.shell .chat-console__log,
+.shell .chat-console__composer,
+.shell .chat-console__input {
+  background: #0d100d;
+  border-color: #4a3e28;
+}
+
+.shell .action-bar__panel {
+  background: rgba(14, 17, 13, 0.94);
+  border-color: #55462d;
+  box-shadow: 0 8px 22px rgba(0,0,0,.42), inset 0 1px 0 rgba(242,207,115,.035);
+}
+
+.shell .action-bar__skill,
+.shell .action-bar__skill--empty,
+.shell .action-bar__portrait,
+.shell .action-bar__party-portrait {
+  background: linear-gradient(180deg, #20251e 0%, #121611 100%);
+  border-color: #4c402b;
+}
+
+.shell .action-bar__skill:hover,
+.shell .action-bar__skill.is-priority {
+  border-color: #8e6b2d;
+  box-shadow: inset 0 0 0 1px rgba(215,164,63,.16), 0 0 10px rgba(215,164,63,.08);
+}
+
+.shell .action-bar__plus,
+.shell .action-bar__rank,
+.shell .action-bar__portrait-tag {
+  color: #e1ad45;
+}
+
+/* Blue semantic bars are also mapped to the site's green/gold palette. */
+.shell .meter.mana > i,
+.shell .party-compact-bar.mana > div i {
+  background: linear-gradient(180deg, #69c98a 0%, #328253 100%);
+}
+
+.shell .party-compact-bar.mana > span {
+  color: #69c98a;
+}
+
+.shell .pill.coin {
+  color: #f2cf73;
+}
+
+.shell .crystal-dot {
+  background: radial-gradient(circle at 35% 30%, #dff3d9 0%, #57b875 45%, #245c3b 100%);
+}
+
+/* Inline blue nav tones are intentionally overridden only visually. */
+.shell .nav-helper .ico,
+.shell .nav-cyclopedia .ico,
+.shell .nav-build .ico,
+.shell .nav-progressao .ico {
+  background: linear-gradient(180deg, #2d5f3d 0%, #173622 100%) !important;
+  border: 1px solid rgba(215,164,63,.22);
+}
+
+.shell .nav-helper .ico img,
+.shell .nav-cyclopedia .ico img,
+.shell .nav-build .ico img,
+.shell .nav-progressao .ico img {
+  filter: drop-shadow(0 0 2px rgba(87,184,117,.48));
+}
+
+.shell .build-skill-bar-track > i {
+  background: linear-gradient(90deg, #2d7b4a, #d7a43f);
+}
+
+.shell .party-formation-card.selected,
+.shell .party-manager-tabs button[aria-selected='true'] {
+  border-color: #8e6b2d;
+  color: #f2cf73;
 }
