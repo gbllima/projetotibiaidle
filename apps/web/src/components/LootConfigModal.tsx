@@ -86,15 +86,29 @@ function LootItemPicker({
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
   const selectedId = Number(value);
   const selected = Number.isInteger(selectedId) ? itemsById.get(selectedId) : undefined;
-  const filtered = items.filter((item) => {
-    if (excludedIds.includes(item.id)) return false;
+  const filtered = useMemo(() => {
+    if (!open) return [];
+    const excluded = new Set(excludedIds);
     const q = query.trim().toLowerCase();
-    return !q || item.name.toLowerCase().includes(q) || String(item.id).includes(q);
-  });
+    const limit = q ? 60 : 32;
+    const matches: PickerItem[] = [];
+    for (const item of items) {
+      if (excluded.has(item.id)) continue;
+      if (q && !item.name.toLowerCase().includes(q) && !String(item.id).includes(q)) continue;
+      matches.push(item);
+      if (matches.length >= limit) break;
+    }
+    return matches;
+  }, [open, query, items, excludedIds]);
 
-  return <details className="loot-item-picker" ref={detailsRef}>
+  return <details
+    className="loot-item-picker"
+    ref={detailsRef}
+    onToggle={(event) => setOpen(event.currentTarget.open)}
+  >
     <summary>
       {selected ? <LootItemIcon itemId={selected.id} size={30} /> : <span className="loot-picker-icon loot-picker-icon-empty" aria-hidden>?</span>}
       <span className={selected ? 'loot-picker-selected' : 'loot-picker-placeholder'}>
@@ -102,7 +116,7 @@ function LootItemPicker({
       </span>
       <span className="loot-picker-chevron" aria-hidden>▾</span>
     </summary>
-    <div className="loot-picker-popover">
+    {open && <div className="loot-picker-popover">
       <input
         className="loot-picker-search"
         value={query}
@@ -126,8 +140,9 @@ function LootItemPicker({
           <span><strong>{item.name}</strong><small>ID {item.id}</small></span>
         </button>)}
         {filtered.length === 0 && <span className="loot-picker-no-results">Nenhum item encontrado.</span>}
+        {filtered.length > 0 && <span className="loot-picker-no-results">Use a busca para encontrar outros itens.</span>}
       </div>
-    </div>
+    </div>}
   </details>;
 }
 
