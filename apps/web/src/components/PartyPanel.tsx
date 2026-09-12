@@ -71,8 +71,16 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
       {menuError && <div className="party-inline-error" role="alert">{menuError}</div>}
       {members.map((member) => {
         const xp = xpProgress(member.level, member.experience ?? 0).percent;
-        const health = member.health ?? 0, maxHealth = member.maxHealth ?? 1;
-        const mana = member.mana ?? 0, maxMana = member.maxMana ?? 1;
+        const rawHealth = member.health ?? 0, maxHealth = member.maxHealth ?? 1;
+        const rawMana = member.mana ?? 0, maxMana = member.maxMana ?? 1;
+        // Party companions can retain a stale/predicted hunt snapshot for a short
+        // time after the leader returns to the city. Their activity flag is the
+        // authoritative UI signal: while inactive/out of hunt, show stable city
+        // vitals instead of rendering those obsolete combat values as if they
+        // were still taking damage or spending mana.
+        const inPartyCombat = Boolean(member.active);
+        const health = member.id === character.id || inPartyCombat ? rawHealth : maxHealth;
+        const mana = member.id === character.id || inPartyCombat ? rawMana : maxMana;
         const vocation = vocationsById.get(member.vocationId);
         const role = [2,6].includes(member.vocationId) ? 'SUP' : [4,8].includes(member.vocationId) ? 'TANK' : 'DPS';
         return <article className={'party-compact-member' + (member.id === character.id ? ' primary' : '')} key={member.id}>
