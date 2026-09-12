@@ -8,13 +8,14 @@ import { AuthScreen } from './screens/AuthScreen.js';
 import { GameScreen } from './screens/GameScreen.js';
 import { SelectScreen } from './screens/SelectScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
+import { PortalScreen } from './screens/PortalScreen.js';
 import { KnockRadio } from './components/KnockRadio.js';
 
-type Screen = 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'select' | 'game';
+type Screen = 'portal' | 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'select' | 'game';
 
 export function App() {
   const { t } = useLocale();
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<Screen>('portal');
   const [afterAuth, setAfterAuth] = useState<'account' | 'select'>('select');
   const [characters, setCharacters] = useState<CharacterView[]>([]);
   const [account, setAccount] = useState<AccountView | null>(null);
@@ -51,6 +52,10 @@ export function App() {
       setHadSocket(false);
     };
   }, [screen, character?.id]);
+
+  if (screen === 'portal') {
+    return <PortalScreen onKnockIdle={() => setScreen('home')} />;
+  }
 
   if (screen === 'home') {
     return <><KnockRadio /><HomeScreen onWiki={() => setScreen('wiki')} onAccount={() => { setAfterAuth('account'); setScreen(storedToken() ? 'account' : 'auth'); }} onPlay={() => {
