@@ -13,13 +13,7 @@ export function PortalScreen({ onKnockIdle }: Props) {
 
       <header className="kock-portal__header">
         <div className="kock-games-logo" aria-label="Kock Games">
-          <span className="kock-games-logo__mark" aria-hidden>
-            <span>K</span>
-          </span>
-          <div>
-            <strong>KOCK</strong>
-            <span>GAMES</span>
-          </div>
+          <img src="/home/Logo%20Empresa.png" alt="Kock Games" />
         </div>
         <p>UM PORTAL. VÁRIOS MUNDOS.</p>
       </header>
