@@ -1,0 +1,183 @@
+/* Visual-only theme bridge for the in-game UI.
+   Keeps layout, behavior and component logic untouched while matching the Home palette. */
+
+.shell {
+  --bg: #090c0b;
+  --panel: #151916;
+  --head: #1b1d17;
+  --card: #181b17;
+  --line: #5b4828;
+  --ink: #ece9df;
+  --muted: #8f958b;
+  --gold: #d7a43f;
+  --gold-dim: #8e6b2d;
+  --hp: #49ad68;
+  --mana: #4aa7d8;
+  --xp: #e1ad45;
+  --danger: #d66b5f;
+  background: #090c0b;
+  color: var(--ink);
+}
+
+.shell .topnav {
+  background: linear-gradient(180deg, #181c18 0%, #0e120f 100%);
+  border-bottom-color: rgba(215, 164, 63, 0.34);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.shell .logo,
+.shell .window-head-title,
+.shell .box-head,
+.shell .dock-head,
+.shell h2,
+.shell h3 {
+  color: #e6dfcf;
+}
+
+.shell .logo span,
+.shell .iconbtn,
+.shell .iconbtn small,
+.shell .modal-card h2,
+.shell .party-compact-name strong,
+.shell .party-manager > h2 {
+  color: var(--gold);
+}
+
+.shell .pill,
+.shell .iconbtn.mini,
+.shell .btn,
+.shell .party-head-button,
+.shell .party-compact-actions button,
+.shell .party-activity,
+.shell .party-empty-member,
+.shell .party-locked-member button,
+.shell .party-manager-footer button {
+  background: linear-gradient(180deg, #20231d 0%, #131612 100%);
+  border-color: #4f422b;
+}
+
+.shell .btn:hover:not(:disabled),
+.shell .iconbtn.mini:hover,
+.shell .party-head-button:hover,
+.shell .party-compact-actions button:hover:not(:disabled),
+.shell .party-empty-member:hover,
+.shell .party-locked-member button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2b2a20 0%, #181a14 100%);
+  border-color: var(--gold-dim);
+  color: #f2cf73;
+}
+
+.shell .btn.gold,
+.shell .party-manager .party-card-primary,
+.shell .party-manager-footer button:first-child:not(:disabled),
+.shell .party-create button:not(:disabled) {
+  background: linear-gradient(180deg, #4a3915 0%, #2e2411 100%);
+  border-color: #8e6b2d;
+  color: #f2cf73;
+}
+
+.shell .box,
+.shell .modal-card,
+.shell .party-manager,
+.shell .card,
+.shell .cy-detail,
+.shell .party-formation-card {
+  background: linear-gradient(180deg, #181b17 0%, #11140f 100%);
+  border-color: #4b3d26;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(242, 207, 115, 0.035);
+}
+
+.shell .window-head,
+.shell .dock-head,
+.shell .box-head,
+.shell .chat-console__head {
+  background: linear-gradient(180deg, #23261e 0%, #171a15 100%);
+  border-color: rgba(215, 164, 63, 0.24);
+  border-bottom-color: #4d4029;
+}
+
+.shell .modal,
+.shell .party-manager-backdrop {
+  background: rgba(4, 7, 5, 0.82);
+}
+
+.shell .modal-card-body,
+.shell .box .body,
+.shell .chat-console,
+.shell .chat-console__body {
+  background-color: #11140f;
+}
+
+.shell input,
+.shell select,
+.shell textarea,
+.shell .hunt-modal-search,
+.shell .party-create input,
+.shell .party-create select,
+.shell .party-create button,
+.shell .party-multiplayer-info button {
+  background: #0d100d;
+  border-color: #4a3e28;
+  color: var(--ink);
+}
+
+.shell input:focus,
+.shell select:focus,
+.shell textarea:focus,
+.shell .hunt-modal-search:focus {
+  border-color: rgba(215, 164, 63, 0.7);
+  box-shadow: 0 0 0 2px rgba(215, 164, 63, 0.09);
+  outline: none;
+}
+
+.shell .cell,
+.shell .item-slot,
+.shell .paper-slot {
+  background: linear-gradient(180deg, #1c201a 0%, #121510 100%);
+  border-color: #493d28;
+}
+
+.shell .cell:hover,
+.shell .item-slot:hover,
+.shell .paper-slot:hover {
+  border-color: #7f642f;
+}
+
+.shell .party-formation-slot,
+.shell .party-manager-footer,
+.shell .party-create,
+.shell .party-locked-member,
+.shell .modal-actions,
+.shell .hunt-modal-footer {
+  border-color: rgba(215, 164, 63, 0.18);
+}
+
+.shell .iconbtn.on,
+.shell .iconbtn:hover {
+  background: rgba(215, 164, 63, 0.06);
+}
+
+.shell .iconbtn.on small {
+  color: #f2cf73;
+}
+
+.shell .who small,
+.shell .inspect,
+.shell .lede,
+.shell label,
+.shell .modal-card ul,
+.shell .party-manager-scroll > p,
+.shell .party-manager-scroll .party-manager-hint,
+.shell .party-compact-vocation,
+.shell .party-locked-member {
+  color: var(--muted);
+}
+
+.shell ::-webkit-scrollbar-thumb {
+  background: #4d4029;
+  border-color: #171a15;
+}
+
+.shell ::-webkit-scrollbar-track {
+  background: #0d100d;
+}
