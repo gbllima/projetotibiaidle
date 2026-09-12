@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { itemsById } from '@tibia-idle/data';
 import { isConsumableItem } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { storedToken } from '../api/client.js';
 import { formatNumber, itemValue } from '../format.js';
+import { itemIconUrl } from '../render/itemIcon.js';
 import { WindowHead } from './WindowHead.js';
 import './LootConfigModal.css';
 
@@ -26,6 +27,8 @@ type Props = {
   onClose: () => void;
   onChanged?: (prefs: LootPrefs, character?: CharacterView) => void;
 };
+
+type PickerItem = { id: number; name: string };
 
 const DEFAULT_PREFS: LootPrefs = {
   ignoredItemIds: [],
@@ -54,6 +57,78 @@ async function requestPrefs(id: number, body?: Record<string, unknown>): Promise
 
 function itemName(itemId: number): string {
   return itemsById.get(itemId)?.name ?? `#${itemId}`;
+}
+
+function LootItemIcon({ itemId, size = 32 }: { itemId: number; size?: number }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    void itemIconUrl(itemId).then((url) => { if (live) setSrc(url); }).catch(() => { if (live) setSrc(null); });
+    return () => { live = false; };
+  }, [itemId]);
+  return <span className="loot-picker-icon" style={{ width: size, height: size }} aria-hidden>
+    {src ? <img src={src} alt="" /> : <span>?</span>}
+  </span>;
+}
+
+function LootItemPicker({
+  value,
+  onChange,
+  items,
+  excludedIds,
+  placeholder = 'Selecione um item...',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  items: PickerItem[];
+  excludedIds: number[];
+  placeholder?: string;
+}) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const [query, setQuery] = useState('');
+  const selectedId = Number(value);
+  const selected = Number.isInteger(selectedId) ? itemsById.get(selectedId) : undefined;
+  const filtered = items.filter((item) => {
+    if (excludedIds.includes(item.id)) return false;
+    const q = query.trim().toLowerCase();
+    return !q || item.name.toLowerCase().includes(q) || String(item.id).includes(q);
+  });
+
+  return <details className="loot-item-picker" ref={detailsRef}>
+    <summary>
+      {selected ? <LootItemIcon itemId={selected.id} size={30} /> : <span className="loot-picker-icon loot-picker-icon-empty" aria-hidden>?</span>}
+      <span className={selected ? 'loot-picker-selected' : 'loot-picker-placeholder'}>
+        {selected ? `${selected.name} (ID ${selected.id})` : placeholder}
+      </span>
+      <span className="loot-picker-chevron" aria-hidden>▾</span>
+    </summary>
+    <div className="loot-picker-popover">
+      <input
+        className="loot-picker-search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onClick={(event) => event.stopPropagation()}
+        placeholder="Buscar item por nome ou ID..."
+        autoFocus
+      />
+      <div className="loot-picker-options">
+        {filtered.map((item) => <button
+          type="button"
+          key={`picker-${item.id}`}
+          className="loot-picker-option"
+          onClick={() => {
+            onChange(String(item.id));
+            setQuery('');
+            if (detailsRef.current) detailsRef.current.open = false;
+          }}
+        >
+          <LootItemIcon itemId={item.id} size={32} />
+          <span><strong>{item.name}</strong><small>ID {item.id}</small></span>
+        </button>)}
+        {filtered.length === 0 && <span className="loot-picker-no-results">Nenhum item encontrado.</span>}
+      </div>
+    </div>
+  </details>;
 }
 
 function findItem(query: string) {
@@ -181,29 +256,23 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
             <div className="loot-manage-card">
               <h4>NÃO COLETAR ({prefs.ignoredItemIds.length})</h4>
               <div className="loot-add-line">
-                <select value={ignoreInput} onChange={(event) => setIgnoreInput(event.target.value)}>
-                  <option value="">Selecione um item...</option>
-                  {allItems.filter((item) => !prefs.ignoredItemIds.includes(item.id)).map((item) => <option key={`ignore-option-${item.id}`} value={item.id}>{item.name} (ID {item.id})</option>)}
-                </select>
+                <LootItemPicker value={ignoreInput} onChange={setIgnoreInput} items={allItems} excludedIds={prefs.ignoredItemIds} />
                 <button disabled={busy || !ignoreInput} onClick={addIgnored}>+ Adicionar</button>
               </div>
               <div className="loot-rule-list">
                 {filteredIgnored.length === 0 && <span className="loot-empty">Nenhum item.</span>}
-                {filteredIgnored.map((itemId) => <div className="loot-rule-item" key={`ignore-${itemId}`}><span>{itemName(itemId)}</span><button disabled={busy} onClick={() => void save({ itemId, ignored: false })}>×</button></div>)}
+                {filteredIgnored.map((itemId) => <div className="loot-rule-item" key={`ignore-${itemId}`}><LootItemIcon itemId={itemId} size={32} /><span>{itemName(itemId)}</span><button disabled={busy} onClick={() => void save({ itemId, ignored: false })}>×</button></div>)}
               </div>
             </div>
             <div className="loot-manage-card">
               <h4>NÃO VENDER ({prefs.protectedItemIds.length})</h4>
               <div className="loot-add-line">
-                <select value={protectInput} onChange={(event) => setProtectInput(event.target.value)}>
-                  <option value="">Selecione um item...</option>
-                  {allItems.filter((item) => !prefs.protectedItemIds.includes(item.id)).map((item) => <option key={`protect-option-${item.id}`} value={item.id}>{item.name} (ID {item.id})</option>)}
-                </select>
+                <LootItemPicker value={protectInput} onChange={setProtectInput} items={allItems} excludedIds={prefs.protectedItemIds} />
                 <button disabled={busy || !protectInput} onClick={addProtected}>+ Adicionar</button>
               </div>
               <div className="loot-rule-list">
                 {filteredProtected.length === 0 && <span className="loot-empty">Nenhum item.</span>}
-                {filteredProtected.map((itemId) => <div className="loot-rule-item" key={`protect-${itemId}`}><span>{itemName(itemId)}</span><button disabled={busy} onClick={() => void save({ itemId, protected: false })}>×</button></div>)}
+                {filteredProtected.map((itemId) => <div className="loot-rule-item" key={`protect-${itemId}`}><LootItemIcon itemId={itemId} size={32} /><span>{itemName(itemId)}</span><button disabled={busy} onClick={() => void save({ itemId, protected: false })}>×</button></div>)}
               </div>
             </div>
           </div>
