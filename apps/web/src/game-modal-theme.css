@@ -170,6 +170,32 @@
   color: #e1ad45;
 }
 
+/* Mercado / compact item table */
+.shell .modal-card .compact-list {
+  background: #0d100d;
+  border-color: #4b3d26 !important;
+}
+.shell .modal-card .compact-row,
+.shell .modal-card button.compact-row {
+  background: linear-gradient(180deg,#181b17 0%,#11140f 100%) !important;
+  border-color: #403720 !important;
+  color: #ddd8cb;
+}
+.shell .modal-card .compact-row:nth-child(even),
+.shell .modal-card button.compact-row:nth-child(even) {
+  background: linear-gradient(180deg,#151916 0%,#10130f 100%) !important;
+}
+.shell .modal-card button.compact-row:hover {
+  background: linear-gradient(180deg,#23261e 0%,#171a15 100%) !important;
+  border-color: #8e6b2d !important;
+}
+.shell .modal-card .compact-row-name {
+  color: #ece9df;
+}
+.shell .modal-card .compact-row-meta {
+  color: #8f958b;
+}
+
 /* Generic modal chrome: remove leftover blue/steel surfaces without touching status bars. */
 .shell .modal-card .tabs button,
 .shell .modal-card [role='tab'] {
