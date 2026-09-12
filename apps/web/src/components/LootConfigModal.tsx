@@ -78,6 +78,10 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
   const [containerTarget, setContainerTarget] = useState<ContainerTarget>('backpack');
   const [listFilter, setListFilter] = useState('');
 
+  const allItems = useMemo(() => Array.from(itemsById.values())
+    .filter((item) => item.id > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')), []);
+
   useEffect(() => {
     let cancelled = false;
     void requestPrefs(character.id)
@@ -109,14 +113,16 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
     .filter((entry) => entry.itemId > 0 && itemName(entry.itemId).toLowerCase().includes(listFilter.toLowerCase())), [prefs.containers, listFilter]);
 
   const addIgnored = () => {
-    const item = findItem(ignoreInput);
-    if (!item) return setError('Item não encontrado. Digite o nome ou ID correto.');
-    void save({ itemId: item.id, ignored: true }).then(() => setIgnoreInput(''));
+    const itemId = Number(ignoreInput);
+    if (!Number.isInteger(itemId) || !itemsById.has(itemId)) return setError('Selecione um item da lista.');
+    if (prefs.ignoredItemIds.includes(itemId)) return setError('Este item já está na lista Não coletar.');
+    void save({ itemId, ignored: true }).then(() => setIgnoreInput(''));
   };
   const addProtected = () => {
-    const item = findItem(protectInput);
-    if (!item) return setError('Item não encontrado. Digite o nome ou ID correto.');
-    void save({ itemId: item.id, protected: true }).then(() => setProtectInput(''));
+    const itemId = Number(protectInput);
+    if (!Number.isInteger(itemId) || !itemsById.has(itemId)) return setError('Selecione um item da lista.');
+    if (prefs.protectedItemIds.includes(itemId)) return setError('Este item já está na lista Não vender.');
+    void save({ itemId, protected: true }).then(() => setProtectInput(''));
   };
   const addContainer = () => {
     const item = findItem(containerInput);
@@ -169,12 +175,18 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
 
         {tab === 'gerenciar' && <section>
           <h3>GERENCIAR LOOT</h3>
-          <p className="loot-config-help">Adicione pelo nome ou ID. “Não coletar” descarta o drop antes de ocupar slot. “Não vender” protege o item da auto-venda.</p>
-          <input className="loot-config-search" placeholder="Buscar nas listas..." value={listFilter} onChange={(event) => setListFilter(event.target.value)} />
+          <p className="loot-config-help">Selecione os itens diretamente nas listas. “Não coletar” descarta o drop antes de ocupar slot. “Não vender” protege o item da auto-venda.</p>
+          <input className="loot-config-search" placeholder="Buscar nas listas adicionadas..." value={listFilter} onChange={(event) => setListFilter(event.target.value)} />
           <div className="loot-manage-columns">
             <div className="loot-manage-card">
               <h4>NÃO COLETAR ({prefs.ignoredItemIds.length})</h4>
-              <div className="loot-add-line"><input value={ignoreInput} onChange={(event) => setIgnoreInput(event.target.value)} placeholder="nome ou id do item" /><button disabled={busy} onClick={addIgnored}>+ Adicionar</button></div>
+              <div className="loot-add-line">
+                <select value={ignoreInput} onChange={(event) => setIgnoreInput(event.target.value)}>
+                  <option value="">Selecione um item...</option>
+                  {allItems.filter((item) => !prefs.ignoredItemIds.includes(item.id)).map((item) => <option key={`ignore-option-${item.id}`} value={item.id}>{item.name} (ID {item.id})</option>)}
+                </select>
+                <button disabled={busy || !ignoreInput} onClick={addIgnored}>+ Adicionar</button>
+              </div>
               <div className="loot-rule-list">
                 {filteredIgnored.length === 0 && <span className="loot-empty">Nenhum item.</span>}
                 {filteredIgnored.map((itemId) => <div className="loot-rule-item" key={`ignore-${itemId}`}><span>{itemName(itemId)}</span><button disabled={busy} onClick={() => void save({ itemId, ignored: false })}>×</button></div>)}
@@ -182,7 +194,13 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
             </div>
             <div className="loot-manage-card">
               <h4>NÃO VENDER ({prefs.protectedItemIds.length})</h4>
-              <div className="loot-add-line"><input value={protectInput} onChange={(event) => setProtectInput(event.target.value)} placeholder="nome ou id do item" /><button disabled={busy} onClick={addProtected}>+ Adicionar</button></div>
+              <div className="loot-add-line">
+                <select value={protectInput} onChange={(event) => setProtectInput(event.target.value)}>
+                  <option value="">Selecione um item...</option>
+                  {allItems.filter((item) => !prefs.protectedItemIds.includes(item.id)).map((item) => <option key={`protect-option-${item.id}`} value={item.id}>{item.name} (ID {item.id})</option>)}
+                </select>
+                <button disabled={busy || !protectInput} onClick={addProtected}>+ Adicionar</button>
+              </div>
               <div className="loot-rule-list">
                 {filteredProtected.length === 0 && <span className="loot-empty">Nenhum item.</span>}
                 {filteredProtected.map((itemId) => <div className="loot-rule-item" key={`protect-${itemId}`}><span>{itemName(itemId)}</span><button disabled={busy} onClick={() => void save({ itemId, protected: false })}>×</button></div>)}
