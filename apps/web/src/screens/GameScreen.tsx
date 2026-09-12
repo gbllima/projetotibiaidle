@@ -242,12 +242,9 @@ export function GameScreen({
       if (!loop) {
         const payload = await api.hunts(character.id);
         setHunts(payload.hunts);
-        const ordered = [...payload.hunts].sort((a, b) => (
-          a.statedLevel - b.statedLevel || a.name.localeCompare(b.name, 'pt-BR')
-        ));
-        const currentIndex = ordered.findIndex((entry) => entry.id === previousHuntId);
+        const currentIndex = payload.hunts.findIndex((entry) => entry.id === previousHuntId);
         const next = currentIndex >= 0
-          ? ordered.slice(currentIndex + 1).find((entry) => entry.unlocked && entry.statedLevel <= character.level)
+          ? payload.hunts.slice(currentIndex + 1).find((entry) => entry.unlocked && entry.statedLevel <= character.level)
           : undefined;
 
         if (!next) {
@@ -814,7 +811,7 @@ export function GameScreen({
             onCharacter(r.character);
             pushLog('Item movido para a backpack.');
           }))}
-          onBackpackWithdraw={(itemId, count, target) => void act(() => api.act(character.id, { type: 'backpack-withdraw', itemId, source: count, target }).then((r) => {
+          onBackpackWithdraw={(itemId, count, target) => void act(() => api.act(character.id, { type: 'backpack-withdraw', itemId, count, target }).then((r) => {
             onCharacter(r.character);
             pushLog(target === 'warehouse' ? 'Item movido pro armazém.' : 'Item movido pra supply pouch.');
           }))}
