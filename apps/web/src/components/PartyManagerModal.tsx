@@ -37,14 +37,21 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
     });
     setError('');
   };
+  const choosePrimary = (id: number) => {
+    if (busy) return;
+    if (!formation.includes(id)) { setError('Adicione o personagem à formação antes de torná-lo principal.'); return; }
+    setPrimary(id);
+    // Keep the visual formation order in sync with the authoritative server
+    // convention: the principal is always the first partyMemberId.
+    setFormation((current) => [id, ...current.filter((entry) => entry !== id)]);
+    setError('');
+  };
   const drop = (event: DragEvent, target: 'primary' | 'formation', position?: number) => {
     event.preventDefault(); event.stopPropagation();
     const id = Number(event.dataTransfer.getData('text/plain'));
     if (busy || !Number.isInteger(id)) return;
-    if (target === 'primary') {
-      if (!formation.includes(id)) { setError('Adicione o personagem à formação antes de torná-lo principal.'); return; }
-      setPrimary(id); setError('');
-    } else add(id, position);
+    if (target === 'primary') choosePrimary(id);
+    else add(id, position);
   };
   const remove = (id: number) => {
     if (busy) return;
@@ -59,12 +66,13 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
       {inFormation && id !== primary && <button type="button" className="party-card-remove" onClick={() => remove(id)} disabled={busy} aria-label={'Remover ' + member.name}>×</button>}
       <PartyPortrait appearance={member.appearance} />
       <strong>{member.name}</strong><small>{member.vocation.name} · lvl {member.level}</small>
-      {inFormation ? <button type="button" className="party-card-primary" disabled={busy || id === primary} onClick={() => setPrimary(id)}>{id === primary ? 'PRINCIPAL' : 'Tornar principal'}</button>
+      {inFormation ? <button type="button" className="party-card-primary" disabled={busy || id === primary} onClick={() => choosePrimary(id)}>{id === primary ? 'PRINCIPAL' : 'Tornar principal'}</button>
         : <button type="button" className="party-card-primary" disabled={busy || formation.length >= character.partySlots} onClick={() => add(id)}>Adicionar</button>}
     </div>;
   };
   const available = roster.filter((member) => !formation.includes(member.id)
     && (!member.partyMemberIds || member.partyMemberIds.length < 2 || member.partyMemberIds[0] === character.id));
+  const primaryMember = roster.find((member) => member.id === primary);
   return <div className="modal party-manager-backdrop" onClick={() => { if (!busy) onClose(); }}>
     <div className="party-manager" role="dialog" aria-modal="true" aria-labelledby="party-manager-title" ref={dialog} tabIndex={-1} onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
@@ -82,11 +90,11 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
       <h2 id="party-manager-title">Gerenciar party</h2>
       <div className="party-manager-scroll" role="tabpanel">
         {tab === 'single' ? <>
-          <p>Arraste um personagem pra Formação. Pro slot Principal, arraste um card DA formação (ele continua na party).</p>
-          <p className="party-manager-hint">Você também pode usar os botões dos cards.</p>
+          <p>Escolha qualquer personagem da formação como Principal. Ao salvar, ele passa a liderar a party e também se torna o personagem controlado na tela.</p>
+          <p className="party-manager-hint">Use “Tornar principal” no card ou arraste o card da formação para o quadro Principal.</p>
           <h3>Principal</h3>
           <div className="party-primary-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, 'primary')}>
-            {roster.find((member) => member.id === primary) && <div className="party-formation-card"><PartyPortrait appearance={roster.find((member) => member.id === primary)!.appearance} /><strong>{roster.find((member) => member.id === primary)!.name}</strong><small>{roster.find((member) => member.id === primary)!.vocation.name} · lvl {roster.find((member) => member.id === primary)!.level}</small></div>}
+            {primaryMember && <div className="party-formation-card selected"><PartyPortrait appearance={primaryMember.appearance} /><strong>{primaryMember.name}</strong><small>{primaryMember.vocation.name} · lvl {primaryMember.level}</small><span className="party-manager-hint">Líder selecionado</span></div>}
           </div>
           <h3>Formação <span>{formation.length}/{character.partySlots}</span></h3>
           <div className="party-formation" onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, 'formation')}>
@@ -116,7 +124,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
           try { const result = await api.configureParty(character.id, formation, primary); onSaved(result.character); onClose(); }
           catch (reason) { setError(reason instanceof Error ? reason.message : 'Não foi possível salvar a formação.'); }
           finally { setBusy(false); }
-        }}>{busy ? 'Salvando…' : dirty ? 'Salvar alterações' : 'Nenhuma mudança'}</button>
+        }}>{busy ? 'Salvando…' : dirty ? `Salvar — ${primaryMember?.name ?? 'novo principal'}` : 'Nenhuma mudança'}</button>
         <button type="button" disabled={busy} onClick={onClose}>Fechar</button>
       </footer>
     </div>
