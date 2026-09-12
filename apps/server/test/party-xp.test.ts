@@ -31,14 +31,14 @@ describe('party XP', () => {
     expect(result.entries.every((entry) => entry.result.delta.experience === 0)).toBe(true);
   });
 
-  it('shares one attacker’s kills equally among three active members', () => {
+  it('shares one attacker’s kills exactly equally among three active members', () => {
     const members = [member(1), member(2, false), member(3, false)];
     const result = settleParty(members, START + 20_000);
     const xp = result.entries.map((entry) => entry.result.delta.experience);
     expect(result.entries[0]!.result.delta.kills).toBeGreaterThan(0);
     expect(result.entries[1]!.result.delta.kills).toBe(0);
     expect(Math.min(...xp)).toBeGreaterThan(0);
-    expect(Math.max(...xp) - Math.min(...xp)).toBeLessThanOrEqual(1);
+    expect(new Set(xp).size).toBe(1);
     for (const entry of result.entries) {
       expect(entry.session.character.experience - expForLevel(40)).toBe(entry.result.delta.experience);
     }
@@ -54,7 +54,7 @@ describe('party XP', () => {
     expect(result.entries[2]!.result.delta.experience).toBe(0);
   });
 
-  it('stops crediting a member after it leaves, and preserves XP on rounding', () => {
+  it('stops crediting a member after it leaves, and keeps remaining members tied', () => {
     const members = [member(1), member(2, false), member(3, false)];
     const first = settleParty(members, START + 10_000);
     const before = members[2]!.session.character.experience;
@@ -66,7 +66,7 @@ describe('party XP', () => {
     expect(members[2]!.session.character.experience).toBe(before);
     expect(second.entries[0]!.result.delta.kills).toBeGreaterThan(0);
     expect(second.entries[0]!.result.delta.experience).toBeGreaterThan(0);
-    expect(Math.abs(second.entries[0]!.result.delta.experience - second.entries[1]!.result.delta.experience)).toBeLessThanOrEqual(1);
+    expect(second.entries[0]!.result.delta.experience).toBe(second.entries[1]!.result.delta.experience);
   });
 
   it('settles the entire party when reading a member and never duplicates XP', () => {
@@ -84,7 +84,7 @@ describe('party XP', () => {
       const experiences = () => ids.map((id) => JSON.parse(db.findCharacter(id)!.session!).character.experience as number);
       const before = experiences();
       expect(Math.min(...before)).toBeGreaterThan(expForLevel(40));
-      expect(Math.max(...before) - Math.min(...before)).toBeLessThanOrEqual(1);
+      expect(new Set(before).size).toBe(1);
       loadCharacter(db, account.id, ids[0]!, START + 20_000);
       reconcileHunts(db, START + 20_000);
       expect(experiences()).toEqual(before);
