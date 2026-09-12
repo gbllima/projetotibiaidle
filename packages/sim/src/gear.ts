@@ -146,6 +146,63 @@ export function gearBudget(level: number): number {
   return Math.round(200 * level ** 1.8);
 }
 
+function itemNamed(name: string): Item | undefined {
+  const wanted = name.toLowerCase();
+  return items.find((item) => item.name.toLowerCase() === wanted);
+}
+
+function addStarterItem(loadout: Partial<Record<EquipSlot, number>>, slot: EquipSlot, name: string, character: CharacterState): void {
+  const item = itemNamed(name);
+  if (!item || !canEquip(item, character)) return;
+  loadout[slot] = item.id;
+}
+
+/**
+ * Deliberately weak level-8 kit. New players should be able to kill starter
+ * monsters, but their first meaningful upgrades must come from playing.
+ */
+function starterLoadout(character: CharacterState): Partial<Record<EquipSlot, number>> {
+  const loadout: Partial<Record<EquipSlot, number>> = {};
+  addStarterItem(loadout, 'head', 'leather helmet', character);
+  addStarterItem(loadout, 'armor', 'leather armor', character);
+  addStarterItem(loadout, 'legs', 'leather legs', character);
+  addStarterItem(loadout, 'feet', 'leather boots', character);
+  const backpack = itemsById.get(DEFAULT_BACKPACK_ID);
+  if (backpack && canEquip(backpack, character)) loadout.backpack = backpack.id;
+
+  switch (character.vocationId) {
+    case 1: case 5:
+      addStarterItem(loadout, 'left', 'wand of vortex', character);
+      break;
+    case 2: case 6:
+      addStarterItem(loadout, 'left', 'snakebite rod', character);
+      break;
+    case 3: case 7:
+      addStarterItem(loadout, 'left', 'bow', character);
+      addStarterItem(loadout, 'ammo', 'simple arrow', character);
+      break;
+    case 4: case 8: {
+      const weapon = character.startWeapon === 'axe'
+        ? 'hand axe'
+        : character.startWeapon === 'club'
+          ? 'club'
+          : 'sword';
+      addStarterItem(loadout, 'left', weapon, character);
+      addStarterItem(loadout, 'right', 'wooden shield', character);
+      break;
+    }
+    // Monks start with their fists; giving them a weapon would work against
+    // their intended early progression.
+    default:
+      break;
+  }
+
+  const weaponId = loadout.left;
+  const weapon = weaponId === undefined ? null : itemsById.get(weaponId);
+  if (weapon && isTwoHanded(weapon)) delete loadout.right;
+  return loadout;
+}
+
 /** Higher is better. Offense is weighted above defense for weapons. */
 function score(item: Item, slot: EquipSlot, preferMagic: boolean): number {
   if (slot === 'left') {
@@ -175,6 +232,12 @@ export function bestLoadout(
   character: CharacterState,
   budget = gearBudget(character.level),
 ): Partial<Record<EquipSlot, number>> {
+  // Character creation currently requests exactly this level/budget pair. The
+  // old generic selector treated 3,000 gold as a per-item cap and could hand a
+  // fresh character several mid-tier pieces at once. Keep that creation path
+  // intentionally modest while leaving normal auto-equip/reference logic intact.
+  if (character.level === 8 && budget === 3_000) return starterLoadout(character);
+
   const vocation = getVocation(character.vocationId);
   const preferMagic = [1, 2, 5, 6].includes(vocation.id);
   const best = new Map<EquipSlot, { item: Item; value: number }>();
