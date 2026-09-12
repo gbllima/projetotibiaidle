@@ -75,7 +75,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
       <strong>{member.name}</strong><small>{member.vocation.name} · lvl {member.level}</small>
       {inFormation
         ? isPrincipal
-          ? <span className="party-manager-hint">PRINCIPAL FIXO</span>
+          ? <span className="party-manager-hint" style={{ color: '#d8a52b', fontWeight: 700 }}>Principal</span>
           : <span className="party-manager-hint">Membro da party</span>
         : <button type="button" className="party-card-primary" disabled={busy || formation.length >= character.partySlots} onClick={() => add(id)}>Adicionar</button>}
     </div>;
@@ -109,7 +109,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
               <PartyPortrait appearance={principal.appearance} />
               <strong>{principal.name}</strong>
               <small>{principal.vocation.name} · lvl {principal.level}</small>
-              <span className="party-manager-hint">PRINCIPAL FIXO</span>
+              <span className="party-manager-hint" style={{ color: '#d8a52b', fontWeight: 700 }}>Principal</span>
             </div>
           </div>
           <h3>Formação <span>{formation.length}/{character.partySlots}</span></h3>
