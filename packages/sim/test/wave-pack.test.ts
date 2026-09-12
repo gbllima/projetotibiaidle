@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   advance, BOSS_HEALTH_MULT, BOSS_REWARD_MULT, createCharacter, deriveStats,
-  describeSession, huntThroughput, SPELLS, startSession, TICKS_PER_HOUR, WAVE_PACK, waveProgress, DEFAULT_TUNING,
+  describeSession, SPELLS, startSession, TICK_MS, WAVE_PACK, waveProgress,
 } from '../src/index.js';
 
 const HUNT = 'venore-rotworm-cave';
+const NORMAL_WAVE_DELAY_TICKS = Math.round(3000 / TICK_MS);
+const BOSS_WAVE_DELAY_TICKS = Math.round(5000 / TICK_MS);
 
 function readyKnight(level = 40): ReturnType<typeof createCharacter> {
   const character = createCharacter('Kina', 4);
@@ -33,37 +35,52 @@ describe('fixed wave packs', () => {
     const events = advance(session, 30, { maxEvents: 800 });
     const deaths = events.filter((event) => event.type === 'monster_death').length;
     const spawns = events.filter((event) => event.type === 'monster_spawn');
-    // Still inside wave 1 → no replacement spawns mid-pack.
     expect(deaths).toBeLessThan(WAVE_PACK[0]);
     expect(spawns).toHaveLength(0);
     expect(session.active.every((monster) => startUids.has(monster.uid))).toBe(true);
   });
 
-  it('spawns the full next wave only after the floor clears', () => {
+  it('waits 3 seconds before releasing a normal next wave', () => {
     const session = startSession(readyKnight(40), HUNT, 22n);
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
-    session.spawnCredits = WAVE_PACK[1]!;
+    session.spawnCredits = 0;
+
+    advance(session, NORMAL_WAVE_DELAY_TICKS - 1, { maxEvents: 40 });
+    expect(session.active).toHaveLength(0);
+
     const events = advance(session, 1, { maxEvents: 40 });
     expect(describeSession(session)?.wave).toBe(2);
     expect(session.active.length).toBe(WAVE_PACK[1]);
     expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
   });
 
-  it('waits for the zone spawn budget before releasing another complete wave', () => {
+  it('uses the same 3-second transition even when spawn credits are already full', () => {
     const session = startSession(readyKnight(40), HUNT, 22n);
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
-    session.spawnCredits = 0;
-    advance(session, 100, { tuning: { ...DEFAULT_TUNING, spawnRate: 0 } });
-    expect(session.active).toHaveLength(0);
+    session.spawnCredits = WAVE_PACK[1]!;
 
-    const requiredTicks = Math.ceil(WAVE_PACK[1]! * TICKS_PER_HOUR / huntThroughput(HUNT).killsPerHour);
-    advance(session, requiredTicks - 1);
+    advance(session, NORMAL_WAVE_DELAY_TICKS - 1, { maxEvents: 40 });
     expect(session.active).toHaveLength(0);
-    const events = advance(session, 1);
+    advance(session, 1, { maxEvents: 40 });
     expect(session.active).toHaveLength(WAVE_PACK[1]);
-    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
+  });
+
+  it('waits 5 seconds before wave 10 boss appears', () => {
+    const session = startSession(readyKnight(80), HUNT, 23n);
+    let kills = 0;
+    for (let i = 0; i < 9; i += 1) kills += WAVE_PACK[i]!;
+    session.totals.kills = kills;
+    session.active = [];
+    session.spawnCredits = 1;
+
+    advance(session, BOSS_WAVE_DELAY_TICKS - 1, { maxEvents: 20 });
+    expect(session.active).toHaveLength(0);
+    const events = advance(session, 1, { maxEvents: 20 });
+    expect(describeSession(session)?.wave).toBe(10);
+    expect(session.active).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(1);
   });
 
   it('wave 10 is one creature with ×10 HP and ×10 reward mult', () => {
@@ -71,17 +88,15 @@ describe('fixed wave packs', () => {
     expect(BOSS_HEALTH_MULT).toBe(10);
     const session = startSession(readyKnight(80), HUNT, 23n);
     const beforeBoss = waveProgress(0);
-    // Jump to the skull wave.
     let kills = 0;
     for (let i = 0; i < 9; i += 1) kills += WAVE_PACK[i]!;
     session.totals.kills = kills;
     session.active = [];
     session.spawnCredits = 1;
-    advance(session, 1, { maxEvents: 20 });
+    advance(session, BOSS_WAVE_DELAY_TICKS, { maxEvents: 20 });
     expect(describeSession(session)?.wave).toBe(10);
     expect(session.active).toHaveLength(1);
-    expect(session.active[0]!.maxHealth).toBeGreaterThanOrEqual(beforeBoss.size); // sanity
-    // Rotworm base HP * 10
+    expect(session.active[0]!.maxHealth).toBeGreaterThanOrEqual(beforeBoss.size);
     expect(session.active[0]!.maxHealth % BOSS_HEALTH_MULT === 0 || session.active[0]!.maxHealth >= 10).toBe(true);
   });
 
