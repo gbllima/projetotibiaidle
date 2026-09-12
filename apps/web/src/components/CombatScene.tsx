@@ -61,7 +61,11 @@ function compactVisualEvents(events: SimEvent[]): SimEvent[] {
     }
 
     if (event.type === 'monster_attack' && (event.amount ?? 0) > 0) {
-      const key = `monster:${event.monsterId ?? event.uid ?? 0}:${Math.floor(event.tick / ATTACK_WINDOW_TICKS)}`;
+      // Party snapshots carry actorId as the member who received this hit.
+      // Keep each victim in a separate visual bucket; otherwise attacks from
+      // different members can be merged and appear as mysterious damage on the
+      // first member represented by that bucket.
+      const key = `monster:${actor}:${event.monsterId ?? event.uid ?? 0}:${Math.floor(event.tick / ATTACK_WINDOW_TICKS)}`;
       addOrMerge(key, event);
       continue;
     }
