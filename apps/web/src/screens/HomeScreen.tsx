@@ -3,6 +3,7 @@ import { CreatureIcon } from '../components/CreatureIcon.js';
 import { itemIconUrl } from '../render/itemIcon.js';
 import { storedToken } from '../api/client.js';
 import '../launch-notice.css';
+import '../home-anywhere.css';
 
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
 type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
@@ -50,6 +51,20 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
           <div className="landing-br-badge"><span>BR</span><div><strong>FEITO PARA QUEM GOSTA DE RPG</strong><small>Progressão idle, hunts, loot e evolução constante.</small></div></div>
         </div>
         <div className="landing-hero-art"><div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Idle BR — O RPG Idle Brasileiro" /></div></div>
+      </section>
+
+      <section className="landing-anywhere" aria-label="Jogue em qualquer lugar">
+        <div className="landing-anywhere-copy">
+          <small>ACESSO DIRETO PELO NAVEGADOR</small>
+          <h2>JOGUE EM QUALQUER LUGAR.<br /><em>SEM DOWNLOADS. SEM INSTALAÇÃO.</em></h2>
+          <p>Entre no Knock Idle BR pelo navegador e continue sua aventura onde estiver.</p>
+        </div>
+        <div className="landing-anywhere-platforms" aria-label="Plataformas compatíveis">
+          <div className="landing-anywhere-platform"><b>PC</b><span>COMPUTADOR</span></div>
+          <div className="landing-anywhere-platform"><b>AN</b><span>ANDROID</span></div>
+          <div className="landing-anywhere-platform"><b>iOS</b><span>IPHONE / IPAD</span></div>
+        </div>
+        <div className="landing-anywhere-note">PC • ANDROID • iOS — abra, entre na sua conta e continue jogando.</div>
       </section>
 
       <section className="landing-fair-economy" aria-label="Economia justa">
