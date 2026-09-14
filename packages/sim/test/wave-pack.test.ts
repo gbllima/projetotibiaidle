@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   advance, BOSS_HEALTH_MULT, BOSS_REWARD_MULT, createCharacter, deriveStats,
-  describeSession, SPELLS, startSession, TICK_MS, WAVE_PACK, waveProgress,
+  describeSession, SPELLS, startSession, TICK_MS, WAVE_PACK, waveActiveLimit, waveProgress,
 } from '../src/index.js';
 
 const HUNT = 'venore-rotworm-cave';
@@ -44,15 +44,15 @@ describe('fixed wave packs', () => {
     const session = startSession(readyKnight(40), HUNT, 22n);
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
-    session.spawnCredits = 0;
+    session.spawnCredits = WAVE_PACK[1]!;
 
     advance(session, NORMAL_WAVE_DELAY_TICKS - 1, { maxEvents: 40 });
     expect(session.active).toHaveLength(0);
 
     const events = advance(session, 1, { maxEvents: 40 });
     expect(describeSession(session)?.wave).toBe(2);
-    expect(session.active.length).toBe(WAVE_PACK[1]);
-    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
+    expect(session.active.length).toBe(waveActiveLimit(1));
+    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(waveActiveLimit(1));
   });
 
   it('uses the same 3-second transition even when spawn credits are already full', () => {
@@ -64,7 +64,7 @@ describe('fixed wave packs', () => {
     advance(session, NORMAL_WAVE_DELAY_TICKS - 1, { maxEvents: 40 });
     expect(session.active).toHaveLength(0);
     advance(session, 1, { maxEvents: 40 });
-    expect(session.active).toHaveLength(WAVE_PACK[1]);
+    expect(session.active).toHaveLength(waveActiveLimit(1));
   });
 
   it('waits 5 seconds before wave 10 boss appears', () => {
@@ -83,9 +83,9 @@ describe('fixed wave packs', () => {
     expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(1);
   });
 
-  it('wave 10 is one creature with ×10 HP and ×10 reward mult', () => {
+  it('wave 10 is one creature with ×5 HP and ×5 reward mult', () => {
     expect(BOSS_REWARD_MULT).toBe(BOSS_HEALTH_MULT);
-    expect(BOSS_HEALTH_MULT).toBe(10);
+    expect(BOSS_HEALTH_MULT).toBe(5);
     const session = startSession(readyKnight(80), HUNT, 23n);
     const beforeBoss = waveProgress(0);
     let kills = 0;
@@ -97,7 +97,7 @@ describe('fixed wave packs', () => {
     expect(describeSession(session)?.wave).toBe(10);
     expect(session.active).toHaveLength(1);
     expect(session.active[0]!.maxHealth).toBeGreaterThanOrEqual(beforeBoss.size);
-    expect(session.active[0]!.maxHealth % BOSS_HEALTH_MULT === 0 || session.active[0]!.maxHealth >= 10).toBe(true);
+    expect(session.active[0]!.maxHealth % BOSS_HEALTH_MULT === 0 || session.active[0]!.maxHealth >= 5).toBe(true);
   });
 
   it('exori hits every living creature for damage in one cast', () => {
