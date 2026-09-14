@@ -120,7 +120,7 @@ function trimLegacyOverflow(session: ReinforcementSession): void {
 function beginWaveWait(session: ReinforcementSession, waveIndex: number): void {
   session.reinforcementWaveIndex = waveIndex;
   session.reinforcementQueue = [];
-  session.reinforcementReadyTick = session.tick + delayTicks(waveIndex) - 1;
+  session.reinforcementReadyTick = session.tick + delayTicks(waveIndex);
   // combat.ts still accrues the calibrated spawn budget, but this wrapper owns
   // every actual spawn so the raw full-pack refill can never bypass the cap.
   session.nextWaveAtTick = RAW_REFILL_BLOCK;
@@ -141,7 +141,7 @@ function ensureState(session: ReinforcementSession): void {
       const legacyReady = session.nextWaveAtTick;
       session.reinforcementReadyTick = legacyReady !== undefined && legacyReady < RAW_REFILL_BLOCK
         ? legacyReady
-        : session.tick + delayTicks(progress.waveIndex) - 1;
+        : session.tick + delayTicks(progress.waveIndex);
       session.nextWaveAtTick = RAW_REFILL_BLOCK;
     }
   }
@@ -159,7 +159,7 @@ function ensureState(session: ReinforcementSession): void {
     const legacyReady = session.nextWaveAtTick;
     session.reinforcementReadyTick = legacyReady !== undefined && legacyReady < RAW_REFILL_BLOCK
       ? legacyReady
-      : session.tick + delayTicks(progress.waveIndex) - 1;
+      : session.tick + delayTicks(progress.waveIndex);
     session.nextWaveAtTick = RAW_REFILL_BLOCK;
   }
 }
