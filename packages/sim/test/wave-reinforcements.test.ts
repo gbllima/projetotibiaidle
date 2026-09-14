@@ -22,6 +22,9 @@ describe('wave reinforcements', () => {
     let furthestWave = 0;
 
     for (let tick = 0; tick < 4_000 && session.status === 'active'; tick += 1) {
+      // This test isolates release cadence and screen caps. Calibration tests
+      // separately verify that real hunts earn these credits at the correct rate.
+      session.spawnCredits = Math.max(session.spawnCredits, waveProgress(session.totals.kills).size);
       // Make the test about release cadence, not equipment DPS.
       for (const monster of session.active) monster.health = Math.min(monster.health, 1);
       advance(session, 1, { maxEvents: 0 });
