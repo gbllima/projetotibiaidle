@@ -70,7 +70,7 @@ function readAllyHealSettings(disabledSpells: string[]): AllyHealSettings {
   const tokens = disabledSpells.filter((entry) => entry.startsWith(PARTY_HEAL_PREFIX));
   const configured = tokens.length > 0;
   const settings: AllyHealSettings = {
-    enabled: configured ? tokens.includes(`${PARTY_HEAL_PREFIX}on`) : false,
+    enabled: configured ? tokens.includes(`${PARTY_HEAL_PREFIX}on`) : true,
     selfFirst: configured ? tokens.includes(`${PARTY_HEAL_PREFIX}self`) : true,
     priority: { ...DEFAULT_ALLY_PRIORITY },
     threshold: { ...DEFAULT_ALLY_THRESHOLD },
