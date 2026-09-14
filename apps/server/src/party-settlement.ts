@@ -20,7 +20,7 @@ type PartyRuntimeEntry = PartySession & {
 
 /**
  * Visual party formation used by the hunt renderer: principal in the centre,
- * then the first two companions to the lower-left / lower-right.
+ * then the first two companions spread farther to the lower-left / lower-right.
  *
  * The server simulation is intentionally map-light, but using the same seats
  * gives us a deterministic definition of "nearest party member" when a hunter
@@ -28,14 +28,14 @@ type PartyRuntimeEntry = PartySession & {
  */
 const PARTY_SEATS = [
   { x: PLAYER_TILE.x, y: PLAYER_TILE.y },
-  { x: PLAYER_TILE.x - 2, y: PLAYER_TILE.y + 1 },
-  { x: PLAYER_TILE.x + 2, y: PLAYER_TILE.y + 1 },
+  { x: PLAYER_TILE.x - 3, y: PLAYER_TILE.y + 2 },
+  { x: PLAYER_TILE.x + 3, y: PLAYER_TILE.y + 2 },
 ] as const;
 
 function partySeat(index: number): { x: number; y: number } {
   return PARTY_SEATS[index] ?? {
-    x: PLAYER_TILE.x + (index % 2 === 0 ? 2 : -2),
-    y: PLAYER_TILE.y + 1 + Math.floor(index / 2),
+    x: PLAYER_TILE.x + (index % 2 === 0 ? 3 : -3),
+    y: PLAYER_TILE.y + 2 + Math.floor(index / 2),
   };
 }
 
