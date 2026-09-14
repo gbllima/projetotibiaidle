@@ -3,6 +3,7 @@ import {
   type ActiveMonster, type HuntSession,
 } from '@tibia-idle/sim';
 import { offlineCapHours, OFFLINE_GAP_MS, OFFLINE_EFFICIENCY, settle } from './settle.js';
+import { applyPartyHealing } from './party-healing.js';
 
 export interface PartySession {
   id: number;
@@ -151,6 +152,15 @@ export function settleParty(sessions: PartySession[], now: number, remainderCurs
     if (!Number.isFinite(next)) break;
 
     const statusesBeforeTick = new Map(entries.map((entry) => [entry.id, entry.session.status]));
+
+    // Party support happens before each hunter's own combat tick. This lets the
+    // Helper's "Priorizar minha cura" reserve the shared healing cooldown for
+    // self-healing when necessary; otherwise exura sio can claim it for an ally.
+    for (const support of applyPartyHealing(entries, next)) {
+      const healer = entries.find((entry) => entry.id === support.healerId);
+      if (healer) healer.result.events = [...healer.result.events, support.event].slice(-24);
+    }
+
     for (const entry of entries) {
       if (entry.session.status !== 'active' || entry.cursor + TICK_MS !== next || next > entry.until) continue;
       const step = settle(entry.session, entry.cursor, next, {
