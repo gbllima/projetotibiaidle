@@ -32,12 +32,17 @@ function huntSession(vocationId: number, patch: Record<string, unknown> = {}) {
 }
 
 describe('helper automation', () => {
-  it('casts exeta res and spawns an extra monster when taunt is on', () => {
+  it('casts exeta res and spends one available spawn credit when taunt is on', () => {
     const session = huntSession(4, { taunt: true, healthPotionId: -1, manaPotionId: -1, healSpellId: '' });
     session.active = session.active.slice(0, 1);
-    const events = advance(session, 120, { maxEvents: 500, creatureFlee: false });
+    session.spawnCredits = 1;
+    const events = advance(session, 8, { maxEvents: 120, creatureFlee: false });
     expect(events.some((event) => event.type === 'buff' && event.words === 'exeta res')).toBe(true);
+    expect(events.some((event) => event.type === 'monster_spawn')).toBe(true);
     expect(session.active.length).toBeGreaterThan(0);
+    // A little fractional budget may accrue during the ticks, but the full
+    // credit reserved for exeta must have been consumed.
+    expect(session.spawnCredits).toBeLessThan(1);
   });
 
   it('activates utito tempo when blood rage is enabled', () => {
