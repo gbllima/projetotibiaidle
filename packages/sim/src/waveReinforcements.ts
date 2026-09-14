@@ -9,6 +9,7 @@ import { huntThroughput } from './throughput.js';
 import { Rng } from './rng.js';
 import { isBossHunt } from './bossEncounters.js';
 import { meleeSurroundSpots, PLAYER_TILE } from './areas.js';
+import { isSpellGroupReady } from './spells.js';
 import {
   BOSS_HEALTH_MULT,
   isBossWave,
@@ -32,6 +33,7 @@ export const WAVE_ACTIVE_LIMIT = [3, 4, 5, 5, 6, 6, 6, 7, 7, 1] as const;
 const NORMAL_WAVE_DELAY_MS = 3_000;
 const BOSS_WAVE_DELAY_MS = 5_000;
 const RAW_REFILL_BLOCK = Number.MAX_SAFE_INTEGER;
+const CREDIT_EPSILON = 1e-9;
 
 type ReinforcementSession = HuntSession & {
   /** Wave whose reinforcement state is currently tracked. */
@@ -115,15 +117,33 @@ function trimLegacyOverflow(session: ReinforcementSession): void {
   layoutPackMonsters(session.active);
 }
 
+function beginWaveWait(session: ReinforcementSession, waveIndex: number): void {
+  session.reinforcementWaveIndex = waveIndex;
+  session.reinforcementQueue = [];
+  session.reinforcementReadyTick = session.tick + delayTicks(waveIndex) - 1;
+  // combat.ts still accrues the calibrated spawn budget, but this wrapper owns
+  // every actual spawn so the raw full-pack refill can never bypass the cap.
+  session.nextWaveAtTick = RAW_REFILL_BLOCK;
+}
+
 function ensureState(session: ReinforcementSession): void {
   if (isBossHunt(session.huntId)) return;
   const progress = waveProgress(session.totals.kills);
   if (session.reinforcementWaveIndex !== progress.waveIndex) {
     session.reinforcementWaveIndex = progress.waveIndex;
-    session.reinforcementReadyTick = undefined;
-    // A wave cannot legitimately change while old queued creatures still live.
-    // Clear only stale data left by an older client/server version.
     session.reinforcementQueue = [];
+    session.reinforcementReadyTick = undefined;
+
+    // A persisted session (or a test fixture) may already sit exactly between
+    // waves. Treat that state like a real transition instead of releasing a
+    // fresh pack immediately.
+    if (session.active.length === 0 && progress.killed === 0) {
+      const legacyReady = session.nextWaveAtTick;
+      session.reinforcementReadyTick = legacyReady !== undefined && legacyReady < RAW_REFILL_BLOCK
+        ? legacyReady
+        : session.tick + delayTicks(progress.waveIndex) - 1;
+      session.nextWaveAtTick = RAW_REFILL_BLOCK;
+    }
   }
   session.reinforcementQueue ??= [];
   trimLegacyOverflow(session);
@@ -140,6 +160,7 @@ function ensureState(session: ReinforcementSession): void {
     session.reinforcementReadyTick = legacyReady !== undefined && legacyReady < RAW_REFILL_BLOCK
       ? legacyReady
       : session.tick + delayTicks(progress.waveIndex) - 1;
+    session.nextWaveAtTick = RAW_REFILL_BLOCK;
   }
 }
 
@@ -149,21 +170,40 @@ function remainingUnspawned(session: ReinforcementSession): number {
   return Math.max(0, progress.size - progress.killed - session.active.length - queued);
 }
 
+function tauntEligible(session: ReinforcementSession): boolean {
+  const character = session.character;
+  if (!character.policy.taunt) return false;
+  if (character.vocationId !== 4 && character.vocationId !== 8) return false;
+  if (character.level < 20 || character.mana < 30) return false;
+  if (!isSpellGroupReady(session.spellCooldowns ?? {}, 'support')) return false;
+  // Queued monsters are already-real legacy creatures. Do not let exeta create
+  // another copy while those are waiting to re-enter the floor.
+  if ((session.reinforcementQueue?.length ?? 0) > 0) return false;
+  return remainingUnspawned(session) > 0;
+}
+
+/**
+ * Fill visible slots only from the hunt's calibrated spawn budget. The initial
+ * room is still free, but every later creature consumes one whole spawn credit.
+ * This keeps strong characters from turning low-level caves into unlimited XP.
+ */
 function fillOpenSlots(
   session: ReinforcementSession,
   events: SimEvent[],
   maxEvents: number,
-): void {
-  if (isBossHunt(session.huntId)) return;
+): number {
+  if (isBossHunt(session.huntId)) return 0;
   const progress = waveProgress(session.totals.kills);
   const limit = sessionActiveLimit(session, progress.waveIndex);
-  if (session.active.length >= limit) return;
+  if (session.active.length >= limit) return 0;
 
   let slots = limit - session.active.length;
   const queue = session.reinforcementQueue ?? (session.reinforcementQueue = []);
+  let released = 0;
 
   // Sessions that were already running before this update may have real active
-  // monsters parked in the hidden queue. Release those first without rerolling.
+  // monsters parked in the hidden queue. Release those first without charging
+  // the spawn budget a second time.
   while (slots > 0 && queue.length > 0) {
     const monster = queue.shift();
     if (!monster) break;
@@ -175,20 +215,40 @@ function fillOpenSlots(
       monsterId: monster.monsterId,
     }, maxEvents);
     slots -= 1;
+    released += 1;
   }
 
   let remaining = remainingUnspawned(session);
   if (slots <= 0 || remaining <= 0) {
     if (session.active.length > 0) layoutPackMonsters(session.active);
-    return;
+    return released;
+  }
+
+  const wholeCredits = Math.max(0, Math.floor(session.spawnCredits + CREDIT_EPSILON));
+  const canReserveTaunt = tauntEligible(session)
+    && wholeCredits >= (session.active.length > 0 ? 1 : 2)
+    && remaining >= (session.active.length > 0 ? 1 : 2);
+  const tauntReserve = canReserveTaunt ? 1 : 0;
+
+  // Leave one visible slot and one spawn credit for exeta res when the helper is
+  // ready. This makes taunt an intentional pull instead of letting automatic
+  // reinforcements steal its vacancy a few microseconds earlier.
+  const autoLimit = Math.max(session.active.length, limit - tauntReserve);
+  slots = Math.max(0, autoLimit - session.active.length);
+  const budget = Math.max(0, wholeCredits - tauntReserve);
+  const toSpawn = Math.min(slots, remaining, budget);
+  if (toSpawn <= 0) {
+    if (session.active.length > 0) layoutPackMonsters(session.active);
+    return released;
   }
 
   const pool = huntThroughput(session.huntId).monsters;
-  if (pool.length === 0) return;
+  if (pool.length === 0) return released;
   const rng = new Rng(0);
   rng.setState(session.rngState);
 
-  while (slots > 0 && remaining > 0) {
+  let spawned = 0;
+  while (spawned < toSpawn) {
     const definition = pickMonster(session, pool, rng);
     if (!definition) break;
     const monster = makeMonster(session, definition);
@@ -199,23 +259,14 @@ function fillOpenSlots(
       uid: monster.uid,
       monsterId: definition.id,
     }, maxEvents);
-    slots -= 1;
-    remaining -= 1;
+    spawned += 1;
   }
 
   session.rngState = rng.getState();
-  session.spawnCredits = Math.max(0, session.spawnCredits - Math.min(session.spawnCredits, limit));
+  session.spawnCredits = Math.max(0, session.spawnCredits - spawned);
   session.initialPackCredit = 0;
   if (session.active.length > 0) layoutPackMonsters(session.active);
-}
-
-function beginWaveWait(session: ReinforcementSession, waveIndex: number): void {
-  session.reinforcementWaveIndex = waveIndex;
-  session.reinforcementQueue = [];
-  session.reinforcementReadyTick = session.tick + delayTicks(waveIndex) - 1;
-  // Prevent combat.ts from releasing its complete 5/7/9/14-monster pack while
-  // this wrapper is counting down to the capped first group.
-  session.nextWaveAtTick = RAW_REFILL_BLOCK;
+  return released + spawned;
 }
 
 function prepareBeforeTick(
@@ -232,23 +283,33 @@ function prepareBeforeTick(
       session.nextWaveAtTick = RAW_REFILL_BLOCK;
       return;
     }
-    session.reinforcementReadyTick = undefined;
-    session.nextWaveAtTick = undefined;
+
     fillOpenSlots(session, events, maxEvents);
+    if (session.active.length > 0) {
+      session.reinforcementReadyTick = undefined;
+      session.nextWaveAtTick = undefined;
+    } else {
+      // The 3s/5s transition is a minimum delay. If the cave has not earned a
+      // spawn credit yet, remain ready and retry next tick instead of restarting
+      // the delay or spawning for free.
+      session.nextWaveAtTick = RAW_REFILL_BLOCK;
+    }
     return;
   }
 
-  // During a wave, a dead creature immediately frees a slot for the next one.
+  // During a wave, a dead creature immediately frees a slot for a reinforcement,
+  // but the replacement still needs one calibrated spawn credit.
   if (progress.killed > 0 || session.active.length > 0) {
     fillOpenSlots(session, events, maxEvents);
-    if (session.active.length > 0) session.nextWaveAtTick = undefined;
   }
 }
 
 /**
- * Same simulator as combat.ts, with one extra invariant: normal cave waves have
- * a bounded number of simultaneous enemies. Total kills, XP and loot for each
- * wave are unchanged; only their release cadence changes.
+ * Same simulator as combat.ts, with two extra invariants:
+ * - normal cave waves have a bounded number of simultaneous enemies;
+ * - every post-entry creature consumes the calibrated hunt spawn budget.
+ *
+ * Total wave sizes, XP/loot rules and deterministic RNG stay unchanged.
  */
 export function advance(session: HuntSession, ticks: number, options: AdvanceOptions = {}): SimEvent[] {
   if (ticks <= 0 || isBossHunt(session.huntId)) return advanceRaw(session, ticks, options);
@@ -265,12 +326,19 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
     const limit = sessionActiveLimit(managed, before.waveIndex);
     const policy = managed.character.policy;
     const originalTaunt = policy.taunt;
-    // Exeta res may fill an open slot, but it must never break the screen cap.
-    if (managed.active.length >= limit && originalTaunt) policy.taunt = false;
+    const allowTaunt = originalTaunt
+      && managed.active.length > 0
+      && managed.active.length < limit
+      && managed.spawnCredits + CREDIT_EPSILON >= 1
+      && tauntEligible(managed);
 
-    if (managed.reinforcementReadyTick !== undefined && managed.active.length === 0) {
-      managed.nextWaveAtTick = RAW_REFILL_BLOCK;
-    }
+    // Raw combat knows how to cast exeta res but not about reinforcement caps or
+    // spawn budgets. Temporarily disable taunt unless the wrapper reserved both.
+    if (originalTaunt && !allowTaunt) policy.taunt = false;
+
+    // combat.ts is still responsible for accruing spawnCredits every tick. Keep
+    // its legacy full-pack refill blocked so only this wrapper may spend them.
+    managed.nextWaveAtTick = RAW_REFILL_BLOCK;
 
     const remainingEventBudget = Math.max(0, maxEvents - events.length);
     const produced = advanceRaw(managed, 1, {
@@ -279,6 +347,10 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
     });
 
     policy.taunt = originalTaunt;
+    const exetaCast = produced.some((event) => event.type === 'buff' && event.words === 'exeta res');
+    if (exetaCast) {
+      managed.spawnCredits = Math.max(0, managed.spawnCredits - 1);
+    }
     for (const event of produced) pushEvent(events, event, maxEvents);
 
     const after = waveProgress(managed.totals.kills);
@@ -287,11 +359,8 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
       continue;
     }
 
-    // If the visible group was wiped but this wave still has enemies left,
-    // cancel combat.ts's full-pack timer and release replacements immediately.
     if (managed.reinforcementReadyTick === undefined) {
       fillOpenSlots(managed, events, maxEvents);
-      if (managed.active.length > 0) managed.nextWaveAtTick = undefined;
     }
 
     trimLegacyOverflow(managed);
