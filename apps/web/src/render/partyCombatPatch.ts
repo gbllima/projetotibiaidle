@@ -213,11 +213,29 @@ if (!prototype.__partyFormationPatchApplied) {
   const originalSetHunt = prototype.setHunt;
   prototype.__partyOriginalSetHunt = originalSetHunt;
   prototype.setHunt = function patchedPartySetHunt(this: SceneInternals, huntId: string): void {
-    const changed = this.huntId !== huntId;
+    const wasCityLobby = this.cityLobby;
+    const changedHunt = this.huntId !== huntId;
+    const freshEntry = wasCityLobby || changedHunt;
+
+    // CombatScene.setHunt optimises away a repaint when the hunt id is equal to
+    // the previous one. That is correct while already inside the hunt, but not
+    // after visiting the City: the current floor is then the city map even though
+    // `huntId` still contains the old hunt. Force the original method to treat a
+    // City -> same hunt transition as a scene change so it destroys the city
+    // floor and paints the cave again.
+    if (wasCityLobby && !changedHunt) this.huntId = '';
     originalSetHunt.call(this, huntId);
-    if (!changed) return;
+
+    if (!freshEntry) return;
+
+    // A new hunt session can reuse local monster uids. Never carry visual aggro
+    // ownership from the previous trip into the new one.
+    victimMap(this).clear();
+    this.monsterTargets.clear();
+
     // Existing party sprites are reused between screens/hunts. Mark them as not
-    // positioned so the first sync of the new hunt applies the wide formation.
+    // positioned so the first sync of every fresh hunt applies the wide formation,
+    // including when the player leaves to City and selects the same cave again.
     for (const ally of partyAllies(this)) formationPlaced.delete(ally as object);
   };
   prototype.__partyFormationPatchApplied = true;
