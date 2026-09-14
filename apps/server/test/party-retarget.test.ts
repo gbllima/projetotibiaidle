@@ -13,7 +13,10 @@ function member(id: number) {
   character.skills.sword = { level: 70, tries: 0 };
   character.equipment.left = 3271;
   character.health = deriveStats(character).maxHealth;
-  character.policy.fleeAt = 0;
+  // The test later injects an already-dead negative HP value. Use a sentinel
+  // below zero so that artificial state reaches the death branch rather than
+  // being intercepted by the normal flee policy first.
+  character.policy.fleeAt = -1;
   character.policy.stopWhenOutOfSupplies = false;
   character.policy.healthPotionAt = 0;
   character.policy.manaPotionAt = 0;
