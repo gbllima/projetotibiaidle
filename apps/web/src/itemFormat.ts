@@ -1,5 +1,5 @@
 import { itemsById, wandsById, type Item } from '@tibia-idle/data';
-import { ITEM_MARKET_CATEGORIES } from '@tibia-idle/sim';
+import { ITEM_MARKET_CATEGORIES, itemAllowedVocationIds } from '@tibia-idle/sim';
 import { formatNumber } from './format.js';
 
 export const BONUS_LABELS: Record<string, string> = {
@@ -69,31 +69,33 @@ const TYPE_TO_MARKET: Record<string, number> = {
   rods: 21,
 };
 
-const PLAYABLE_CLASS_ORDER = ['Knight', 'Paladin', 'Sorcerer', 'Druid', 'Monk'] as const;
+const VOCATION_LABELS: ReadonlyArray<{
+  base: number;
+  promoted: number;
+  baseLabel: string;
+  promotedLabel: string;
+}> = [
+  { base: 4, promoted: 8, baseLabel: 'Knight', promotedLabel: 'Elite Knight' },
+  { base: 3, promoted: 7, baseLabel: 'Paladin', promotedLabel: 'Royal Paladin' },
+  { base: 1, promoted: 5, baseLabel: 'Sorcerer', promotedLabel: 'Master Sorcerer' },
+  { base: 2, promoted: 6, baseLabel: 'Druid', promotedLabel: 'Elder Druid' },
+  { base: 9, promoted: 10, baseLabel: 'Monk', promotedLabel: 'Exalted Monk' },
+];
 
-type PlayableClassLabel = (typeof PLAYABLE_CLASS_ORDER)[number];
-
-function normalizeItemVocation(raw: string): string {
-  const value = raw.trim().toLowerCase();
-  if (value.includes('knight')) return 'Knight';
-  if (value.includes('paladin')) return 'Paladin';
-  if (value.includes('sorcerer')) return 'Sorcerer';
-  if (value.includes('druid')) return 'Druid';
-  if (value.includes('monk')) return 'Monk';
-  return raw.trim().replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-/** Human-friendly class restriction shown on item cards. Empty item.vocations means unrestricted. */
+/** Human-friendly class restriction, using the same resolver as server equip rules. */
 export function itemVocationLabel(item: Item): string {
-  if (item.vocations.length === 0) return 'Todas as classes';
+  const allowed = itemAllowedVocationIds(item);
+  if (allowed === null) return 'Todas as classes';
 
-  const normalized = [...new Set(item.vocations.map(normalizeItemVocation).filter(Boolean))];
-  const known = PLAYABLE_CLASS_ORDER.filter((label) => normalized.includes(label));
-  const unknown = normalized.filter((label) => !PLAYABLE_CLASS_ORDER.includes(label as PlayableClassLabel));
-  const ordered = [...known, ...unknown];
+  const labels: string[] = [];
+  for (const row of VOCATION_LABELS) {
+    const base = allowed.includes(row.base);
+    const promoted = allowed.includes(row.promoted);
+    if (base) labels.push(row.baseLabel);
+    else if (promoted) labels.push(row.promotedLabel);
+  }
 
-  if (known.length === PLAYABLE_CLASS_ORDER.length && unknown.length === 0) return 'Todas as classes';
-  return ordered.join(' · ') || 'Todas as classes';
+  return labels.join(' · ') || 'Todas as classes';
 }
 
 export function itemMarketCategory(item: Item): number {
