@@ -7,7 +7,7 @@ import {
 } from '@tibia-idle/sim';
 
 /** Hardest cap on catch-up. Free accounts get less; VIP matches the design doc. */
-export const FREE_OFFLINE_HOURS = 8;
+export const FREE_OFFLINE_HOURS = 16;
 export const VIP_OFFLINE_HOURS = 24;
 export const MAX_OFFLINE_HOURS = VIP_OFFLINE_HOURS;
 /** Gaps longer than this are treated as offline catch-up, not a live tick. */
