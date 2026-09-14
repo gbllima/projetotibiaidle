@@ -67,10 +67,14 @@ function serveHomeAssets(): Plugin {
 export default defineConfig({
   plugins: [react(), serveExtractedAssets(), serveHomeAssets()],
   server: {
+    allowedHosts: ['.trycloudflare.com'],
     proxy: {
       '/api': { target: apiTarget, changeOrigin: true },
       '/ws': { target: apiTarget, ws: true },
     },
+  },
+  preview: {
+    allowedHosts: ['.trycloudflare.com'],
   },
   resolve: {
     alias: {
