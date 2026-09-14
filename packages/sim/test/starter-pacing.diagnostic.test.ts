@@ -3,6 +3,7 @@ import {
   advance,
   bestLoadout,
   createCharacter,
+  defaultSupplies,
   deriveStats,
   startSession,
   TICK_MS,
@@ -14,12 +15,12 @@ function starterKnight() {
   character.startWeapon = 'sword';
   character.skills.sword.level = 12;
   character.equipment = bestLoadout(character, 3_000);
+  character.supplies = defaultSupplies(character, 1);
   const stats = deriveStats(character);
   character.health = stats.maxHealth;
   character.mana = stats.maxMana;
   character.policy.fleeAt = 0;
   character.policy.stopWhenOutOfSupplies = false;
-  character.policy.healthPotionAt = 0;
   return character;
 }
 
