@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createCharacter, deriveStats, expForLevel, SPELLS, startSession, TICK_MS,
+  createCharacter, deriveStats, expForLevel, SPELLS, startSession, TICK_MS, waveActiveLimit,
+  type ActiveMonster, type HuntSession,
 } from '@tibia-idle/sim';
 import { settleParty } from '../src/party-settlement.js';
 
 const START = 1_700_000_000_000;
+
+type ReinforcementSession = HuntSession & { reinforcementQueue?: ActiveMonster[] };
 
 function member(id: number) {
   const character = createCharacter('Retarget ' + id, 4);
@@ -30,15 +33,20 @@ function member(id: number) {
   return { id, session, settledAt: START };
 }
 
+function allMonsters(session: HuntSession): ActiveMonster[] {
+  const reinforcement = session as ReinforcementSession;
+  return [...session.active, ...(reinforcement.reinforcementQueue ?? [])];
+}
+
 describe('party monster retarget', () => {
-  it('moves a dead member’s remaining monsters to the nearest living member', () => {
+  it('moves a dead member’s visible and queued monsters to the nearest living member', () => {
     const leader = member(1);
     const fallen = member(2);
     const farMember = member(3);
 
-    const leaderBefore = leader.session.active.length;
-    const fallenBefore = fallen.session.active.length;
-    const farBefore = farMember.session.active.length;
+    const leaderBefore = allMonsters(leader.session).length;
+    const fallenBefore = allMonsters(fallen.session).length;
+    const farBefore = allMonsters(farMember.session).length;
 
     // Slot 2 is the lower-left formation seat. The principal in the centre is
     // closer than slot 3 on the lower-right, so every remaining creature should
@@ -48,13 +56,23 @@ describe('party monster retarget', () => {
     settleParty([leader, fallen, farMember], START + TICK_MS);
 
     expect(fallen.session.status).toBe('died');
-    expect(fallen.session.active).toHaveLength(0);
+    expect(allMonsters(fallen.session)).toHaveLength(0);
     expect(leader.session.status).toBe('active');
     expect(farMember.session.status).toBe('active');
-    expect(leader.session.active).toHaveLength(leaderBefore + fallenBefore);
-    expect(farMember.session.active).toHaveLength(farBefore);
 
-    const uids = leader.session.active.map((monster) => monster.uid);
-    expect(new Set(uids).size).toBe(uids.length);
+    // Retargeting preserves the whole fight, including creatures that had been
+    // hidden by the shared-screen reinforcement cap.
+    expect(allMonsters(leader.session)).toHaveLength(leaderBefore + fallenBefore);
+    expect(allMonsters(farMember.session)).toHaveLength(farBefore);
+    expect(allMonsters(leader.session).length + allMonsters(farMember.session).length)
+      .toBe(leaderBefore + fallenBefore + farBefore);
+
+    // With two survivors, the same global wave-1 cap (3) is redistributed 2/1.
+    expect(leader.session.active).toHaveLength(2);
+    expect(farMember.session.active).toHaveLength(1);
+    expect(leader.session.active.length + farMember.session.active.length).toBe(waveActiveLimit(0));
+
+    const leaderUids = allMonsters(leader.session).map((monster) => monster.uid);
+    expect(new Set(leaderUids).size).toBe(leaderUids.length);
   });
 });
