@@ -6,7 +6,7 @@ import './ObjectiveTracker.css';
 
 export type OverlayId='none'|'helper'|'cyclopedia'|'market'|'loja'|'vip'|'rank'|'build'|'progressao'|'roleta'|'depot'|'guild';
 export const NAV:Array<{id:OverlayId;label:string;tone:string}>=[{id:'guild',label:'Guild',tone:'#466a47'},{id:'helper',label:'Helper',tone:'#1e40af'},{id:'cyclopedia',label:'Cyclopedia',tone:'#1d4ed8'},{id:'market',label:'Mercado',tone:'#a16207'},{id:'loja',label:'Loja',tone:'#c2410c'},{id:'vip',label:'VIP',tone:'#b45309'},{id:'rank',label:'Rank',tone:'#7c2d12'},{id:'build',label:'Build',tone:'#3b82f6'},{id:'progressao',label:'Progressão',tone:'#6366f1'},{id:'roleta',label:'Roleta',tone:'#6d28d9'},{id:'depot',label:'Depot',tone:'#92400e'}];
-const NAV_UNLOCK:Partial<Record<OverlayId,number>>={helper:1,build:8,depot:8,cyclopedia:10,progressao:15,market:20,rank:20,loja:20,vip:20,roleta:25,guild:30};
+const NAV_UNLOCK:Partial<Record<OverlayId,number>>={helper:1,vip:1,build:8,depot:8,cyclopedia:10,progressao:15,market:20,rank:20,loja:20,roleta:25,guild:30};
 
 const UNLOCK_COPY:Partial<Record<OverlayId,{summary:string;purpose:string}>>={
   helper:{summary:'Assistente para automatizar decisões básicas de combate e sobrevivência.',purpose:'Configurar cura, suprimentos e comportamentos automáticos do personagem.'},
