@@ -23,6 +23,15 @@ function readyKnight(level = 40): ReturnType<typeof createCharacter> {
   return character;
 }
 
+function passiveKnight(level = 40): ReturnType<typeof createCharacter> {
+  const character = readyKnight(level);
+  character.policy.autoAttack = false;
+  character.policy.taunt = false;
+  character.policy.disabledSpells = SPELLS.map((spell) => spell.id);
+  character.policy.runeId = -1;
+  return character;
+}
+
 describe('fixed wave packs', () => {
   it('starts wave 1 with a fixed pack and does not drip-spawn mid-wave', () => {
     const character = readyKnight(12);
@@ -41,7 +50,7 @@ describe('fixed wave packs', () => {
   });
 
   it('waits 3 seconds before releasing a normal next wave', () => {
-    const session = startSession(readyKnight(40), HUNT, 22n);
+    const session = startSession(passiveKnight(40), HUNT, 22n);
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
     session.spawnCredits = WAVE_PACK[1]!;
@@ -56,7 +65,7 @@ describe('fixed wave packs', () => {
   });
 
   it('uses the same 3-second transition even when spawn credits are already full', () => {
-    const session = startSession(readyKnight(40), HUNT, 22n);
+    const session = startSession(passiveKnight(40), HUNT, 22n);
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
     session.spawnCredits = WAVE_PACK[1]!;
