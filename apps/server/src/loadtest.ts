@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { TICK_MS } from '@tibia-idle/sim';
+import { expForLevel, TICK_MS, type CharacterState } from '@tibia-idle/sim';
 import { createApp } from './app.js';
 import { setHuntCap } from './queue.js';
 
@@ -16,6 +16,11 @@ export interface LoadReport {
 /**
  * Stresses settlement: many hunters, one long offline window, one read each.
  * This is the hot path when a laptop farm reconnects after a night.
+ *
+ * The fixture deliberately uses durable level-100 knights in the safe starter
+ * cave. This benchmark is about settlement throughput/determinism, not whether
+ * a brand-new level-8 character happens to flee or run out of supplies while
+ * balance numbers evolve.
  */
 export async function runLoad(options: { hunters?: number; minutes?: number } = {}): Promise<LoadReport> {
   const hunters = Math.max(1, options.hunters ?? 40);
@@ -44,7 +49,20 @@ export async function runLoad(options: { hunters?: number; minutes?: number } = 
     if (created.statusCode !== 201) {
       throw new Error(`character ${i}: ${created.statusCode} ${created.body}`);
     }
-    ids.push((created.json() as { character: { id: number } }).character.id);
+    const id = (created.json() as { character: { id: number } }).character.id;
+    ids.push(id);
+
+    // Isolate server settlement performance from beginner survivability. Keep
+    // XP/level coherent so level-up calculations remain deterministic.
+    const row = db.findCharacter(id)!;
+    const state = JSON.parse(row.state) as CharacterState;
+    state.level = 100;
+    state.experience = expForLevel(100);
+    state.gold = 1_000_000;
+    state.skills.sword = { level: 70, tries: 0 };
+    state.policy.fleeAt = 0;
+    state.policy.stopWhenOutOfSupplies = false;
+    db.saveCharacter(row.id, JSON.stringify(state), null, row.settledAt);
   }
 
   const hunts = (await app.inject({
@@ -52,15 +70,21 @@ export async function runLoad(options: { hunters?: number; minutes?: number } = 
     url: `/api/characters/${ids[0]}/hunts`,
     headers: { authorization: `Bearer ${tokens[0]}` },
   })).json().hunts as Array<{ id: string; unlocked: boolean }>;
-  const huntId = hunts.find((hunt) => hunt.unlocked)!.id;
+  const starter = hunts.find((hunt) => hunt.id === 'venore-rotworm-cave' && hunt.unlocked)
+    ?? hunts.find((hunt) => hunt.unlocked);
+  if (!starter) throw new Error('load test has no unlocked hunt');
+  const huntId = starter.id;
 
   for (let i = 0; i < hunters; i += 1) {
-    await app.inject({
+    const response = await app.inject({
       method: 'POST',
       url: `/api/characters/${ids[i]}/hunt`,
       payload: { huntId },
       headers: { authorization: `Bearer ${tokens[i]}` },
     });
+    if (response.statusCode !== 200) {
+      throw new Error(`hunt ${i}: ${response.statusCode} ${response.body}`);
+    }
     const row = db.findCharacter(ids[i]!)!;
     db.saveCharacter(row.id, row.state, row.session, Date.now() - minutes * 60 * 1000);
   }
@@ -75,7 +99,7 @@ export async function runLoad(options: { hunters?: number; minutes?: number } = 
       url: `/api/characters/${ids[i]}`,
       headers: { authorization: `Bearer ${tokens[i]}` },
     });
-    const session = (after.json() as { character: { session: { totals: { ticks: number; kills: number } }; gold: number } }).character;
+    const session = (after.json() as { character: { session: { totals: { ticks: number; kills: number } } | null; gold: number } }).character;
     ticks += session.session?.totals.ticks ?? 0;
     kills += session.session?.totals.kills ?? 0;
     gold += session.gold;
