@@ -21,11 +21,16 @@ const TILE = 32;
 /**
  * Creature atlases contain many 64x64+ multi-tile monsters. The game viewport is
  * intentionally compact, so rendering those at raw atlas size makes large
- * creatures cover party members, nameplates and neighbouring SQMs. Scale only
- * monster containers; players, allies, movement tiles and combat calculations
- * stay at their original size.
+ * creatures cover party members, nameplates and neighbouring SQMs.
  */
 const MONSTER_RENDER_SCALE = 0.75;
+
+/**
+ * Player outfits are kept slightly smaller while hunting so their pixels remain
+ * easier to read in crowded fights and they do not visually merge with nearby
+ * creatures/effects. City keeps the normal 1:1 scene scale.
+ */
+const CHARACTER_RENDER_SCALE = 0.85;
 
 /**
  * Wide opening formation for a hunt. The principal remains on PLAYER_TILE
@@ -265,6 +270,13 @@ if (!prototype.__partyMovementPatchApplied) {
         formationPlaced.add(entry as object);
       });
     }
+
+    // Keep city characters at the original scale. During hunts, reduce only the
+    // visual containers so outfits read more cleanly in crowded combat. Movement,
+    // targeting and all simulation coordinates remain unchanged.
+    const characterScale = this.cityLobby ? 1 : CHARACTER_RENDER_SCALE;
+    if (this.player) this.player.root.scale.set(characterScale);
+    for (const ally of partyAllies(this)) ally.root.scale.set(characterScale);
 
     // Large atlas creatures are intentionally reduced only at render time.
     // Their tile, pathfinding, attacks, HP and server simulation are untouched.
