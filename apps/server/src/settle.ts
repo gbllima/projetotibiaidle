@@ -30,6 +30,7 @@ export const BOSS_TRIP_HOURS = 0.25;
 
 export interface SettlementDelta { experience: number; kills: number; lootValue: number; supplyValue: number; levels: number; }
 export interface SettlementResult {
+  training?: { skill: string; gained: number; beforeLevel: number; afterLevel: number; beforePercent?: number; afterPercent?: number; chargesExhausted?: boolean; chargesUsed: number; stamina: number };
   session: HuntSession | null; events: SimEvent[]; elapsedSeconds: number; discardedSeconds: number;
   stoppedBecause: string | null; offline: boolean; efficiency: number; capHours: number; delta: SettlementDelta;
   deathPenalty?: import('@tibia-idle/sim').DeathPenaltyResult | null;
@@ -44,7 +45,7 @@ export function requiredPartySlots(partySizes: readonly string[]): number {
   return 3;
 }
 export function publicSettlement(settlement: SettlementResult) {
-  return { elapsedSeconds: settlement.elapsedSeconds, discardedSeconds: settlement.discardedSeconds, stoppedBecause: settlement.stoppedBecause, offline: settlement.offline, efficiency: settlement.efficiency, capHours: settlement.capHours, delta: settlement.delta, deathPenalty: settlement.deathPenalty ?? null };
+  return { elapsedSeconds: settlement.elapsedSeconds, discardedSeconds: settlement.discardedSeconds, stoppedBecause: settlement.stoppedBecause, offline: settlement.offline, efficiency: settlement.efficiency, capHours: settlement.capHours, delta: settlement.delta, training: settlement.training, deathPenalty: settlement.deathPenalty ?? null };
 }
 
 /**

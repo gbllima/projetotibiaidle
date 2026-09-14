@@ -3,7 +3,7 @@ import { PLAYABLE_VOCATION_IDS, vocationsById } from '@tibia-idle/data';
 import { ApiError, api, storeToken } from '../api/client.js';
 import { AuthLogo, AuthShell } from '../components/AuthShell.js';
 import { useLocale } from '../i18n/Locale.js';
-import type { AccountView, CharacterView } from '../api/types.js';
+import type { AccountView } from '../api/types.js';
 
 const BLURBS: Record<number, string> = {
   4: 'Tank · corpo a corpo',
@@ -23,16 +23,14 @@ const VOC_ACCENT: Record<number, string> = {
 
 const WEAPONS = ['Machado', 'Espada', 'Clava'] as const;
 
-export function SelectScreen({
-  characters,
+export function CreateCharacterScreen({
   account,
   onEnter,
   onRefresh,
   onLogout,
 }: {
-  characters: CharacterView[];
   account: AccountView | null;
-  onEnter: (id: number) => void;
+  onEnter: (id: number) => Promise<void>;
   onRefresh: () => Promise<void>;
   onLogout: () => void;
 }) {
@@ -45,9 +43,7 @@ export function SelectScreen({
   const [busy, setBusy] = useState(false);
   const [claimUser, setClaimUser] = useState('');
   const [claimPass, setClaimPass] = useState('');
-  const slots = account?.slots ?? 5;
-  const used = account?.used ?? characters.length;
-  const full = used >= slots;
+  const full = (account?.used ?? 0) > 0;
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
@@ -59,7 +55,7 @@ export function SelectScreen({
         weapon: weapon === 'Machado' ? 'axe' : weapon === 'Clava' ? 'club' : 'sword',
       });
       await onRefresh();
-      onEnter(created.character.id);
+      await onEnter(created.character.id);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Falha ao criar personagem.');
     } finally {
@@ -88,9 +84,6 @@ export function SelectScreen({
         <div className="select-topbar">
           <AuthLogo subtitle={t('createCharLede')} />
           <div className="select-topbar-actions">
-            <span className="select-slots-pill">
-              {t('charSlots')} <strong>{used}/{slots}</strong>
-            </span>
             <button className="auth-link-btn" type="button" onClick={onLogout}>
               {t('selectLogout')}
             </button>
@@ -122,46 +115,7 @@ export function SelectScreen({
           </form>
         )}
 
-        <div className="select-grid">
-          <section className="select-roster">
-            <h2>{t('selectYourChar')}</h2>
-            {characters.length === 0 ? (
-              <p className="select-empty">{t('selectEmpty')}</p>
-            ) : (
-              <ul className="select-char-list">
-                {characters.map((character) => {
-                  const principalId = character.partyMemberIds?.[0] ?? character.id;
-                  const isPrincipal = principalId === character.id;
-                  const principal = characters.find((entry) => entry.id === principalId);
-                  return (
-                  <li key={character.id}>
-                    <button
-                      type="button"
-                      className="select-char-card"
-                      disabled={!isPrincipal}
-                      title={!isPrincipal ? `Entre pelo personagem principal${principal ? `: ${principal.name}` : ''}.` : undefined}
-                      style={{ '--voc-accent': VOC_ACCENT[character.vocation.id] ?? '#e8c547' } as CSSProperties}
-                      onClick={() => { if (isPrincipal) onEnter(character.id); }}
-                    >
-                      <div className="select-char-main">
-                        <strong>{character.name}</strong>
-                        <span>{character.vocation.name}</span>
-                      </div>
-                      <div className="select-char-meta">
-                        <span className="select-char-level">Lv {character.level}</span>
-                        <span className="select-char-gold">{character.gold.toLocaleString('pt-BR')} gp</span>
-                      </div>
-                      <span className="select-char-enter">
-                        {isPrincipal ? `${t('selectEnter')} →` : 'Membro da party'}
-                      </span>
-                    </button>
-                  </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
+        <div className="select-grid create-character-grid">
           <section className="select-create">
             <h2>{t('selectCreateSection')}</h2>
             <form onSubmit={(event) => void create(event)}>
@@ -225,7 +179,7 @@ export function SelectScreen({
                 </>
               )}
 
-              {full && <p className="select-full">{t('selectSlotsFull')}</p>}
+              {full && <p className="select-full">Sua conta possui um personagem. Volte para entrar no jogo.</p>}
               {error ? <p className="auth-error">{error}</p> : null}
 
               <button className="auth-submit" disabled={busy || full} type="submit">

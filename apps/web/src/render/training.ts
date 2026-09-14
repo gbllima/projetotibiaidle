@@ -1,3 +1,4 @@
+import { NAME_STYLE } from './textStyle.js';
 import { AnimatedSprite, Application, Container, Sprite, Text, Texture } from 'pixi.js';
 import { DIRECTION_NORTH, GROUP_IDLE, GROUP_MOVING, loadAtlas, type Atlas } from './atlas.js';
 import { magicEffectId } from './effects.js';
@@ -24,15 +25,7 @@ interface TrainingShot {
   onHit?: () => void;
 }
 
-const PLAYER_LABEL = {
-  fill: 0x00ff00,
-  fontFamily: 'Verdana, Geneva, Tahoma, sans-serif',
-  fontSize: 9,
-  fontWeight: 'bold' as const,
-  stroke: { color: 0x000000, width: 3, join: 'round' as const },
-  align: 'center' as const,
-  padding: 4,
-};
+
 
 function placeholder(color: number): Texture {
   const canvas = document.createElement('canvas');
@@ -250,7 +243,7 @@ export class TrainingRenderer {
     sprite.animationSpeed = 0.12;
     sprite.play();
 
-    const label = new Text({ text: player.name, style: PLAYER_LABEL, resolution: 2 });
+    const label = new Text({ text: player.name, style: NAME_STYLE, resolution: 2 });
     label.anchor.set(0.5, 1);
 
     const root = new Container();

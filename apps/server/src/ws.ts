@@ -2,10 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { HuntSession, SimEvent } from '@tibia-idle/sim';
 import type { Database } from './db.js';
-import { loadCharacter } from './game.js';
+import { loadCharacter, takeAwaySummary } from './game.js';
 import { economyCharacterView, syncAccountEconomy } from './economy.js';
 import { markOffline, markOnline } from './presence.js';
-import { publicSettlement } from './settle.js';
 
 /**
  * Live session updates.
@@ -161,7 +160,7 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
             partyMonsters: partyMonsterSnapshot(partySessions),
             partyEvents: remapPartyEvents(loaded.partyEvents ?? [], subscription.characterId, partySessions),
           },
-          settlement: publicSettlement(settlement),
+          settlement: takeAwaySummary(db, subscription.characterId, settlement),
         });
       } catch (error) {
         send({ type: 'error', error: (error as Error).message });

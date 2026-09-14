@@ -7,7 +7,7 @@ import { accountFromHeader, AuthError, claimAccount, isGuestUsername, isAdminUse
 import type { Database } from './db.js';
 import {
   addPartyMember, configureParty, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
-  sellPouch, stashPouch, startHunt, stopHunt, upgradeGear,
+  sellPouch, stashPouch, startHunt, stopHunt, upgradeGear, takeAwaySummary,
 } from './game.js';
 import { worldSnapshot, type ActBody } from './systems.js';
 import {
@@ -172,7 +172,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       const id = Number((request.params as { id: string }).id);
       const { loaded, settlement } = loadCharacter(db, accountId, id);
       syncAccountEconomy(db, accountId, loaded);
-      return reply.send({ character: economyCharacterView(db, accountId, loaded), settlement: publicSettlement(settlement) });
+      return reply.send({ character: economyCharacterView(db, accountId, loaded), settlement: takeAwaySummary(db, id, settlement) });
     } catch (error) { return fail(reply, error); }
   });
 

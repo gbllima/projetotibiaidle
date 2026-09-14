@@ -1,3 +1,4 @@
+import { NAME_STYLE } from './textStyle.js';
 import { CITY_WIDTH, CITY_HEIGHT, CITY_SPAWN, cityPath, cityWalkable, type CityPosition } from '@tibia-idle/data';
 import { AnimatedSprite, Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { itemsById, monstersById, mountsByServerId } from '@tibia-idle/data';
@@ -89,24 +90,6 @@ export interface PlayerView {
   appearance?: { outfit: number; head: number; body: number; legs: number; feet: number; aura?: number; mount?: number; addons?: number };
 }
 
-/** BaiakIdle game-window name: lime fill, heavy black outline. */
-const NAME_STYLE = {
-  fill: 0x00ff00,
-  fontFamily: 'Verdana, Geneva, Tahoma, sans-serif',
-  fontSize: 9,
-  fontWeight: 'bold' as const,
-  stroke: { color: 0x000000, width: 3, join: 'round' as const },
-  dropShadow: {
-    color: 0x000000,
-    alpha: 1,
-    blur: 0,
-    distance: 1,
-    angle: Math.PI / 2,
-  },
-  align: 'center' as const,
-  letterSpacing: 0.2,
-  padding: 4,
-};
 
 /** Compact HP plate under the name (same for players and creatures). */
 const BAR_WIDTH = 27;

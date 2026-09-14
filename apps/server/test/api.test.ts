@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { TICK_MS } from '@tibia-idle/sim';
+import { TICK_MS, magicProgressPercent, skillProgressPercent } from '@tibia-idle/sim';
 import { createApp } from '../src/app.js';
 import type { Database } from '../src/db.js';
 import { setHuntCap } from '../src/queue.js';
@@ -315,6 +315,75 @@ describe('hunting', () => {
 });
 
 describe('offline settlement', () => {
+  it('keeps offline training progress through roster reads and shows it once on return', async () => {
+    const token = await signUp();
+    const character = await makeCharacter(token);
+    const row = db.findCharacter(character.id)!;
+    const state = JSON.parse(row.state);
+    state.stamina = 2000;
+    state.supplies = [{ itemId: 28552, count: 1 }];
+    db.saveCharacter(row.id, JSON.stringify(state), null, Date.now() - 30 * 60 * 1000);
+    await get('/api/characters', token);
+    await get('/api/characters', token);
+    const after = (await get(`/api/characters/${row.id}`, token)).json();
+    expect(after.settlement.offline).toBe(true);
+    expect(after.settlement.training).toMatchObject({ skill: 'sword', gained: 231, chargesUsed: 1, chargesExhausted: true, stamina: 6 });
+    expect(after.settlement.training.beforePercent).toBe(skillProgressPercent(4, 'sword', state.skills.sword.level, state.skills.sword.tries));
+    expect(after.settlement.training.afterPercent).toBe(skillProgressPercent(4, 'sword', after.character.skills.sword.level, after.character.skills.sword.tries));
+    expect(after.settlement.elapsedSeconds).toBeGreaterThanOrEqual(1800);
+    const again = (await get(`/api/characters/${row.id}`, token)).json();
+    expect(again.settlement.training).toBeUndefined();
+    expect(again.character.skills).toEqual(after.character.skills);
+  });
+  it('reports progress without a skill level up and does not claim missing charges ran out', async () => {
+    const token = await signUp();
+    const character = await makeCharacter(token);
+    const row = db.findCharacter(character.id)!;
+    const state = JSON.parse(row.state);
+    state.skills.sword = { level: 100, tries: 0 };
+    state.supplies = [];
+    db.saveCharacter(row.id, JSON.stringify(state), null, Date.now() - 120_000);
+    const { training } = (await get(`/api/characters/${row.id}`, token)).json().settlement;
+    expect(training.beforeLevel).toBe(100);
+    expect(training.afterLevel).toBe(100);
+    expect(training.beforePercent).toBe(0);
+    expect(training.afterPercent).toBeGreaterThan(0);
+    expect(training.chargesExhausted).toBe(false);
+  });
+  it('separates twelve hours away from the eight hour training cap for magic', async () => {
+    const token = await signUp();
+    const character = await makeCharacter(token, 'Mage', 1);
+    const row = db.findCharacter(character.id)!;
+    const state = JSON.parse(row.state);
+    state.supplies = [];
+    db.saveCharacter(row.id, JSON.stringify(state), null, Date.now() - 12 * 3_600_000);
+    const { character: after, settlement } = (await get(`/api/characters/${row.id}`, token)).json();
+    expect(settlement.elapsedSeconds).toBe(8 * 3600);
+    expect(settlement.discardedSeconds).toBeGreaterThanOrEqual(4 * 3600);
+    expect(settlement.training.beforePercent).toBe(magicProgressPercent(1, state.magicLevel, state.manaSpent));
+    expect(settlement.training.afterPercent).toBe(magicProgressPercent(1, after.magicLevel, after.manaSpent));
+    expect(settlement.training.chargesExhausted).toBe(false);
+  });
+  it('keeps the hunt return summary through the roster and delivers it once', async () => {
+    const token = await signUp();
+    const character = await makeCharacter(token);
+    const hunts = (await get(`/api/characters/${character.id}/hunts`, token)).json().hunts;
+    const started = await post(`/api/characters/${character.id}/hunt`, { huntId: hunts.find((h: { unlocked: boolean }) => h.unlocked).id }, token);
+    expect(started.statusCode).toBe(200);
+    const row = db.findCharacter(character.id)!;
+    db.saveCharacter(row.id, row.state, row.session, Date.now() - 120_000);
+    await get('/api/characters', token);
+    const pending = JSON.parse(db.getWorld(`away:${row.id}`)!);
+    await get('/api/characters', token);
+    const { settlement } = (await get(`/api/characters/${row.id}`, token)).json();
+    expect(settlement.offline).toBe(true);
+    expect(settlement.elapsedSeconds).toBeGreaterThanOrEqual(119);
+    expect(settlement.training).toBeUndefined();
+    expect(settlement).toEqual(pending);
+    expect(settlement.delta).toEqual(expect.objectContaining({ kills: expect.any(Number), experience: expect.any(Number), lootValue: expect.any(Number), supplyValue: expect.any(Number) }));
+    const again = (await get(`/api/characters/${row.id}`, token)).json();
+    expect(again.settlement.offline).toBe(false);
+  });
   it('treats a short gap as live, not offline', async () => {
     const token = await signUp();
     const character = await makeCharacter(token);

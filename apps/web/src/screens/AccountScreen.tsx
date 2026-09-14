@@ -6,7 +6,7 @@ import { PartyPortrait } from '../components/PartyPortrait.js';
 import { formatStamina } from '../format.js';
 import './portal.css';
 
-export function AccountScreen({ onHome, onEnter, onLogout, onSelect }: { onHome: () => void; onEnter: (id: number) => void; onLogout: () => void; onSelect: () => void }) {
+export function AccountScreen({ onHome, onPlay, onLogout }: { onHome: () => void; onPlay: () => void; onLogout: () => void; }) {
   const [account, setAccount] = useState<AccountView | null>(null);
   const [characters, setCharacters] = useState<CharacterView[]>([]);
   const [tab, setTab] = useState<'account' | 'admin'>('account');
@@ -29,10 +29,9 @@ export function AccountScreen({ onHome, onEnter, onLogout, onSelect }: { onHome:
       <div className="portal-grid">{characters.map((character) => <article className="portal-card account-character" key={character.id}>
         <header><PartyPortrait appearance={character.appearance} size={48} /><div><h2>{character.name}</h2><p>{character.vocation.name} · nível {character.level}</p></div></header>
         <dl><dt>Situação</dt><dd>{character.session ? 'Em caçada' : character.queue ? 'Na fila da caçada' : 'Cidade · Safe Zone'}</dd><dt>Experiência</dt><dd>{character.experience.toLocaleString('pt-BR')}</dd><dt>Ouro</dt><dd>{character.gold.toLocaleString('pt-BR')}</dd><dt>Coins</dt><dd>{character.coins}</dd><dt>Stamina</dt><dd>{formatStamina(character.stamina)} / 42h</dd><dt>Vida</dt><dd>{Math.round(character.health)}/{character.maxHealth}</dd><dt>Mana</dt><dd>{Math.round(character.mana)}/{character.maxMana}</dd><dt>Party</dt><dd>{character.partyMemberIds?.length ?? 1}/{character.partySlots} membros</dd><dt>Guild</dt><dd>{character.guildId ? '#' + character.guildId : 'Sem guild'}</dd></dl>
-        <button className="btn gold" onClick={() => onEnter(character.id)}>Entrar com este personagem</button>
       </article>)}</div>
       {!loading && !characters.length && <p>Você ainda não tem personagens.</p>}
-      <button className="btn" onClick={onSelect}>Criar ou selecionar personagem</button>
+      <button className="btn gold" disabled={loading} onClick={onPlay}>{characters.length ? 'Entrar no jogo' : 'Criar personagem'}</button>
       <p className="portal-note">{updated && 'Atualizado às ' + updated.toLocaleTimeString('pt-BR') + '. '}A stamina recupera na cidade, mesmo com o painel aberto. Caçadas ativas continuam normalmente.</p>
     </>}
   </div></main>;

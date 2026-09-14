@@ -7,7 +7,7 @@ import {
   combatHitChance, defaultSupplies, deriveStats, normalizeCharacter, normalizeSession,
   estimateDamagePerSecond, expectedExperiencePerHour, huntThroughput,
   loadoutCost, estimatePackHuntSupplies, suppliesCost, throughputFit, wheelPointsEarned, wheelPointsLeft,
-  dummySkillName, trainOffline, gearTier, movePouchToWarehouse, addItemStack, backpackCapacity,
+  dummySkillName, trainOffline, magicProgressPercent, skillProgressPercent, gearTier, movePouchToWarehouse, addItemStack, backpackCapacity,
   lootSlotUpgradeCost, supplySlotUpgradeCost, lootSlotCoinCost, supplySlotCoinCost,
   LOOT_SLOT_DEFAULT, SUPPLY_SLOT_DEFAULT,
   availableExerciseHits,
@@ -17,7 +17,7 @@ import {
 import { settleParty } from './party-settlement.js';
 import { isAdminUsername } from './auth.js';
 import type { CharacterRow, Database } from './db.js';
-import { beginHunt, endHunt, GameError, regenStamina, requiredPartySlots, settle, summarise } from './settle.js';
+import { beginHunt, endHunt, GameError, OFFLINE_GAP_MS, publicSettlement, regenStamina, requiredPartySlots, settle, summarise } from './settle.js';
 import { HUNT_CAP, promoteHunt, releaseAndPromote, tryStartOrQueue } from './queue.js';
 
 /**
@@ -493,14 +493,48 @@ export function loadCharacter(
   }
 
   if (!loaded.session) {
-    regenStamina(loaded.character, row.session ? 0 : now - row.settledAt);
-    trainOffline(loaded.character, now - row.settledAt);
+    const idleMs = row.session ? 0 : Math.max(0, now - row.settledAt);
+    const character = loaded.character;
+    const skill = dummySkillName(character);
+    const beforeLevel = skill === 'magic' ? character.magicLevel : character.skills[skill].level;
+    const progress = () => skill === 'magic'
+      ? magicProgressPercent(character.vocationId, character.magicLevel, character.manaSpent)
+      : skillProgressPercent(character.vocationId, skill, character.skills[skill].level, character.skills[skill].tries);
+    const beforePercent = progress();
+    const charges = availableExerciseHits(character, skill);
+    const stamina = character.stamina;
+    regenStamina(character, idleMs);
+    const gained = trainOffline(character, idleMs);
+    if (idleMs > OFFLINE_GAP_MS) {
+      settlement.offline = true;
+      settlement.elapsedSeconds = Math.floor(Math.min(idleMs, 8 * 3_600_000) / 1000);
+      settlement.discardedSeconds = Math.floor(Math.max(0, idleMs - 8 * 3_600_000) / 1000);
+      settlement.capHours = 8;
+      settlement.training = {
+        skill, gained, beforeLevel, beforePercent, afterPercent: progress(),
+        chargesExhausted: charges > 0 && availableExerciseHits(character, skill) === 0,
+        afterLevel: skill === 'magic' ? character.magicLevel : character.skills[skill].level,
+        chargesUsed: charges - availableExerciseHits(character, skill), stamina: character.stamina - stamina,
+      };
+    }
   }
 
   if (!partySettlements.has(characterId) && (settlement.elapsedSeconds > 0 || loaded.session === null)) {
     persist(db, loaded, now);
   }
+  // Keep the summary through roster and background reads until entering the game.
+  if (settlement.offline && settlement.elapsedSeconds >= 60) {
+    db.setWorld(`away:${characterId}`, JSON.stringify(publicSettlement(settlement)));
+  }
   return { loaded, settlement };
+}
+
+export function takeAwaySummary(db: Database, characterId: number, settlement: ReturnType<typeof settle>) {
+  const key = `away:${characterId}`;
+  const pending = db.getWorld(key);
+  if (!pending) return publicSettlement(settlement);
+  db.setWorld(key, '');
+  return JSON.parse(pending) as ReturnType<typeof publicSettlement>;
 }
 
 export function startHunt(

@@ -1,3 +1,4 @@
+import { AwayModal } from '../components/AwayModal.js';
 import { CITY_MERCHANT } from '@tibia-idle/data';
 import { PartyManagerModal } from '../components/PartyManagerModal.js';
 import { PartyMemberModal } from '../components/PartyMemberModal.js';
@@ -206,7 +207,7 @@ export function GameScreen({
 
   useEffect(() => {
     if (!settlement) return;
-    if (settlement.elapsedSeconds >= 60) {
+    if (settlement.offline && settlement.elapsedSeconds >= 60) {
       setAway(settlement);
       pushLog(`${t('awayTitle')}: ${formatDuration(settlement.elapsedSeconds)}.`);
     } else if (settlement.stoppedBecause) {
@@ -976,31 +977,7 @@ export function GameScreen({
         />
       )}
 
-      {away && (
-        <div className="modal" onClick={() => setAway(null)}>
-          <div className="modal-card away" onClick={(event) => event.stopPropagation()}>
-            <WindowHead title={t('awayTitle')} onClose={() => setAway(null)} closeLabel={t('close')} />
-            <div className="modal-card-body">
-            <p className="lede modal-lede-left">{formatDuration(away.elapsedSeconds)}</p>
-            <div className="away-grid">
-              <div><span>{t('awayXp')}</span><strong>{formatNumber(away.delta?.experience ?? 0)}</strong></div>
-              <div><span>{t('awayKills')}</span><strong>{formatNumber(away.delta?.kills ?? 0)}</strong></div>
-              <div><span>{t('awayLoot')}</span><strong>{formatNumber(away.delta?.lootValue ?? 0)}</strong></div>
-              <div><span>{t('awaySupplies')}</span><strong>{formatNumber(away.delta?.supplyValue ?? 0)}</strong></div>
-              <div><span>{t('awayLevels')}</span><strong>{away.delta?.levels ?? 0}</strong></div>
-              <div>
-                <span>{t('awayEfficiency')}</span>
-                <strong>{Math.round((away.efficiency ?? 1) * 100)}%</strong>
-              </div>
-            </div>
-            {away.discardedSeconds ? (
-              <p className="lede modal-lede-left">{t('awayCap')}: {away.capHours ?? 8}h</p>
-            ) : null}
-            <button className="btn gold" style={{ width: '100%' }} onClick={() => setAway(null)}>{t('gotIt')}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {away && <AwayModal away={away} onClose={() => setAway(null)} />}
 
       {huntEnd && !away && (
         <div className="modal" onClick={() => setHuntEnd(null)}>

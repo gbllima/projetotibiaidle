@@ -1,0 +1,7 @@
+.away-progress { display: grid; gap: 12px; margin: 0 0 16px; }
+.away-progress-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+.away-progress-label span { color: var(--muted); }
+.away-progress-track { height: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.away-progress-track i { display: block; height: 100%; background: var(--gold); }
+.away-notice { padding: 10px; margin: 0 0 16px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); line-height: 1.5; }
+.away-confirm { width: 100%; }

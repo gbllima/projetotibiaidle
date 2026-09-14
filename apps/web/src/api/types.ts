@@ -452,6 +452,7 @@ export interface SettlementDelta {
 }
 
 export interface Settlement {
+  training?: { skill: string; gained: number; beforeLevel: number; afterLevel: number; beforePercent?: number; afterPercent?: number; chargesExhausted?: boolean; chargesUsed: number; stamina: number };
   elapsedSeconds: number;
   discardedSeconds?: number;
   stoppedBecause: string | null;

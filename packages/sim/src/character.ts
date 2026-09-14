@@ -258,27 +258,13 @@ export function trainOffline(character: CharacterState, idleMs: number): number 
 
   const skill = dummySkillName(character);
   const used = consumeExerciseHits(character, skill, hits);
-  if (used > 0) {
-    const perCharge = triesPerExerciseCharge(skill);
-    const gained = used * perCharge;
-    if (skill === 'magic') {
-      addManaSpent(character, gained, 1);
-    } else {
-      addSkillTries(character, skill, gained, 1);
-    }
-    character.lastDummyTries = gained;
-    return gained;
-  }
+  // Continue free training with the remaining hits after charges run out.
+  const gained = used * triesPerExerciseCharge(skill) + (hits - used) * (skill === 'magic' ? 20 : 1);
+  if (skill === 'magic') addManaSpent(character, gained, 1);
+  else addSkillTries(character, skill, gained, 1);
+  character.lastDummyTries = gained;
+  return gained;
 
-  const tries = hits;
-  if (skill === 'magic') {
-    addManaSpent(character, tries * 20, 1);
-    character.lastDummyTries = tries;
-    return tries;
-  }
-  addSkillTries(character, skill, tries, 1);
-  character.lastDummyTries = tries;
-  return tries;
 }
 
 /** A fresh level 8 character, matching what the server hands a new player. */

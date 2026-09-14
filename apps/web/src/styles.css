@@ -2498,6 +2498,7 @@ h2.window-head-title { font-size: 13px; }
   border-top: 1px solid #2c3340;
 }
 .modal-card.away { width: min(420px, 100%); }
+.select-grid.create-character-grid { grid-template-columns: minmax(0, 480px); justify-content: center; }
 .away-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
