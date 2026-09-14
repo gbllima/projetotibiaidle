@@ -16,6 +16,7 @@ import { CombatScene } from './combat.js';
  * must come from real server player_attack events only.
  */
 const PARTY_UID_STRIDE = 10_000_000;
+const TILE = 32;
 
 /**
  * Creature atlases contain many 64x64+ multi-tile monsters. The game viewport is
@@ -26,9 +27,24 @@ const PARTY_UID_STRIDE = 10_000_000;
  */
 const MONSTER_RENDER_SCALE = 0.75;
 
+/**
+ * Wide opening formation for a hunt. The principal remains on PLAYER_TILE
+ * (6,5); companions start several SQMs apart so their creatures form separate
+ * combat clusters instead of immediately covering one another.
+ */
+const PARTY_FORMATION_SPOTS = [
+  { x: 3, y: 7 },
+  { x: 9, y: 7 },
+  { x: 3, y: 3 },
+  { x: 9, y: 3 },
+] as const;
+
 type SceneRoot = {
   alpha: number;
   destroyed?: boolean;
+  x: number;
+  y: number;
+  zIndex: number;
   scale: { set(value: number): void };
 };
 
@@ -38,8 +54,11 @@ type SceneEntry = {
   lastHealth: number;
   tileX: number;
   tileY: number;
+  fromX: number;
+  fromY: number;
   destX: number;
   destY: number;
+  walkLeft: number;
   standX?: number;
   standY?: number;
 };
@@ -55,10 +74,13 @@ type SceneInternals = {
   allies: Map<string, SceneEntry>;
   sprites: Map<number, SceneEntry>;
   monsterTargets: Map<number, SceneEntry>;
+  huntId: string;
+  cityLobby: boolean;
 };
 
 type SyntheticAllyStrike = (name: string, ally: unknown, target: unknown, delta: number) => void;
 type SceneSync = (this: SceneInternals, active: unknown[], player: unknown, allies?: AllyView[]) => void;
+type SetHunt = (this: SceneInternals, huntId: string) => void;
 type ChaseMonster = (
   this: SceneInternals,
   entry: SceneEntry,
@@ -71,6 +93,7 @@ type ChaseMonster = (
 type CombatPrototype = {
   playOne(this: SceneInternals, event: SimEvent): void;
   sync: SceneSync;
+  setHunt: SetHunt;
   chaseMonster: ChaseMonster;
   tryAllyStrike: SyntheticAllyStrike;
   __partyTargetPatchApplied?: boolean;
@@ -78,11 +101,14 @@ type CombatPrototype = {
   __partyMovementPatchApplied?: boolean;
   __partyOriginalSync?: SceneSync;
   __partyOriginalChaseMonster?: ChaseMonster;
+  __partyFormationPatchApplied?: boolean;
+  __partyOriginalSetHunt?: SetHunt;
   __partySyntheticStrikeDisabled?: boolean;
   __partySyntheticStrikeOriginal?: SyntheticAllyStrike;
 };
 
 const authoritativeVictims = new WeakMap<object, Map<number, number>>();
+const formationPlaced = new WeakSet<object>();
 
 function victimMap(scene: SceneInternals): Map<number, number> {
   let map = authoritativeVictims.get(scene as object);
@@ -105,6 +131,21 @@ function partyAllies(scene: SceneInternals): SceneEntry[] {
 
 function allyById(scene: SceneInternals, id: number): SceneEntry | undefined {
   return partyAllies(scene).find((entry) => entry.characterId === id);
+}
+
+function placePartyMember(entry: SceneEntry, x: number, y: number): void {
+  entry.tileX = x;
+  entry.tileY = y;
+  entry.fromX = x;
+  entry.fromY = y;
+  entry.destX = x;
+  entry.destY = y;
+  entry.walkLeft = 0;
+  entry.standX = undefined;
+  entry.standY = undefined;
+  entry.root.x = x * TILE + TILE / 2;
+  entry.root.y = y * TILE + TILE;
+  entry.root.zIndex = Math.round(entry.root.y * 10 + 6);
 }
 
 function distance(from: SceneEntry, to: SceneEntry): number {
@@ -168,6 +209,20 @@ if (!prototype.__partyTargetPatchApplied) {
   prototype.__partyTargetPatchApplied = true;
 }
 
+if (!prototype.__partyFormationPatchApplied) {
+  const originalSetHunt = prototype.setHunt;
+  prototype.__partyOriginalSetHunt = originalSetHunt;
+  prototype.setHunt = function patchedPartySetHunt(this: SceneInternals, huntId: string): void {
+    const changed = this.huntId !== huntId;
+    originalSetHunt.call(this, huntId);
+    if (!changed) return;
+    // Existing party sprites are reused between screens/hunts. Mark them as not
+    // positioned so the first sync of the new hunt applies the wide formation.
+    for (const ally of partyAllies(this)) formationPlaced.delete(ally as object);
+  };
+  prototype.__partyFormationPatchApplied = true;
+}
+
 if (!prototype.__partyMovementPatchApplied) {
   const originalSync = prototype.sync;
   const originalChaseMonster = prototype.chaseMonster;
@@ -181,6 +236,17 @@ if (!prototype.__partyMovementPatchApplied) {
     allies: AllyView[] = [],
   ): void {
     originalSync.call(this, active, player, allies);
+
+    // On the first hunt frame, spread real party members into separate clusters.
+    // This is deliberately one-time: once combat starts they can move normally.
+    if (!this.cityLobby) {
+      partyAllies(this).forEach((entry, index) => {
+        const spot = PARTY_FORMATION_SPOTS[index];
+        if (!spot || formationPlaced.has(entry as object)) return;
+        placePartyMember(entry, spot.x, spot.y);
+        formationPlaced.add(entry as object);
+      });
+    }
 
     // Large atlas creatures are intentionally reduced only at render time.
     // Their tile, pathfinding, attacks, HP and server simulation are untouched.
