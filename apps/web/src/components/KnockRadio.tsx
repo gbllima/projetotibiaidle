@@ -14,10 +14,13 @@ const TRACKS: Track[] = [
 
 export function KnockRadio() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [index, setIndex] = useState(() => Number(localStorage.getItem('knock-radio-track') || 0) % TRACKS.length);
+  const [index, setIndex] = useState(() => {
+    const stored = Number(localStorage.getItem('knock-radio-track') || 0);
+    return Number.isFinite(stored) ? Math.abs(Math.trunc(stored)) % TRACKS.length : 0;
+  });
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(() => Number(localStorage.getItem('knock-radio-volume') || 0.45));
-  const track = TRACKS[index];
+  const track = TRACKS[index] ?? TRACKS[0]!;
 
   useEffect(() => {
     if (!audioRef.current) return;
