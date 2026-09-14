@@ -1,13 +1,58 @@
 import { useEffect, useMemo, useState } from 'react';
-import { HEALTH_POTION_TIERS, HEAL_SPELLS, MANA_POTION_TIERS, SPIRIT_POTION_TIERS, healSpellsFor, runesFor, spellsFor, type HelperMode } from '@tibia-idle/sim';
+import {
+  HEALTH_POTION_TIERS,
+  HEAL_SPELLS,
+  MANA_POTION_TIERS,
+  SPIRIT_POTION_TIERS,
+  healSpellsFor,
+  runesFor,
+  spellsFor,
+  type HelperMode,
+} from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { api } from '../api/client.js';
 import { outfitIconUrl } from '../render/outfitIcon.js';
 import { ItemSlot } from './ItemSlot.js';
 import { SpellIcon } from './SpellIcon.js';
 
-const PERCENTS = [0.2, 0.25, 0.35, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
-const VOC_SHORT: Record<number, string> = { 1: 'MS', 2: 'ED', 3: 'RP', 4: 'EK', 5: 'MS', 6: 'ED', 7: 'RP', 8: 'EK', 9: 'MK', 10: 'MK' };
+const PERCENTS = [0.2, 0.25, 0.35, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95];
+const VOC_SHORT: Record<number, string> = {
+  1: 'MS', 2: 'ED', 3: 'RP', 4: 'EK', 5: 'MS', 6: 'ED', 7: 'RP', 8: 'EK', 9: 'MK', 10: 'MK',
+};
+
+const PARTY_HEAL_PREFIX = '__partyheal:';
+type BaseVocation = 1 | 2 | 3 | 4 | 9;
+
+type AllyHealSettings = {
+  enabled: boolean;
+  selfFirst: boolean;
+  priority: Record<BaseVocation, number>;
+  threshold: Record<BaseVocation, number>;
+};
+
+const ALLY_VOCATIONS: Array<{ id: BaseVocation; label: string }> = [
+  { id: 4, label: 'Knight' },
+  { id: 9, label: 'Monk' },
+  { id: 3, label: 'Paladin' },
+  { id: 2, label: 'Druid' },
+  { id: 1, label: 'Sorcerer' },
+];
+
+const DEFAULT_ALLY_PRIORITY: Record<BaseVocation, number> = {
+  4: 1,
+  9: 1,
+  3: 2,
+  2: 3,
+  1: 3,
+};
+
+const DEFAULT_ALLY_THRESHOLD: Record<BaseVocation, number> = {
+  4: 0.9,
+  9: 0.9,
+  3: 0.9,
+  2: 0.9,
+  1: 0.9,
+};
 
 type Section = 'cura' | 'aliado' | 'escudo' | 'equip' | 'atacar' | 'magias' | 'taticas';
 
@@ -20,6 +65,43 @@ const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
   { id: 'magias', label: 'Magias de Ataque', icon: '↗' },
   { id: 'taticas', label: 'Táticas', icon: '╬' },
 ];
+
+function readAllyHealSettings(disabledSpells: string[]): AllyHealSettings {
+  const tokens = disabledSpells.filter((entry) => entry.startsWith(PARTY_HEAL_PREFIX));
+  const configured = tokens.length > 0;
+  const settings: AllyHealSettings = {
+    enabled: configured ? tokens.includes(`${PARTY_HEAL_PREFIX}on`) : false,
+    selfFirst: configured ? tokens.includes(`${PARTY_HEAL_PREFIX}self`) : true,
+    priority: { ...DEFAULT_ALLY_PRIORITY },
+    threshold: { ...DEFAULT_ALLY_THRESHOLD },
+  };
+
+  for (const token of tokens) {
+    const payload = token.slice(PARTY_HEAL_PREFIX.length);
+    const priority = /^p:(1|2|3|4|9)=(1|2|3)$/.exec(payload);
+    if (priority) {
+      settings.priority[Number(priority[1]) as BaseVocation] = Number(priority[2]);
+      continue;
+    }
+    const threshold = /^t:(1|2|3|4|9)=(\d{1,3})$/.exec(payload);
+    if (threshold) {
+      settings.threshold[Number(threshold[1]) as BaseVocation] = Math.max(0.2, Math.min(0.95, Number(threshold[2]) / 100));
+    }
+  }
+  return settings;
+}
+
+function encodeAllyHealSettings(disabledSpells: string[], settings: AllyHealSettings): string[] {
+  const normal = disabledSpells.filter((entry) => !entry.startsWith(PARTY_HEAL_PREFIX));
+  const tokens = [`${PARTY_HEAL_PREFIX}configured`];
+  if (settings.enabled) tokens.push(`${PARTY_HEAL_PREFIX}on`);
+  if (settings.selfFirst) tokens.push(`${PARTY_HEAL_PREFIX}self`);
+  for (const vocation of ALLY_VOCATIONS) {
+    tokens.push(`${PARTY_HEAL_PREFIX}p:${vocation.id}=${settings.priority[vocation.id]}`);
+    tokens.push(`${PARTY_HEAL_PREFIX}t:${vocation.id}=${Math.round(settings.threshold[vocation.id] * 100)}`);
+  }
+  return [...normal, ...tokens];
+}
 
 function HelperPortrait({ appearance, vocationId }: { appearance?: CharacterView['appearance']; vocationId: number }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -82,6 +164,8 @@ export function HelperModal({
     ?? MANA_POTION_TIERS.filter((tier) => active.level >= tier.level).at(-1);
   const heal = HEAL_SPELLS.find((spell) => spell.id === policy.healSpellId);
   const disabled = busy || localBusy;
+  const allyHeal = useMemo(() => readAllyHealSettings(policy.disabledSpells), [policy.disabledSpells]);
+  const canCastHealFriend = [2, 6].includes(active.vocation.id) && active.level >= 18;
 
   const party = useMemo(() => {
     const source = active.caveParty?.length ? active.caveParty : character.caveParty;
@@ -108,7 +192,7 @@ export function HelperModal({
       });
     }
     return entries;
-  }, [active.id, active.caveParty, character.caveParty]);
+  }, [active.id, active.caveParty, active.name, active.level, active.vocation.id, active.appearance, active.health, active.maxHealth, character.caveParty]);
 
   function save(patch: Record<string, unknown>) {
     setActive((current) => mergePolicy(current, mode, patch));
@@ -122,15 +206,15 @@ export function HelperModal({
     }).finally(() => setLocalBusy(false));
   }
 
-  function selectMember(id: number, nextSection?: Section) {
-    if (id === active.id) {
-      if (nextSection) setSection(nextSection);
-      return;
-    }
+  function saveAllyHeal(next: AllyHealSettings) {
+    save({ disabledSpells: encodeAllyHealSettings(policy.disabledSpells, next) });
+  }
+
+  function selectMember(id: number) {
+    if (id === active.id) return;
     setLoadingMember(true);
     void api.character(id).then((result) => {
       setActive(result.character);
-      if (nextSection) setSection(nextSection);
     }).finally(() => setLoadingMember(false));
   }
 
@@ -179,7 +263,7 @@ export function HelperModal({
           <main className="helper-main helper-main--compact">
             <div className="helper-section-title">
               <h3>{SECTIONS.find((entry) => entry.id === section)?.icon} {SECTIONS.find((entry) => entry.id === section)?.label}</h3>
-              <small>{active.name} · {active.vocation.name} · lvl {active.level}</small>
+              {section !== 'aliado' && <small>{active.name} · {active.vocation.name} · lvl {active.level}</small>}
             </div>
 
             {section === 'cura' && (
@@ -194,20 +278,66 @@ export function HelperModal({
             )}
 
             {section === 'aliado' && (
-              <div className="helper-stack">
-                <p className="helper-explain">A party usa a cura automática real de cada personagem. Selecione um aliado abaixo para ajustar a magia, poções e porcentagem de vida dele.</p>
-                {party.filter((member) => member.id !== active.id).map((member, index) => {
-                  const pct = member.health !== undefined && member.maxHealth ? Math.round((member.health / member.maxHealth) * 100) : null;
-                  return (
-                    <button key={member.id} type="button" className="helper-ally-row" onClick={() => selectMember(member.id, 'cura')}>
-                      <HelperPortrait appearance={member.appearance as CharacterView['appearance'] | undefined} vocationId={member.vocationId} />
-                      <span><strong>{member.name}</strong><small>{VOC_SHORT[member.vocationId] ?? '?'} · lvl {member.level}</small></span>
-                      <em>Prioridade {index + 1}</em>
-                      <b>{pct === null ? 'Configurar' : `${pct}% HP`}</b>
-                    </button>
-                  );
-                })}
-                {party.filter((member) => member.id !== active.id).length === 0 && <p className="helper-explain">Adicione membros à party para coordenar a cura.</p>}
+              <div className="helper-ally-config">
+                <div className="helper-ally-switches">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={allyHeal.enabled}
+                      disabled={disabled || !canCastHealFriend}
+                      onChange={(event) => saveAllyHeal({ ...allyHeal, enabled: event.target.checked })}
+                    />
+                    <span>Curar aliado</span>
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={allyHeal.selfFirst}
+                      disabled={disabled}
+                      onChange={(event) => saveAllyHeal({ ...allyHeal, selfFirst: event.target.checked })}
+                    />
+                    <span>Priorizar minha cura</span>
+                  </label>
+                </div>
+
+                <div className="helper-ally-table" role="table" aria-label="Prioridade de cura por vocação">
+                  <div className="helper-ally-table-head" role="row">
+                    <span>VOCAÇÃO</span>
+                    <span>PRIORIDADE</span>
+                    <span>CURA EM</span>
+                  </div>
+                  {ALLY_VOCATIONS.map((vocation) => (
+                    <div className="helper-ally-priority-row" role="row" key={vocation.id}>
+                      <span>{vocation.label}</span>
+                      <select
+                        aria-label={`Prioridade ${vocation.label}`}
+                        value={allyHeal.priority[vocation.id]}
+                        disabled={disabled}
+                        onChange={(event) => saveAllyHeal({
+                          ...allyHeal,
+                          priority: { ...allyHeal.priority, [vocation.id]: Number(event.target.value) },
+                        })}
+                      >
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                      </select>
+                      <PercentSelect
+                        value={allyHeal.threshold[vocation.id]}
+                        disabled={disabled}
+                        onChange={(value) => saveAllyHeal({
+                          ...allyHeal,
+                          threshold: { ...allyHeal.threshold, [vocation.id]: value },
+                        })}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <p className="helper-ally-hint">Cura o aliado de MENOR prioridade abaixo do seu gatilho (empate = mais ferido). Exura sio.</p>
+                {!canCastHealFriend && (
+                  <p className="helper-ally-warning">Exura sio é executado por Druid/Elder Druid a partir do nível 18. Selecione o ED no topo para configurar a cura da party.</p>
+                )}
               </div>
             )}
 
@@ -292,7 +422,10 @@ export function HelperModal({
 
         <footer className="helper-foot helper-foot--compact">
           <span>{loadingMember ? 'Carregando personagem…' : `${active.name} · ${mode.toUpperCase()}`}</span>
-          <div>{mode !== 'hunt' && <><button type="button" disabled={disabled} onClick={() => save({ helperCopyFrom: 'hunt' })}>Copiar Hunt</button><button type="button" disabled={disabled} onClick={() => save({ helperReset: true })}>Resetar</button></>}<button type="button" onClick={onClose}>Fechar</button></div>
+          <div>
+            {mode !== 'hunt' && <><button type="button" disabled={disabled} onClick={() => save({ helperCopyFrom: 'hunt' })}>Copiar Hunt</button><button type="button" disabled={disabled} onClick={() => save({ helperReset: true })}>Resetar</button></>}
+            <button type="button" onClick={onClose}>Fechar</button>
+          </div>
         </footer>
       </section>
     </div>
