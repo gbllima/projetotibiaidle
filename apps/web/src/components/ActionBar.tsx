@@ -1,12 +1,36 @@
-import { useEffect, useState } from 'react';
-import { hotbarSpells, spellsFor, type Spell } from '@tibia-idle/sim';
+import { useEffect, useMemo, useState } from 'react';
+import { SPELLS, runesFor, spellsFor, type Spell } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
+import { api } from '../api/client.js';
 import { outfitIconUrl } from '../render/outfitIcon.js';
 import { SpellIcon } from './SpellIcon.js';
+import { ItemSlot } from './ItemSlot.js';
 
 const VOC_SHORT: Record<number, string> = {
-  1: 'MS', 2: 'ED', 3: 'RP', 4: 'EK', 5: 'MS', 6: 'ED', 7: 'RP', 8: 'EK', 9: 'EM', 10: 'EM',
+  1: 'MS', 2: 'ED', 3: 'RP', 4: 'EK', 5: 'MS', 6: 'ED', 7: 'RP', 8: 'EK', 9: 'MK', 10: 'MK',
 };
+
+const BAR_SLOTS = 4;
+
+type MiniPolicy = {
+  spellPriority: string[];
+  disabledSpells: string[];
+  runeId?: number;
+};
+
+type BarMember = {
+  id: number;
+  name: string;
+  vocationId: number;
+  level: number;
+  appearance?: CharacterView['appearance'];
+  policy: MiniPolicy;
+  full?: CharacterView;
+};
+
+type RotationTarget = BarMember & { slot: number };
+
+type RotationTab = 'all' | 'attack' | 'area' | 'runes';
 
 export function spellAccentClass(damageType: string): string {
   if (damageType.includes('FIRE')) return 'spell-fire';
@@ -23,53 +47,21 @@ export function spellShortLabel(spell: Spell): string {
   return word.length > 5 ? word.slice(0, 5) : word;
 }
 
-function Portrait({ character }: { character: CharacterView }) {
+function PortraitImage({
+  appearance,
+  vocationId,
+}: {
+  appearance?: CharacterView['appearance'];
+  vocationId: number;
+}) {
   const [url, setUrl] = useState<string | null>(null);
-  const voc = VOC_SHORT[character.vocation.id] ?? '?';
-
   useEffect(() => {
     let alive = true;
-    void outfitIconUrl(
-      character.appearance.outfit,
-      44,
-      {
-        head: character.appearance.head,
-        body: character.appearance.body,
-        legs: character.appearance.legs,
-        feet: character.appearance.feet,
-      },
-      character.appearance.addons ?? 0,
-    ).then((next) => {
-      if (alive) setUrl(next);
-    });
-    return () => { alive = false; };
-  }, [
-    character.appearance.outfit,
-    character.appearance.head,
-    character.appearance.body,
-    character.appearance.legs,
-    character.appearance.feet,
-    character.appearance.addons,
-  ]);
-
-  return (
-    <div className="action-bar__portrait-wrap">
-      <div className="action-bar__portrait" title={`${character.name} — personagem principal`}>
-        {url ? <img src={url} alt="" /> : <span className="action-bar__portrait-fallback">{voc}</span>}
-        <span className="action-bar__portrait-tag">{voc}</span>
-      </div>
-    </div>
-  );
-}
-
-function PartyPortrait({ member }: { member: NonNullable<CharacterView['caveParty']>[number] }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const voc = VOC_SHORT[member.vocationId] ?? '?';
-  useEffect(() => {
-    let alive = true;
-    const appearance = member.appearance;
-    if (!appearance) return () => { alive = false; };
-    void outfitIconUrl(appearance.outfit, 44, {
+    if (!appearance) {
+      setUrl(null);
+      return () => { alive = false; };
+    }
+    void outfitIconUrl(appearance.outfit, 42, {
       head: appearance.head,
       body: appearance.body,
       legs: appearance.legs,
@@ -78,65 +70,212 @@ function PartyPortrait({ member }: { member: NonNullable<CharacterView['cavePart
       if (alive) setUrl(next);
     });
     return () => { alive = false; };
-  }, [member.appearance]);
+  }, [appearance]);
+  return url
+    ? <img src={url} alt="" />
+    : <span className="action-bar__portrait-fallback">{VOC_SHORT[vocationId] ?? '?'}</span>;
+}
+
+function configuredSpells(member: BarMember): Array<Spell | null> {
+  const disabled = new Set(member.policy.disabledSpells ?? []);
+  const available = spellsFor(member.vocationId, member.level);
+  const byId = new Map(available.map((spell) => [spell.id, spell]));
+  const chosen: Spell[] = [];
+  for (const id of member.policy.spellPriority ?? []) {
+    const spell = byId.get(id);
+    if (!spell || disabled.has(id) || chosen.some((entry) => entry.id === id)) continue;
+    chosen.push(spell);
+    if (chosen.length >= BAR_SLOTS) break;
+  }
+  if (chosen.length === 0) {
+    for (const spell of available) {
+      if (disabled.has(spell.id)) continue;
+      chosen.push(spell);
+      if (chosen.length >= BAR_SLOTS) break;
+    }
+  }
+  return Array.from({ length: BAR_SLOTS }, (_, index) => chosen[index] ?? null);
+}
+
+function RotationModal({
+  target,
+  onClose,
+  onSaved,
+  onOpenHelper,
+}: {
+  target: RotationTarget;
+  onClose: () => void;
+  onSaved: (characterId: number, policy: MiniPolicy) => void;
+  onOpenHelper: (characterId: number) => void;
+}) {
+  const [tab, setTab] = useState<RotationTab>('all');
+  const [search, setSearch] = useState('');
+  const [onlyUnlocked, setOnlyUnlocked] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [full, setFull] = useState<CharacterView | null>(target.full ?? null);
+  const [policy, setPolicy] = useState<MiniPolicy>({
+    spellPriority: [...(target.policy.spellPriority ?? [])],
+    disabledSpells: [...(target.policy.disabledSpells ?? [])],
+    runeId: target.policy.runeId,
+  });
+
+  useEffect(() => {
+    let alive = true;
+    if (target.full) {
+      setFull(target.full);
+      return () => { alive = false; };
+    }
+    void api.character(target.id).then((result) => {
+      if (!alive) return;
+      setFull(result.character);
+      setPolicy({
+        spellPriority: [...result.character.policy.spellPriority],
+        disabledSpells: [...result.character.policy.disabledSpells],
+        runeId: result.character.policy.runeId,
+      });
+    }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [target.id]);
+
+  const allClassSpells = useMemo(
+    () => SPELLS.filter((spell) => spell.vocations.includes(target.vocationId))
+      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
+    [target.vocationId],
+  );
+
+  const filteredSpells = allClassSpells.filter((spell) => {
+    if (onlyUnlocked && spell.level > target.level) return false;
+    if (tab === 'attack' && spell.area) return false;
+    if (tab === 'area' && !spell.area) return false;
+    const q = search.trim().toLocaleLowerCase('pt-BR');
+    return !q || spell.name.toLocaleLowerCase('pt-BR').includes(q) || spell.words.toLocaleLowerCase('pt-BR').includes(q);
+  });
+
+  const runes = full ? runesFor(full.vocation.id, full.level, full.magicLevel) : [];
+  const currentId = policy.spellPriority[target.slot];
+
+  async function persist(next: MiniPolicy) {
+    setPolicy(next);
+    onSaved(target.id, next);
+    setLoading(true);
+    try {
+      const result = await api.act(target.id, {
+        type: 'policy',
+        spellPriority: next.spellPriority,
+        disabledSpells: next.disabledSpells,
+        ...(next.runeId !== undefined ? { runeId: next.runeId } : {}),
+      });
+      setFull(result.character);
+      const confirmed: MiniPolicy = {
+        spellPriority: [...result.character.policy.spellPriority],
+        disabledSpells: [...result.character.policy.disabledSpells],
+        runeId: result.character.policy.runeId,
+      };
+      setPolicy(confirmed);
+      onSaved(target.id, confirmed);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function chooseSpell(spell: Spell) {
+    const without = policy.spellPriority.filter((id) => id !== spell.id);
+    const nextPriority = [...without];
+    const insertAt = Math.min(target.slot, nextPriority.length);
+    nextPriority.splice(insertAt, 0, spell.id);
+    void persist({
+      ...policy,
+      spellPriority: nextPriority,
+      disabledSpells: policy.disabledSpells.filter((id) => id !== spell.id),
+    });
+  }
+
+  function clearSlot() {
+    if (!currentId) return;
+    void persist({ ...policy, spellPriority: policy.spellPriority.filter((id) => id !== currentId) });
+  }
+
   return (
-    <div className="action-bar__party-portrait" title={`${member.name} — membro da party`}>
-      {url ? <img src={url} alt="" /> : <span className="action-bar__portrait-fallback">{voc}</span>}
-      <span className="action-bar__portrait-tag">{voc}</span>
+    <div className="modal rotation-modal" onClick={onClose}>
+      <section className="rotation-card" onClick={(event) => event.stopPropagation()}>
+        <header className="rotation-head">
+          <div>
+            <span>ROTAÇÃO</span>
+            <strong>{target.name} · slot {target.slot + 1} <small>(ordem = prioridade)</small></strong>
+          </div>
+          <button type="button" onClick={onClose}>×</button>
+        </header>
+
+        <div className="rotation-tabs">
+          {([['all', 'Todas'], ['attack', 'Ataque'], ['area', 'Área'], ['runes', 'Runas']] as const).map(([id, label]) => (
+            <button key={id} type="button" className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>
+          ))}
+        </div>
+
+        <div className="rotation-tools">
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou palavra (ex.: exura, fireball)…" />
+          <label><input type="checkbox" checked={onlyUnlocked} onChange={(event) => setOnlyUnlocked(event.target.checked)} /> Só liberadas</label>
+        </div>
+
+        <div className="rotation-list">
+          {tab !== 'runes' && filteredSpells.map((spell) => {
+            const selected = currentId === spell.id;
+            const disabled = policy.disabledSpells.includes(spell.id);
+            const unlocked = spell.level <= target.level;
+            const rank = policy.spellPriority.indexOf(spell.id);
+            return (
+              <article key={spell.id} className={`rotation-entry ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`}>
+                <SpellIcon spell={spell} size={48} />
+                <div className="rotation-entry-copy">
+                  <strong>{spell.name}</strong>
+                  <b>{spell.words}</b>
+                  <small>lvl {spell.level} · {spell.mana} mana · cd {Math.max(1, Math.round(spell.cooldownMs / 1000))}s · {spell.area ? 'Área' : 'Alvo'}</small>
+                </div>
+                <div className="rotation-entry-state">
+                  {rank >= 0 && <span>#{rank + 1}</span>}
+                  <button type="button" disabled={loading || !unlocked} onClick={() => chooseSpell(spell)}>{selected ? 'Em uso' : unlocked ? 'Usar' : `Lvl ${spell.level}`}</button>
+                </div>
+              </article>
+            );
+          })}
+
+          {tab === 'runes' && (
+            <>
+              {runes.length === 0 && <p className="rotation-empty">Nenhuma runa liberada para este personagem.</p>}
+              {runes.map((rune) => {
+                const selected = (policy.runeId ?? -1) === rune.itemId;
+                return (
+                  <article key={rune.itemId} className={`rotation-entry ${selected ? 'selected' : ''}`}>
+                    <ItemSlot itemId={rune.itemId} label={rune.name} />
+                    <div className="rotation-entry-copy">
+                      <strong>{rune.name}</strong>
+                      <b>Runa de ataque</b>
+                      <small>lvl {rune.level} · magic level {rune.magicLevel}</small>
+                    </div>
+                    <div className="rotation-entry-state">
+                      <button type="button" disabled={loading} onClick={() => void persist({ ...policy, runeId: selected ? -1 : rune.itemId })}>{selected ? 'Em uso' : 'Usar'}</button>
+                    </div>
+                  </article>
+                );
+              })}
+              <button className="rotation-helper-link" type="button" onClick={() => { onClose(); onOpenHelper(target.id); }}>Mais opções de runas no Helper → Táticas</button>
+            </>
+          )}
+        </div>
+
+        <footer className="rotation-foot">
+          <span>Slot {target.slot + 1}: {currentId ? allClassSpells.find((spell) => spell.id === currentId)?.name ?? currentId : 'vazio'}</span>
+          <div>
+            <button type="button" disabled={!currentId || loading} onClick={clearSlot}>Limpar slot</button>
+            <button type="button" onClick={onClose}>Fechar</button>
+          </div>
+        </footer>
+      </section>
     </div>
   );
 }
 
-function SpellSlot({
-  spell,
-  off,
-  rank,
-  hint,
-  onSpellPriority,
-  onSpellToggle,
-}: {
-  spell: Spell;
-  off: boolean;
-  rank: number;
-  hint: string;
-  onSpellPriority: (spell: Spell) => void;
-  onSpellToggle: (spell: Spell, disabled: boolean) => void;
-}) {
-  const priority = rank === 0;
-
-  return (
-    <button
-      type="button"
-      className={`action-bar__skill ${spellAccentClass(spell.damageType)} ${off ? 'is-off' : 'is-on'} ${priority ? 'is-priority' : ''}`}
-      title={`${spell.name} (${spell.words}) — ${hint}`}
-      onClick={() => onSpellPriority(spell)}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        onSpellToggle(spell, !off);
-      }}
-    >
-      <SpellIcon
-        spell={spell}
-        className="action-bar__skill-img"
-        fallbackClassName="action-bar__skill-icon"
-        fallback={spellShortLabel(spell)}
-      />
-      {rank >= 0 && <span className="action-bar__rank">#{rank + 1}</span>}
-    </button>
-  );
-}
-
-export function ActionBar({
-  character,
-  spells,
-  onAutoAttack,
-  onSpellPriority,
-  onSpellToggle,
-  onOpenSpells,
-  hint,
-  spellsConfigLabel,
-  onOpenHelper,
-}: {
+export function ActionBar(props: {
   character: CharacterView;
   spells: Spell[];
   onAutoAttack: (characterId: number) => void;
@@ -147,82 +286,85 @@ export function ActionBar({
   spellsConfigLabel: string;
   onOpenHelper: (characterId: number) => void;
 }) {
-  const autoOn = character.policy?.autoAttack !== false;
-  const partyMembers = (character.caveParty ?? []).filter((member) => !member.self);
+  const { character } = props;
+  const [rotation, setRotation] = useState<RotationTarget | null>(null);
+  const [overrides, setOverrides] = useState<Record<number, MiniPolicy>>({});
+
+  useEffect(() => {
+    setOverrides({});
+    setRotation(null);
+  }, [character.id]);
+
+  const members: BarMember[] = [
+    {
+      id: character.id,
+      name: character.name,
+      vocationId: character.vocation.id,
+      level: character.level,
+      appearance: character.appearance,
+      policy: overrides[character.id] ?? character.policy,
+      full: character,
+    },
+    ...(character.caveParty ?? []).filter((member) => !member.self).map((member) => ({
+      id: member.id,
+      name: member.name,
+      vocationId: member.vocationId,
+      level: member.level,
+      appearance: member.appearance as CharacterView['appearance'] | undefined,
+      policy: overrides[member.id] ?? {
+        spellPriority: member.policy?.spellPriority ?? [],
+        disabledSpells: member.policy?.disabledSpells ?? [],
+      },
+    })),
+  ];
 
   return (
-    <div className="action-bar">
-      <div className="action-bar__panel">
-        <div className="action-bar__character-group action-bar__character-group--main">
-          <Portrait character={character} />
-          <button
-            type="button"
-            className={`action-bar__skill spell-physical ${autoOn ? 'is-on' : 'is-off'}`}
-            title="Auto-attack"
-            onClick={() => onAutoAttack(character.id)}
-          >
-            <span className="action-bar__skill-icon">⚔</span>
-            <span className="action-bar__skill-label">ATK</span>
-          </button>
-          {spells.map((spell, index) => (
-            <SpellSlot
-              key={spell.id}
-              spell={spell}
-              off={false}
-              rank={index}
-              hint={hint}
-              onSpellPriority={(spell) => onSpellPriority(character.id, spell)}
-              onSpellToggle={(spell, disabled) => onSpellToggle(character.id, spell, disabled)}
-            />
-          ))}
-          <button
-            type="button"
-            className="action-bar__skill action-bar__skill--empty"
-            title={spellsConfigLabel}
-            onClick={onOpenSpells}
-          >
-            <span className="action-bar__plus">+</span>
-          </button>
+    <>
+      <div className="action-bar action-bar--compact">
+        <div className="action-bar__panel">
+          {members.map((member) => {
+            const slots = configuredSpells(member);
+            return (
+              <div className="action-bar__character-group" key={member.id}>
+                <button
+                  type="button"
+                  className="action-bar__portrait-button"
+                  title={`${member.name} — abrir Helper`}
+                  onClick={() => props.onOpenHelper(member.id)}
+                >
+                  <span className="action-bar__portrait">
+                    <PortraitImage appearance={member.appearance} vocationId={member.vocationId} />
+                    <span className="action-bar__portrait-tag">{VOC_SHORT[member.vocationId] ?? '?'}</span>
+                  </span>
+                </button>
+                {slots.map((spell, slot) => (
+                  <button
+                    type="button"
+                    key={`${member.id}-slot-${slot}`}
+                    className={`action-bar__skill ${spell ? spellAccentClass(spell.damageType) : 'action-bar__skill--empty'} ${spell ? 'is-on' : ''}`}
+                    title={spell ? `${spell.name} — abrir Rotação do slot ${slot + 1}` : `Slot ${slot + 1} vazio — configurar rotação`}
+                    onClick={() => setRotation({ ...member, slot })}
+                  >
+                    {spell ? (
+                      <SpellIcon spell={spell} className="action-bar__skill-img" fallbackClassName="action-bar__skill-icon" fallback={spellShortLabel(spell)} />
+                    ) : <span className="action-bar__plus">+</span>}
+                    <span className="action-bar__slot-index">{slot + 1}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </div>
-        {partyMembers.map((member) => (
-          <div className="action-bar__character-group action-bar__character-group--party" key={member.id}>
-            <PartyPortrait member={member} />
-            <button type="button" className={`action-bar__skill spell-physical ${member.policy?.autoAttack === false ? 'is-off' : 'is-on'}`} title={`${member.name} — auto-attack`} onClick={() => onAutoAttack(member.id)}>
-              <span className="action-bar__skill-icon">⚔</span>
-            </button>
-            {(hotbarSpells(member.vocationId, member.level, {
-              disabledSpells: member.policy?.disabledSpells ?? [],
-              spellPriority: member.policy?.spellPriority ?? [],
-            }).length > 0
-              ? hotbarSpells(member.vocationId, member.level, {
-                disabledSpells: member.policy?.disabledSpells ?? [],
-                spellPriority: member.policy?.spellPriority ?? [],
-              })
-              : spellsFor(member.vocationId, member.level)
-                .filter((spell) => !(member.policy?.disabledSpells ?? []).includes(spell.id))
-                .slice(0, 4)
-            ).map((spell, index) => (
-              <SpellSlot
-                key={`${member.id}-${spell.id}`}
-                spell={spell}
-                off={member.policy?.disabledSpells?.includes(spell.id) ?? false}
-                rank={index}
-                hint={`${member.name}: ${hint}`}
-                onSpellPriority={(selected) => onSpellPriority(member.id, selected)}
-                onSpellToggle={(selected, disabled) => onSpellToggle(member.id, selected, disabled)}
-              />
-            ))}
-            <button
-              type="button"
-              className="action-bar__skill action-bar__skill--empty"
-              title={`${member.name} — configurar skills`}
-              onClick={() => onOpenHelper(member.id)}
-            >
-              <span className="action-bar__plus">+</span>
-            </button>
-          </div>
-        ))}
       </div>
-    </div>
+
+      {rotation && (
+        <RotationModal
+          target={{ ...rotation, policy: overrides[rotation.id] ?? rotation.policy }}
+          onClose={() => setRotation(null)}
+          onOpenHelper={props.onOpenHelper}
+          onSaved={(characterId, policy) => setOverrides((current) => ({ ...current, [characterId]: policy }))}
+        />
+      )}
+    </>
   );
 }
