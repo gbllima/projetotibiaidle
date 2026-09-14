@@ -26,9 +26,9 @@ const TILE = 32;
 const MONSTER_RENDER_SCALE = 0.75;
 
 /**
- * Player outfits are kept slightly smaller while hunting so their pixels remain
- * easier to read in crowded fights and they do not visually merge with nearby
- * creatures/effects. City keeps the normal 1:1 scene scale.
+ * Keep player outfits slightly smaller everywhere so their pixels stay easier to
+ * read and the character keeps the same visual size when moving between City and
+ * hunts. This only scales the rendered container; gameplay coordinates stay intact.
  */
 const CHARACTER_RENDER_SCALE = 0.85;
 
@@ -271,12 +271,11 @@ if (!prototype.__partyMovementPatchApplied) {
       });
     }
 
-    // Keep city characters at the original scale. During hunts, reduce only the
-    // visual containers so outfits read more cleanly in crowded combat. Movement,
-    // targeting and all simulation coordinates remain unchanged.
-    const characterScale = this.cityLobby ? 1 : CHARACTER_RENDER_SCALE;
-    if (this.player) this.player.root.scale.set(characterScale);
-    for (const ally of partyAllies(this)) ally.root.scale.set(characterScale);
+    // Keep the same cleaner character scale both in City and in hunts. This avoids
+    // a visible size jump when entering/leaving combat while preserving all real
+    // movement, targeting and simulation coordinates.
+    if (this.player) this.player.root.scale.set(CHARACTER_RENDER_SCALE);
+    for (const ally of partyAllies(this)) ally.root.scale.set(CHARACTER_RENDER_SCALE);
 
     // Large atlas creatures are intentionally reduced only at render time.
     // Their tile, pathfinding, attacks, HP and server simulation are untouched.
