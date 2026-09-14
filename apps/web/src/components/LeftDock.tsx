@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import { huntsById, itemsById, monstersById } from '@tibia-idle/data';
-import { blessingCount, magicProgressPercent, skillProgressPercent, staminaMultiplier } from '@tibia-idle/sim';
+import { blessingCount, isPromoted, magicProgressPercent, PROMOTION_GOLD, PROMOTION_LEVEL, skillProgressPercent, staminaMultiplier } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { api } from '../api/client.js';
 import { formatDuration, formatNumber, formatRate, formatStamina, staminaTone, xpProgress } from '../format.js';
 import { itemTooltipLines } from '../itemFormat.js';
 import { DockBox } from './DockBox.js';
 import { ItemSlot } from './ItemSlot.js';
+
+const PROMOTION_NAMES: Record<number, string> = {
+  1: 'Master Sorcerer',
+  2: 'Elder Druid',
+  3: 'Royal Paladin',
+  4: 'Elite Knight',
+  9: 'Exalted Monk',
+};
 
 function partyNeed(sizes: readonly string[]): number {
   if (sizes.includes('solo') || sizes.length === 0) return 1;
@@ -68,6 +76,8 @@ function SkillsOverview({ character }: { character: CharacterView }) {
   const [selectedId, setSelectedId] = useState(character.id);
   const [view, setView] = useState<CharacterView>(character);
   const [loading, setLoading] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  const [promotionError, setPromotionError] = useState('');
 
   const ids = character.partyMemberIds ?? [character.id];
   const tabs = ids.map((id) => {
@@ -101,11 +111,33 @@ function SkillsOverview({ character }: { character: CharacterView }) {
 
   const choose = async (id: number) => {
     if (id === selectedId) return;
+    setPromotionError('');
     setSelectedId(id);
     if (id === character.id) { setView(character); return; }
     setLoading(true);
     try { const result = await api.character(id); setView(result.character); }
     finally { setLoading(false); }
+  };
+
+  const promoted = Boolean(view.promoted) || isPromoted(view.vocation.id);
+  const promotionTarget = PROMOTION_NAMES[view.vocation.id] ?? view.vocation.name;
+  const promotionLevelOk = view.level >= PROMOTION_LEVEL;
+  const promotionGoldOk = view.gold >= PROMOTION_GOLD;
+  const promotionIdle = !view.session;
+  const canPromote = !promoted && Boolean(PROMOTION_NAMES[view.vocation.id]) && promotionLevelOk && promotionGoldOk && promotionIdle;
+
+  const promote = async () => {
+    if (!canPromote || promoting) return;
+    setPromoting(true);
+    setPromotionError('');
+    try {
+      const result = await api.act(view.id, { type: 'promotion' });
+      setView(result.character);
+    } catch (error) {
+      setPromotionError(error instanceof Error ? error.message : 'Não foi possível realizar a promoção.');
+    } finally {
+      setPromoting(false);
+    }
   };
 
   const xp = xpProgress(view.level, view.experience);
@@ -140,8 +172,32 @@ function SkillsOverview({ character }: { character: CharacterView }) {
   return (
     <DockBox id="skills" title="Skills">
       <div style={{ display:'flex', gap:4, overflowX:'auto', paddingBottom:7 }}>
-        {tabs.map((tab) => <button key={tab.id} type="button" className={`btn ${tab.id===selectedId?'gold':''}`} disabled={loading} onClick={() => void choose(tab.id)} style={{ minWidth:0, padding:'3px 8px', fontSize:10, whiteSpace:'nowrap' }}>{tab.name}</button>)}
+        {tabs.map((tab) => <button key={tab.id} type="button" className={`btn ${tab.id===selectedId?'gold':''}`} disabled={loading || promoting} onClick={() => void choose(tab.id)} style={{ minWidth:0, padding:'3px 8px', fontSize:10, whiteSpace:'nowrap' }}>{tab.name}</button>)}
       </div>
+
+      <div style={{ padding:'7px 8px', margin:'0 0 8px', border:'1px solid rgba(216,168,65,.35)', borderRadius:4, background:'rgba(80,58,14,.16)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'center', marginBottom:4 }}>
+          <strong style={{ color:'#d8a841', fontSize:11 }}>PROMOÇÃO</strong>
+          <strong style={{ color: promoted ? '#86d38b' : '#eee', fontSize:11 }}>{promoted ? view.vocation.name : promotionTarget}</strong>
+        </div>
+        <div style={{ color:'#aaa', fontSize:10, lineHeight:1.45, marginBottom:6 }}>
+          Requisitos: nível <strong style={{ color: promotionLevelOk ? '#86d38b' : '#e6b45a' }}>{PROMOTION_LEVEL}</strong> · <strong style={{ color: promotionGoldOk ? '#86d38b' : '#e6b45a' }}>{formatNumber(PROMOTION_GOLD)} gold</strong>
+        </div>
+        <button
+          type="button"
+          className="btn gold"
+          style={{ width:'100%', fontSize:10, padding:'5px 7px' }}
+          disabled={promoting || promoted || !canPromote}
+          onClick={() => void promote()}
+        >
+          {promoting ? 'Promovendo…' : promoted ? 'Já promovido' : `Promover para ${promotionTarget}`}
+        </button>
+        {!promoted && !promotionLevelOk && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Alcance o nível {PROMOTION_LEVEL} para liberar a promoção.</div>}
+        {!promoted && promotionLevelOk && !promotionGoldOk && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Você precisa de {formatNumber(PROMOTION_GOLD)} gold.</div>}
+        {!promoted && promotionLevelOk && promotionGoldOk && !promotionIdle && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Encerre a hunt para realizar a promoção.</div>}
+        {promotionError && <div className="loss" style={{ fontSize:9, marginTop:4 }}>{promotionError}</div>}
+      </div>
+
       <div style={{ color:'#aaa', fontSize:11, margin:'0 0 7px' }}>{view.vocation.name}</div>
 
       <div className="kv" style={{ padding:'8px 10px', borderRadius:4, background:'rgba(0,0,0,.22)', marginBottom:9 }}>
