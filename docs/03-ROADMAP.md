@@ -77,7 +77,7 @@ arquitetura inteira cai.
 - [x] Consumo de supplies e política configurável
 - [x] Stamina e multiplicadores de XP
 - [x] `advance(session, ticks)` em lote
-- [x] Settlement offline (mesmo código, teto 8 h grátis / 24 h VIP, 70% offline)
+- [x] Settlement offline (mesmo código, teto 16 h grátis / 24 h VIP, 70% offline)
 - [x] Teste de determinismo (mesmo seed, chunks diferentes)
 - [x] Teste de calibração contra o `Xp/Hour` oficial
 
@@ -182,7 +182,7 @@ Analyzer funcionando, o problema é de design e nenhuma feature extra resolve.
 
 ## Regras de retenção (doc 01 §3.6 / §3.8) — concluídas
 
-- [x] Offline 8 h grátis / 24 h VIP, com ~70% de XP e loot
+- [x] Offline 16 h grátis / 24 h VIP, com ~70% de XP e loot
 - [x] Tela "Enquanto você esteve fora" (XP, loot, kills, supplies)
 - [x] Stamina regenera fora de hunt (1 min a cada 3 min reais)
 - [x] Hunts Duo / Party x4 exigem slots de party
