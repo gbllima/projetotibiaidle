@@ -19,6 +19,11 @@ type PartyRuntimeEntry = PartySession & {
   level: number;
 };
 
+type ReinforcementPartySession = HuntSession & {
+  reinforcementPartySize?: number;
+  reinforcementPartyIndex?: number;
+};
+
 /**
  * Visual party formation used by the hunt renderer: principal in the centre,
  * then the first two companions spread farther to the lower-left / lower-right.
@@ -133,9 +138,18 @@ function retargetMonstersFromDeaths(
 
 /** Advance on one clock and distribute only monster rewards at the instant of a kill. */
 export function settleParty(sessions: PartySession[], now: number, remainderCursor = 0) {
-  const entries: PartyRuntimeEntry[] = sessions.map((member) => {
+  const entries: PartyRuntimeEntry[] = sessions.map((member, partyIndex) => {
     const { session, settledAt } = member;
     session.partyMembers = [];
+
+    // The simulator keeps each character in its own persisted HuntSession, while
+    // the client renders all of them on one floor. Tell the reinforcement layer
+    // how many sessions share that floor so the 3-7 enemy limit is distributed
+    // across the whole party instead of being repeated for every character.
+    const reinforcement = session as ReinforcementPartySession;
+    reinforcement.reinforcementPartySize = Math.max(1, sessions.length);
+    reinforcement.reinforcementPartyIndex = partyIndex;
+
     const elapsed = Math.max(0, now - settledAt);
     const cap = offlineCapHours(session.character, now) * 3_600_000;
     const result = settle(session, settledAt, settledAt);
