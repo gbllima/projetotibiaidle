@@ -5,12 +5,33 @@ import { AuthLogo, AuthShell } from '../components/AuthShell.js';
 import { useLocale } from '../i18n/Locale.js';
 import type { AccountView } from '../api/types.js';
 
-const BLURBS: Record<number, string> = {
-  4: 'Tank · corpo a corpo',
-  9: 'Tank · punhos',
-  3: 'Atirador · distância',
-  1: 'Atirador · magia',
-  2: 'Atirador · magia + cura',
+const VOCATION_GUIDE: Record<number, { role: string; summary: string; difficulty: string; recommended?: boolean }> = {
+  4: {
+    role: 'Tank · corpo a corpo',
+    summary: 'Alta sobrevivência · custo baixo · progressão segura',
+    difficulty: 'Dificuldade ★★☆☆☆',
+    recommended: true,
+  },
+  9: {
+    role: 'Tank · punhos',
+    summary: 'Resistente · híbrido · exige mais otimização',
+    difficulty: 'Dificuldade ★★★☆☆',
+  },
+  3: {
+    role: 'Atirador · distância',
+    summary: 'Equilibrado · bom XP · usa munição',
+    difficulty: 'Dificuldade ★★★☆☆',
+  },
+  1: {
+    role: 'Atirador · magia',
+    summary: 'XP alto · dano alto · mais frágil e caro',
+    difficulty: 'Dificuldade ★★★★☆',
+  },
+  2: {
+    role: 'Atirador · magia + cura',
+    summary: 'Boa sustentação · ótimo em party · usa mana',
+    difficulty: 'Dificuldade ★★★☆☆',
+  },
 };
 
 const VOC_ACCENT: Record<number, string> = {
@@ -22,6 +43,7 @@ const VOC_ACCENT: Record<number, string> = {
 };
 
 const WEAPONS = ['Machado', 'Espada', 'Clava'] as const;
+const FIRST_HUNT = 'venore-rotworm-cave';
 
 export function CreateCharacterScreen({
   account,
@@ -55,6 +77,18 @@ export function CreateCharacterScreen({
         weapon: weapon === 'Machado' ? 'axe' : weapon === 'Clava' ? 'club' : 'sword',
       });
       await onRefresh();
+
+      // First impression matters in an idle: put a brand-new character into
+      // the tutorial hunt immediately so damage, XP and loot appear before the
+      // player has to understand the entire hunt browser. If the cave is full
+      // or the request fails, entering the character still works and the
+      // guided tutorial falls back to the normal hunt-selection step.
+      try {
+        await api.startHunt(created.character.id, FIRST_HUNT, 1);
+      } catch {
+        // Non-fatal onboarding enhancement.
+      }
+
       await onEnter(created.character.id);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Falha ao criar personagem.');
@@ -118,6 +152,9 @@ export function CreateCharacterScreen({
         <div className="select-grid create-character-grid">
           <section className="select-create">
             <h2>{t('selectCreateSection')}</h2>
+            <p className="lede" style={{ marginTop: 0 }}>
+              Escolha o estilo que combina com você. Se for sua primeira vez, Knight é a opção mais simples para aprender o jogo.
+            </p>
             <form onSubmit={(event) => void create(event)}>
               <div className="auth-field">
                 <label htmlFor="char-name">{t('name')}</label>
@@ -144,7 +181,8 @@ export function CreateCharacterScreen({
               <div className="select-voc-grid" role="group" aria-labelledby="char-vocation-label">
                 {PLAYABLE_VOCATION_IDS.map((id) => {
                   const vocation = vocationsById.get(id);
-                  if (!vocation) return null;
+                  const guide = VOCATION_GUIDE[id];
+                  if (!vocation || !guide) return null;
                   return (
                     <button
                       type="button"
@@ -154,8 +192,10 @@ export function CreateCharacterScreen({
                       style={{ '--voc-accent': VOC_ACCENT[id] ?? '#e8c547' } as CSSProperties}
                       onClick={() => setVocationId(id)}
                     >
-                      <strong>{vocation.name}</strong>
-                      <small>{BLURBS[id]}</small>
+                      <strong>{vocation.name}{guide.recommended ? ' · ⭐ Recomendado' : ''}</strong>
+                      <small>{guide.role}</small>
+                      <small>{guide.summary}</small>
+                      <small>{guide.difficulty}</small>
                     </button>
                   );
                 })}
