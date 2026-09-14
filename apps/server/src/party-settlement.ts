@@ -1,5 +1,5 @@
 import {
-  addExperience, isBossHunt, layoutPackMonsters, PLAYER_TILE, TICK_MS,
+  addExperience, isBossHunt, layoutPackMonsters, PLAYER_TILE, TICK_MS, waveActiveLimit, waveProgress,
   type ActiveMonster, type HuntSession,
 } from '@tibia-idle/sim';
 import { offlineCapHours, OFFLINE_GAP_MS, OFFLINE_EFFICIENCY, settle } from './settle.js';
@@ -22,6 +22,7 @@ type PartyRuntimeEntry = PartySession & {
 type ReinforcementPartySession = HuntSession & {
   reinforcementPartySize?: number;
   reinforcementPartyIndex?: number;
+  reinforcementQueue?: ActiveMonster[];
 };
 
 /**
@@ -89,12 +90,32 @@ function nearestLivingRecipient(
   return candidates[0] ?? null;
 }
 
+function visiblePartyLimit(session: ReinforcementPartySession): number {
+  const globalLimit = waveActiveLimit(waveProgress(session.totals.kills).waveIndex);
+  const partySize = Math.max(1, Math.trunc(session.reinforcementPartySize ?? 1));
+  if (partySize <= 1) return globalLimit;
+  const index = Math.max(0, Math.min(partySize - 1, Math.trunc(session.reinforcementPartyIndex ?? 0)));
+  const sharedTotal = Math.max(globalLimit, partySize);
+  const base = Math.floor(sharedTotal / partySize);
+  const remainder = sharedTotal % partySize;
+  return Math.max(1, base + (index < remainder ? 1 : 0));
+}
+
+function capTransferredMonsters(session: ReinforcementPartySession): void {
+  const limit = visiblePartyLimit(session);
+  session.reinforcementQueue ??= [];
+  if (session.active.length > limit) {
+    session.reinforcementQueue.push(...session.active.splice(limit));
+  }
+  if (session.active.length > 0) layoutPackMonsters(session.active);
+}
+
 /**
  * A configured party represents one fight on screen even though each character
  * keeps an independent persisted HuntSession. When one member actually dies,
- * move their still-living creatures into the nearest surviving member's session
- * so those monsters continue attacking instead of vanishing with the dead
- * session.
+ * move every still-living creature they own — both visible and queued
+ * reinforcements — into the nearest surviving member's session so no part of a
+ * wave vanishes with the dead session.
  *
  * Dedicated boss instances remain isolated: moving a second boss into a session
  * that completes on the first boss death would leave an unfinishable encounter.
@@ -103,20 +124,25 @@ function retargetMonstersFromDeaths(
   entries: PartyRuntimeEntry[],
   statusesBeforeTick: Map<number, HuntSession['status']>,
 ): void {
-  const relayout = new Set<HuntSession>();
+  const touched = new Set<ReinforcementPartySession>();
 
   entries.forEach((source, sourceIndex) => {
     if (statusesBeforeTick.get(source.id) !== 'active' || source.session.status !== 'died') return;
-    if (source.session.active.length === 0 || isBossHunt(source.session.huntId)) return;
+    if (isBossHunt(source.session.huntId)) return;
 
-    const remaining = [...source.session.active];
+    const sourceReinforcement = source.session as ReinforcementPartySession;
+    const queued = sourceReinforcement.reinforcementQueue ?? [];
+    if (source.session.active.length === 0 && queued.length === 0) return;
+
+    const remaining = [...source.session.active, ...queued];
     source.session.active = [];
+    sourceReinforcement.reinforcementQueue = [];
 
     for (const monster of remaining) {
       const target = nearestLivingRecipient(entries, sourceIndex, monster);
       if (!target) {
-        // Everybody else is also down: leave the creature with the dead session
-        // and let normal hunt finalisation remove it.
+        // Everybody else is also down: keep the creature attached to the dead
+        // session and let normal hunt finalisation remove it.
         source.session.active.push(monster);
         continue;
       }
@@ -126,14 +152,24 @@ function retargetMonstersFromDeaths(
         uid: target.entry.session.nextUid++,
         attackCooldowns: [...monster.attackCooldowns],
       };
-      target.entry.session.active.push(moved);
-      relayout.add(target.entry.session);
+      const targetSession = target.entry.session as ReinforcementPartySession;
+      targetSession.active.push(moved);
+      touched.add(targetSession);
     }
   });
 
-  // Re-seat imported monsters around their new target. This also keeps the
-  // server snapshot aligned with the viewport's tile-based AoE calculations.
-  for (const session of relayout) layoutPackMonsters(session.active);
+  // Once somebody dies, the screen cap is shared only by living combatants.
+  // Reindex them before capping transferred creatures so the vacated visual
+  // slot can be used immediately without exceeding the global wave limit.
+  const living = entries.filter((entry) => entry.session.status === 'active' && entry.session.character.health > 0);
+  living.forEach((entry, index) => {
+    const reinforcement = entry.session as ReinforcementPartySession;
+    reinforcement.reinforcementPartySize = Math.max(1, living.length);
+    reinforcement.reinforcementPartyIndex = index;
+    touched.add(reinforcement);
+  });
+
+  for (const session of touched) capTransferredMonsters(session);
 }
 
 /** Advance on one clock and distribute only monster rewards at the instant of a kill. */
