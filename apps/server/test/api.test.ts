@@ -416,9 +416,9 @@ describe('offline settlement', () => {
     const settlement = after.json().settlement as {
       elapsedSeconds: number; discardedSeconds: number; capHours: number;
     };
-    expect(settlement.capHours).toBe(8);
-    expect(settlement.elapsedSeconds).toBeLessThanOrEqual(8 * 60 * 60);
-    expect(settlement.elapsedSeconds).toBeGreaterThan(7 * 60 * 60);
+    expect(settlement.capHours).toBe(16);
+    expect(settlement.elapsedSeconds).toBeLessThanOrEqual(16 * 60 * 60);
+    expect(settlement.elapsedSeconds).toBeGreaterThan(15 * 60 * 60);
     expect(settlement.discardedSeconds).toBeGreaterThan(0);
   }, 30_000);
 
