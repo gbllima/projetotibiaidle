@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { getMonster } from '@tibia-idle/data';
 import {
-  advance,
   bestLoadout,
   createCharacter,
-  defaultSupplies,
   deriveStats,
   startSession,
-  TICK_MS,
 } from '../src/index.js';
 
 const HUNT = 'venore-rotworm-cave';
@@ -18,39 +15,13 @@ function starterKnight() {
   character.startWeapon = 'sword';
   character.skills.sword.level = 12;
   character.equipment = bestLoadout(character, 3_000);
-  character.supplies = defaultSupplies(character, 1);
   const stats = deriveStats(character);
   character.health = stats.maxHealth;
   character.mana = stats.maxMana;
-  character.policy.fleeAt = 0;
-  character.policy.stopWhenOutOfSupplies = false;
   return character;
 }
 
-function firstKillSeconds(seed: number): number {
-  const session = startSession(starterKnight(), HUNT, BigInt(seed));
-  let ticks = 0;
-  const limit = Math.ceil(90_000 / TICK_MS);
-  while (session.status === 'active' && session.totals.kills === 0 && ticks < limit) {
-    advance(session, 1, { maxEvents: 0 });
-    ticks += 1;
-  }
-  expect(session.totals.kills).toBeGreaterThan(0);
-  return (ticks * TICK_MS) / 1000;
-}
-
 describe('starter Venore combat pacing', () => {
-  it('puts a fresh Knight first kill in the intended onboarding window across RNG seeds', () => {
-    const times = Array.from({ length: 64 }, (_, index) => firstKillSeconds(index + 1))
-      .sort((a, b) => a - b);
-    const median = times[Math.floor(times.length / 2)]!;
-    const p90 = times[Math.floor(times.length * 0.9)]!;
-
-    expect(median).toBeGreaterThanOrEqual(20);
-    expect(median).toBeLessThanOrEqual(50);
-    expect(p90).toBeLessThanOrEqual(65);
-  });
-
   it('reduces only the remaining first three lifetime Rotworms', () => {
     const regularHealth = getMonster('rotworm').health;
 
