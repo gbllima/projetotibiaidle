@@ -88,18 +88,84 @@ export function isTwoHanded(item: Item): boolean {
   return item.slot === 'two-handed';
 }
 
-const VOCATION_ALIASES: Record<number, string[]> = {
-  1: ['sorcerer', 'master sorcerer'],
-  2: ['druid', 'elder druid'],
-  3: ['paladin', 'royal paladin'],
-  4: ['knight', 'elite knight'],
-  5: ['sorcerer', 'master sorcerer'],
-  6: ['druid', 'elder druid'],
-  7: ['paladin', 'royal paladin'],
-  8: ['knight', 'elite knight'],
-  9: ['monk', 'exalted monk'],
-  10: ['monk', 'exalted monk'],
-};
+const EXPLICIT_VOCATION_IDS: ReadonlyArray<{ token: string; ids: readonly number[] }> = [
+  { token: 'master sorcerer', ids: [5] },
+  { token: 'elder druid', ids: [6] },
+  { token: 'royal paladin', ids: [7] },
+  { token: 'elite knight', ids: [8] },
+  { token: 'exalted monk', ids: [10] },
+  // Base vocation restrictions also include the promoted version.
+  { token: 'sorcerer', ids: [1, 5] },
+  { token: 'druid', ids: [2, 6] },
+  { token: 'paladin', ids: [3, 7] },
+  { token: 'knight', ids: [4, 8] },
+  { token: 'monk', ids: [9, 10] },
+];
+
+function explicitVocationIds(item: Item): number[] {
+  const ids = new Set<number>();
+  for (const raw of item.vocations) {
+    const value = raw.trim().toLowerCase();
+    const match = EXPLICIT_VOCATION_IDS.find((entry) => value === entry.token);
+    if (!match) continue;
+    for (const id of match.ids) ids.add(id);
+  }
+  return [...ids];
+}
+
+/**
+ * Some old/common weapons have no explicit vocation tag in items.xml.
+ * For the idle game's class identity we still enforce the combat family:
+ * Knight = sword/axe/club, Paladin = distance/ammo/quiver,
+ * Sorcerer = wands, Druid = rods, Monk = fist/monk weapons.
+ */
+function implicitWeaponVocationIds(item: Item): readonly number[] | null {
+  const type = (item.type ?? '').toLowerCase();
+  const weapon = (item.weaponType ?? '').toLowerCase();
+  const name = item.name.toLowerCase();
+  const meleeEffect = (item.meleeAttackEffect ?? '').toLowerCase();
+
+  if (weapon === 'sword' || weapon === 'axe' || weapon === 'club'
+    || type === 'sword weapons' || type === 'axe weapons' || type === 'club weapons') {
+    return [4, 8];
+  }
+
+  if (weapon === 'distance' || type === 'distance weapons'
+    || weapon === 'ammo' || weapon === 'ammunition' || weapon === 'missile'
+    || type === 'ammunition' || type === 'quivers') {
+    return [3, 7];
+  }
+
+  if (type === 'rods' || (weapon === 'wand' && /\brod\b/.test(name))) return [2, 6];
+  if (type === 'wands' || weapon === 'wand') return [1, 5];
+
+  if (weapon === 'fist' || type === 'fist weapons'
+    || meleeEffect.includes('monkstaff') || meleeEffect.includes('monkdagger')) {
+    return [9, 10];
+  }
+
+  if (type === 'spellbooks' || weapon === 'spellbook') return [1, 2, 5, 6];
+
+  return null;
+}
+
+/**
+ * Vocation ids that may equip an item.
+ * `null` means genuinely unrestricted.
+ *
+ * Explicit items.xml vocation tags always win. When the XML is silent, weapon
+ * families receive sensible class restrictions so e.g. a Spike Sword is a
+ * Knight item instead of appearing as "all classes".
+ */
+export function itemAllowedVocationIds(item: Item): readonly number[] | null {
+  if (item.vocations.length > 0) {
+    const explicit = explicitVocationIds(item);
+    // Preserve old behavior for an unknown/custom vocation tag instead of
+    // accidentally making the item unusable for everyone.
+    return explicit.length > 0 ? explicit : null;
+  }
+  return implicitWeaponVocationIds(item);
+}
 
 /** Weapon types a vocation can actually fight with. Rods share `weaponType=wand`. */
 export function weaponFamily(vocationId: number): readonly string[] {
@@ -129,9 +195,8 @@ export function effectiveLevelRequirement(item: Item): number {
 
 export function canEquipFor(item: Item, vocationId: number, level: number): boolean {
   if (equipLevelRequired(item) > level) return false;
-  if (item.vocations.length === 0) return true;
-  const aliases = VOCATION_ALIASES[vocationId] ?? [];
-  return item.vocations.some((v) => aliases.includes(v));
+  const allowed = itemAllowedVocationIds(item);
+  return allowed === null || allowed.includes(vocationId);
 }
 
 export function canEquip(item: Item, character: CharacterState): boolean {
