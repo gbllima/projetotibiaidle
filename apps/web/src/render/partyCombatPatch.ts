@@ -10,6 +10,11 @@ import { CombatScene } from './combat.js';
  * Pin each party monster to the member identified by actorId before the normal
  * renderer handles the event. This is presentation-only: damage, HP and combat
  * results remain authoritative on the server.
+ *
+ * The base renderer also has a presentation-only ally strike loop that invents
+ * a damage amount from the ally HP. That number is not a server combat result,
+ * so disable that synthetic strike completely. Real ally attacks continue to be
+ * rendered from player_attack events carrying actorId.
  */
 type SceneInternals = {
   player: unknown | null;
@@ -17,10 +22,15 @@ type SceneInternals = {
   monsterTargets: Map<number, unknown>;
 };
 
+type SyntheticAllyStrike = (name: string, ally: unknown, target: unknown, delta: number) => void;
+
 type CombatPrototype = {
   playOne(this: SceneInternals, event: SimEvent): void;
+  tryAllyStrike: SyntheticAllyStrike;
   __partyTargetPatchApplied?: boolean;
   __partyTargetOriginalPlayOne?: (this: SceneInternals, event: SimEvent) => void;
+  __partySyntheticStrikeDisabled?: boolean;
+  __partySyntheticStrikeOriginal?: SyntheticAllyStrike;
 };
 
 const prototype = CombatScene.prototype as unknown as CombatPrototype;
@@ -37,4 +47,13 @@ if (!prototype.__partyTargetPatchApplied) {
     original.call(this, event);
   };
   prototype.__partyTargetPatchApplied = true;
+}
+
+if (!prototype.__partySyntheticStrikeDisabled) {
+  prototype.__partySyntheticStrikeOriginal = prototype.tryAllyStrike;
+  prototype.tryAllyStrike = function suppressSyntheticAllyStrike(): void {
+    // Intentionally empty: only authoritative server player_attack events may
+    // create ally damage numbers/effects in the combat scene.
+  };
+  prototype.__partySyntheticStrikeDisabled = true;
 }
