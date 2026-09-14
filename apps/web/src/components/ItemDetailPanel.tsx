@@ -4,10 +4,12 @@ import {
   itemCategoryName,
   itemDisplayName,
   itemLevelRequired,
+  itemVocationLabel,
   itemWeightOz,
 } from '../itemFormat.js';
 import { formatNumber } from '../format.js';
 import { ItemSlot } from './ItemSlot.js';
+import './ItemVocationRibbon.css';
 
 export function ItemDetailPanel({ item, compact }: { item: Item; compact?: boolean }) {
   const wand = wandsById.get(item.id);
@@ -22,6 +24,7 @@ export function ItemDetailPanel({ item, compact }: { item: Item; compact?: boole
       {item.description && (
         <p className="lede item-detail-desc">{item.description}</p>
       )}
+      <div className="item-vocation-ribbon">{itemVocationLabel(item)}</div>
       <div className="kv">
         <span>Categoria</span><strong>{category}</strong>
         <span>Peso</span><strong>{itemWeightOz(item)}</strong>
@@ -54,7 +57,6 @@ export function ItemDetailPanel({ item, compact }: { item: Item; compact?: boole
         {item.runeSpellName && <><span>Rune</span><strong>{item.runeSpellName}</strong></>}
         {item.imbuementSlots > 0 && <><span>Imbuements</span><strong>{item.imbuementSlots} slots</strong></>}
         {level > 0 && <><span>Level</span><strong>{level}</strong></>}
-        {item.vocations.length > 0 && <><span>Vocação</span><strong>{item.vocations.join(', ')}</strong></>}
         {item.slot && <><span>Slot</span><strong>{item.slot}</strong></>}
         {item.weaponType && <><span>Weapon</span><strong>{item.weaponType}</strong></>}
         <span>Stackable</span><strong>{item.stackable ? 'sim' : 'não'}</strong>
