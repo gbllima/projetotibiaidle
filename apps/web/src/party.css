@@ -28,7 +28,10 @@
 #party-config .dock-head, #party-config .box-head { min-height: 34px; }
 .party-head-button { min-width:30px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:4px;background:linear-gradient(var(--head),var(--card));color:var(--ink);font:700 11px/1 inherit;cursor:pointer; }
 .party-head-button:hover { border-color:var(--gold-dim);color:#fff; }.party-config-button{margin-left:4px}
-.party-compact-member{padding:8px 0 9px;border-bottom:1px solid rgba(255,255,255,.08)}.party-compact-member:last-of-type{border-bottom:0}
+.party-compact-member{padding:8px 0 9px;border-bottom:1px solid rgba(255,255,255,.08);transition:opacity .18s ease,filter .18s ease,background .18s ease}.party-compact-member:last-of-type{border-bottom:0}
+.party-compact-member.dead{background:linear-gradient(90deg,rgba(90,28,28,.16),rgba(30,30,30,.02) 72%)}
+.party-compact-member.dead .party-compact-vocation,.party-compact-member.dead .party-compact-bars,.party-compact-member.dead .party-mini-set,.party-compact-member.dead .party-compact-actions,.party-compact-member.dead .party-role,.party-compact-member.dead .party-compact-name strong{opacity:.42;filter:grayscale(.9)}
+.party-dead-label{flex:0 0 auto;margin-left:auto;padding:2px 4px;border:1px solid rgba(190,78,78,.65);border-radius:3px;background:rgba(104,31,31,.45);color:#f0a0a0;font-size:7px;font-weight:900;line-height:1;letter-spacing:.04em;text-shadow:0 1px 1px #000}
 .party-compact-top{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:7px;align-items:start}.party-compact-details{min-width:0}
 .party-compact-name{display:flex;align-items:center;gap:6px;min-width:0;margin-bottom:3px}.party-compact-name strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gold);font-size:13px}
 .party-role{flex:0 0 auto;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:900;line-height:1;letter-spacing:.04em}.party-role.sup{background:#247a61;color:#b9ffe9}.party-role.dps{background:#60458b;color:#eadcff}.party-role.tank{background:#8a5a28;color:#ffe2b7}
