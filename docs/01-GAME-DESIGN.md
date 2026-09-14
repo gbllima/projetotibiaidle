@@ -168,7 +168,7 @@ Máximo 42h, regenera offline. É o limitador de sessão e o motivo pra voltar a
 Ausente na referência; é o nosso diferencial de retenção.
 
 - Ao reconectar, o servidor avança a mesma simulação por tick (determinística)
-- Teto de acumulação: 8h grátis, 24h para VIP
+- Teto de acumulação: 16h grátis, 24h para VIP
 - Eficiência offline em ~70% da online (XP e loot), para preservar valor da sessão ativa
 - Tela de "enquanto você esteve fora": XP, loot, kills, supplies gastos
 
@@ -193,7 +193,7 @@ endgame em vez de despejar tudo de uma vez.
 
 ### 3.8 Social
 
-- **Market** — leilão player-to-player, o coração da economia
+- **Market** — leilão player-to-player com auditoria
 - **Guilds** — com hunts de guild e ranking
 - **Party hunts** — hunts que exigem 2 ou 4 jogadores (o arquivo já marca `Duo` e `Party x4`)
 - **Rankings** — nível, skill, bestiary, riqueza
