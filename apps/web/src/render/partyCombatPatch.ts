@@ -114,16 +114,13 @@ function nearestLivingHero(scene: SceneInternals, monster: SceneEntry): SceneEnt
 /** Determine the real party target for one rendered creature. */
 function targetForMonster(scene: SceneInternals, uid: number, monster: SceneEntry): SceneEntry | null {
   // A real server hit is the strongest signal. Keep following that victim while
-  // they are alive; if they die, drop through to nearest-survivor selection.
+  // they are alive. If the actor is no longer present (dead/left), do not assume
+  // it was the principal: fall through to UID ownership and nearest-survivor
+  // selection below.
   const forcedId = victimMap(scene).get(uid);
   if (forcedId !== undefined) {
     const forcedAlly = allyById(scene, forcedId);
-    if (forcedAlly) {
-      if (isLiving(forcedAlly)) return forcedAlly;
-    } else if (isLiving(scene.player)) {
-      // actorId that is not an ally is the principal character.
-      return scene.player;
-    }
+    if (isLiving(forcedAlly)) return forcedAlly;
   }
 
   // Secondary sessions are namespaced as memberId * stride + localUid.
@@ -132,7 +129,8 @@ function targetForMonster(scene: SceneInternals, uid: number, monster: SceneEntr
     const owner = allyById(scene, ownerId);
     if (isLiving(owner)) return owner;
   } else if (isLiving(scene.player)) {
-    // Raw uids belong to the principal session.
+    // Raw uids belong to the principal session. This is also how authoritative
+    // hits on the principal resolve without needing the principal characterId.
     return scene.player;
   }
 
@@ -149,9 +147,10 @@ if (!prototype.__partyTargetPatchApplied) {
     if (event.type === 'monster_attack' && event.uid !== undefined && event.actorId !== undefined) {
       victimMap(this).set(event.uid, event.actorId);
       const ally = allyById(this, event.actorId);
-      const target = ally ?? this.player;
-      // Keep the final blow on the character that truly received it. Movement
-      // will retarget only after their authoritative HP/session says they are dead.
+      const target = ally ?? (event.uid < PARTY_UID_STRIDE ? this.player : null);
+      // Keep the final blow on the character that truly received it. A missing
+      // namespaced ally means that member has already left/died; in that case
+      // movement selects the nearest living survivor instead of the principal.
       if (target) this.monsterTargets.set(event.uid, target);
     }
     original.call(this, event);
