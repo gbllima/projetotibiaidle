@@ -5,7 +5,7 @@ const STARTER_HUNT_ID = 'venore-rotworm-cave';
 const STARTER_MONSTER_ID = 'rotworm';
 const STARTER_FAST_KILLS = 3;
 const STARTER_MAX_LEVEL = 10;
-const STARTER_HEALTH_MULTIPLIER = 0.12;
+const STARTER_HEALTH_MULTIPLIER = 0.18;
 
 /**
  * New characters need an early payoff before the normal idle pacing takes over.
