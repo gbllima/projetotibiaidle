@@ -11,6 +11,7 @@ import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
 import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
 import { registerWebSocket } from './ws.js';
+import { installVocationAppearanceDefaults } from './vocation-appearance.js';
 
 export interface AppOptions {
   databaseFile: string;
@@ -25,6 +26,7 @@ const AUTH_PATHS = new Set(['/api/login', '/api/register', '/api/guest', '/api/c
 
 export async function createApp(options: AppOptions): Promise<{ app: FastifyInstance; db: Database }> {
   const db = new Database(options.databaseFile);
+  installVocationAppearanceDefaults(db);
   loadWorldEvent(db);
   reconcileHunts(db);
   const reconcileTimer = setInterval(() => {
