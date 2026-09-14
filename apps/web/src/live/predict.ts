@@ -240,7 +240,7 @@ function overlay(server: CharacterView, session: HuntSession | null): CharacterV
   // Without this, the local tick loop keeps rendering stale paperdoll slots.
   applyServerSnapshot(session, server);
   const stats = deriveStats(session.character);
-  const localSession = describeSession(session);
+  const localSession = describeSession(session)!;
   const extraPartyMonsters = partyMonsters(server);
   const visibleSession = extraPartyMonsters.length > 0
     ? { ...localSession, active: [...localSession.active, ...extraPartyMonsters] }
