@@ -309,7 +309,7 @@ function PartyVisual() {
 }
 
 function ProgressionVisual({ endgame = false }: { endgame?: boolean }) {
-  const examples = endgame
+  const examples: Array<[string, string]> = endgame
     ? [['Giant Spider', 'Conteúdo perigoso'], ['Demon', 'Alto nível'], ['Ferumbras', 'Objetivo de endgame']]
     : [['Rotworm', 'Começo'], ['Dragon', 'Intermediário'], ['Giant Spider', 'Mais exigente'], ['Demon', 'Alto nível']];
   return <div className="wiki-monster-road">
@@ -422,7 +422,7 @@ export function WikiScreen({ onHome, onPlay }: { onHome: () => void; onPlay: () 
   return <main className="portal-page">
     <header className="portal-nav">
       <button onClick={onHome}>← Início</button>
-      <strong>WIKI · IDLE KNOCK TIBIA</strong>
+      <strong>WIKI · KNOCK IDLE BR</strong>
       <button onClick={onPlay}>Jogar</button>
     </header>
     <div className="portal-content">
