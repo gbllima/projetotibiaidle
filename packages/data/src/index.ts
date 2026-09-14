@@ -128,7 +128,7 @@ export const wandsById: ReadonlyMap<number, WandStats> = new Map(wands.map((wand
 export const outfitsCatalogById: ReadonlyMap<string, OutfitCatalogEntry> = new Map(
   outfitsCatalog.map((entry) => [entry.id, entry]),
 );
-export const mountsCatalogById: ReadonlyMap<number, MountCatalogEntry> = new Map(
+export const mountsByServerId: ReadonlyMap<number, MountCatalogEntry> = new Map(
   mountsCatalog.map((entry) => [entry.mount, entry]),
 );
 
