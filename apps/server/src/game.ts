@@ -251,7 +251,29 @@ function cavePartyView(loaded: LoadedCharacter): Array<PartyHunter & { self: boo
   return [self, ...others];
 }
 
+function livePartyActivity(loaded: LoadedCharacter, db: Database) {
+  const members = configuredPartyIds(db, loaded.row.accountId, loaded.row.id).flatMap((id) => {
+    const row = db.findCharacter(id);
+    if (!row || !row.session) return [];
+    const member = parse(row);
+    return member.session?.status === 'active' && member.character.health > 0 ? [{ id, session: member.session }] : [];
+  });
+  const huntId = loaded.session?.huntId ?? members[0]?.session.huntId;
+  const living = members.filter((member) => member.session.huntId === huntId);
+  const first = living[0];
+  if (!first) return null;
+  const summary = summarise(first.session);
+  if (!summary) return null;
+  return {
+    huntId: first.session.huntId,
+    startedAt: Math.min(...living.map((member) => member.session.startedAt ?? 0)),
+    memberIds: living.map((member) => member.id),
+    session: { ...summary, active: living.flatMap((member) => (summarise(member.session)?.active ?? []).map((monster) => ({ ...monster, uid: member.id * 10_000_000 + monster.uid % 10_000_000 }))) },
+  };
+}
+
 function persistentPartyView(loaded: LoadedCharacter, db: Database): Array<PartyHunter & { self: boolean }> {
+  const activity = livePartyActivity(loaded, db);
   if (db.getWorld(partyKey(loaded.row.id)) === null) return cavePartyView(loaded);
   loaded.character.backpackContents ??= [];
   loaded.character.warehouse ??= [];
@@ -309,11 +331,14 @@ function persistentPartyView(loaded: LoadedCharacter, db: Database): Array<Party
         count: stack.count,
       })),
       backpackCapacity: sharedBackpackCapacity,
-      active: id === loaded.row.id
-        ? loaded.session?.status === 'active'
-        : loaded.session?.status === 'active' && member.session?.status === 'active'
-          && member.session.huntId === loaded.session.huntId,
+      active: activity?.memberIds.includes(id) ?? false,
       self: id === loaded.row.id,
+      diedInHunt: !member.session && (() => {
+        const raw = db.getWorld(`death-scene:${id}`);
+        if (!raw || !activity) return false;
+        const death = JSON.parse(raw) as { huntId: string; at: number };
+        return death.huntId === activity.huntId && death.at >= activity.startedAt;
+      })(),
     }];
   });
 }
@@ -355,6 +380,7 @@ function settleConfiguredParty(db: Database, accountId: number, characterId: num
     const loaded = members.find((member) => member.row.id === entry.id)!;
     results.set(entry.id, entry.result);
     if (entry.session.status !== 'active') {
+      if (entry.session.status === 'died') db.setWorld(`death-scene:${entry.id}`, JSON.stringify({ huntId: entry.session.huntId, at: now }));
       endHunt(entry.session);
       loaded.session = null;
     }
@@ -466,6 +492,7 @@ export function loadCharacter(
 
   const loaded = parse(row);
   attachCaveParty(db, loaded);
+  if (loaded.session?.status === 'active' && db.getWorld(`death-scene:${characterId}`)) db.setWorld(`death-scene:${characterId}`, '');
   const settlement = partySettlements.get(characterId) ?? settle(loaded.session, row.settledAt, now);
   const targetUid = loaded.session?.active[0]?.uid;
   loaded.partyEvents = [...partySettlements.entries()].flatMap(([id, result]) => result.events
@@ -473,6 +500,7 @@ export function loadCharacter(
     .map((event) => ({ ...event, actorId: event.actorId ?? id, uid: targetUid ?? event.uid })));
 
   if (!partySettlements.has(characterId) && settlement.session && settlement.session.status !== 'active') {
+    if (settlement.session.status === 'died') db.setWorld(`death-scene:${characterId}`, JSON.stringify({ huntId: settlement.session.huntId, at: now }));
     // The hunt ended while the player was away: bank the loot so the gold is
     // waiting for them rather than trapped in a dead session.
     endHunt(settlement.session);
@@ -791,6 +819,8 @@ export function describeCharacter(loaded: LoadedCharacter, db?: Database) {
     partySlots: character.partySlots ?? 1,
     partyMemberIds: db ? configuredPartyIds(db, loaded.row.accountId, loaded.row.id) : [loaded.row.id],
     partyBonus: Math.round((partyShare - 1) * 100),
+    partyActivity: db ? livePartyActivity(loaded, db) : null,
+    deathScene: db && !loaded.session ? JSON.parse(db.getWorld(`death-scene:${loaded.row.id}`) || 'null') : null,
     caveParty: db ? persistentPartyView(loaded, db) : cavePartyView(loaded),
     guildId: character.guildId,
     decorations: character.decorations ?? [],

@@ -65,6 +65,7 @@ export function GameScreen({
 }) {
   const { t, locale, setLocale } = useLocale();
   const { character, events } = usePredictedCharacter(server);
+  const activitySession = character.session ?? server.partyActivity?.session ?? null;
   const [overlay, setOverlay] = useState<OverlayId>('none');
   const [helperSection, setHelperSection] = useState<'cura' | 'magias'>('cura');
   const [settings, setSettings] = useState(false);
@@ -210,7 +211,7 @@ export function GameScreen({
     if (settlement.offline && settlement.elapsedSeconds >= 60) {
       setAway(settlement);
       pushLog(`${t('awayTitle')}: ${formatDuration(settlement.elapsedSeconds)}.`);
-    } else if (settlement.stoppedBecause) {
+    } else if (settlement.stoppedBecause && !server.partyActivity) {
       setHuntEnd({
         reason: settlement.stoppedBecause,
         death: settlement.deathPenalty ?? liveDeath.current ?? undefined,
@@ -227,42 +228,26 @@ export function GameScreen({
   }, [loop]);
 
   useEffect(() => {
-    if (character.session?.huntId) lastHunt.current = character.session.huntId;
-  }, [character.session?.huntId]);
+    if (server.session?.huntId || server.partyActivity?.huntId) lastHunt.current = server.session?.huntId ?? server.partyActivity!.huntId;
+  }, [server.session?.huntId, server.partyActivity?.huntId]);
 
   useEffect(() => {
-    if (character.session || character.queue || userStopped.current || busy) return;
+    // Only the authoritative party state may end/restart the activity. The
+    // principal's local prediction can die while companions are still fighting.
+    if (server.session || server.partyActivity || server.queue || userStopped.current || busy) return;
     const previousHuntId = lastHunt.current;
     if (!previousHuntId) return;
     lastHunt.current = null;
-
+    if (!loop) return;
     void act(async () => {
-      let targetHuntId = previousHuntId;
-      let targetLabel = huntLabel(previousHuntId);
-
-      if (!loop) {
-        const payload = await api.hunts(character.id);
-        setHunts(payload.hunts);
-        const currentIndex = payload.hunts.findIndex((entry) => entry.id === previousHuntId);
-        const next = currentIndex >= 0
-          ? payload.hunts.slice(currentIndex + 1).find((entry) => entry.unlocked && entry.statedLevel <= character.level)
-          : undefined;
-
-        if (!next) {
-          pushLog('Progressão automática: nenhuma próxima hunt compatível com seu nível está liberada.');
-          return;
-        }
-        targetHuntId = next.id;
-        targetLabel = next.name;
+      setHuntEnd(null);
+      for (const id of server.partyMemberIds ?? [server.id]) {
+        await api.startHunt(id, previousHuntId, lastHours.current);
       }
-
-      const result = await api.startHunt(character.id, targetHuntId, lastHours.current);
-      onCharacter(result.character);
-      if (result.character.queue) pushLog(t('queueWait'));
-      else if (loop) pushLog(`${t('loop')}: ${targetLabel}.`);
-      else pushLog(`Próxima hunt: ${targetLabel}.`);
+      onCharacter((await api.character(server.id)).character);
+      pushLog(`${t('loop')}: ${huntLabel(previousHuntId)}.`);
     });
-  }, [character.session, character.queue, loop, busy, character.id, character.level]);
+  }, [server.session, server.partyActivity, server.queue, loop, busy, server.id]);
 
   useEffect(() => {
     for (const event of events) {
@@ -309,13 +294,13 @@ export function GameScreen({
     pushLog(t('bestiaryUnlock'));
   }, [character.bestiary]);
 
-  const hunt = character.session
-    ? huntsById.get(character.session.huntId) ?? bossesByHuntId.get(character.session.huntId)
+  const hunt = activitySession
+    ? huntsById.get(activitySession.huntId) ?? bossesByHuntId.get(activitySession.huntId)
     : character.queue
       ? huntsById.get(character.queue.huntId) ?? bossesByHuntId.get(character.queue.huntId)
       : null;
-  const wavesTotal = character.session?.wavesTotal ?? 10;
-  const wavesCleared = character.session?.wavesCleared ?? 0;
+  const wavesTotal = activitySession?.wavesTotal ?? 10;
+  const wavesCleared = activitySession?.wavesCleared ?? 0;
 
   useEffect(() => {
     const node = logRef.current;
@@ -445,16 +430,16 @@ export function GameScreen({
               {hunt?.name ?? t('hunts')}
               <small>▾</small>
             </button>
-            <div className={`wave ${character.session?.bossWave ? 'boss' : ''}`}>
+            <div className={`wave ${activitySession?.bossWave ? 'boss' : ''}`}>
               <div className="label">
-                {character.session?.bossWave ? t('bossWave') : `Wave ${character.session?.wave ?? 0}/${wavesTotal}`}
-                {character.session ? ` · Inimigos ${character.session.packAlive ?? character.session.active.length}/${character.session.packSize}` : ''}
+                {activitySession?.bossWave ? t('bossWave') : `Wave ${activitySession?.wave ?? 0}/${wavesTotal}`}
+                {activitySession ? ` · Inimigos ${activitySession.packAlive ?? activitySession.active.length}/${activitySession.packSize}` : ''}
               </div>
               <div className="waves">
                 {Array.from({ length: wavesTotal }, (_, index) => (
                   <i
                     key={index}
-                    className={`${index < (wavesCleared % wavesTotal) ? 'on' : ''} ${index === wavesTotal - 1 ? 'skull' : ''} ${character.session?.bossWave && index === wavesTotal - 1 ? 'now' : ''}`}
+                    className={`${index < (wavesCleared % wavesTotal) ? 'on' : ''} ${index === wavesTotal - 1 ? 'skull' : ''} ${activitySession?.bossWave && index === wavesTotal - 1 ? 'now' : ''}`}
                   />
                 ))}
               </div>
@@ -464,7 +449,7 @@ export function GameScreen({
               aria-pressed={loop}
               title={loop
                 ? 'Loop ativo: ao terminar, repete a mesma hunt.'
-                : 'Loop desativado: ao terminar, avança para a próxima hunt compatível com seu nível.'}
+                : 'Loop desativado: ao terminar, volta para a cidade.'}
               onClick={() => setLoop(!loop)}
             >
               {t('loop')}
@@ -472,18 +457,19 @@ export function GameScreen({
           </div>
           </div>
 
-          {character.session ? (
+          {activitySession ? (
             <div className="viewport">
               <CombatScene
                 key={character.id}
                 characterId={character.id}
-                huntId={character.session.huntId}
-                active={character.session.active}
+                huntId={activitySession.huntId}
+                active={activitySession.active}
                 events={[...events, ...(character.partyEvents ?? [])]}
                 decorations={character.decorations}
                 allies={[
-                  ...(character.caveParty ?? []).filter((mate) => !mate.self).map((mate) => ({
+                  ...(character.caveParty ?? []).filter((mate) => !mate.self && (mate.active !== false || mate.diedInHunt)).map((mate) => ({
                     id: mate.id,
+                    dead: mate.diedInHunt,
                     name: mate.name,
                     vocationId: mate.vocationId,
                     health: mate.health ?? 1,
@@ -492,7 +478,7 @@ export function GameScreen({
                     maxMana: mate.maxMana ?? 1,
                     appearance: mate.appearance,
                   })),
-                  ...(character.session.summons ?? []).map((summon) => ({
+                  ...(activitySession.summons ?? []).map((summon) => ({
                     name: summon.name,
                     vocationId: 0,
                     health: 1,
@@ -507,6 +493,7 @@ export function GameScreen({
                   })),
                 ]}
                 player={{
+                  dead: Boolean(server.deathScene && !server.session && server.partyActivity),
                   name: character.name,
                   vocationId: character.vocation.id,
                   health: character.health,

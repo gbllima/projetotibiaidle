@@ -150,7 +150,7 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
           db,
           subscription.accountId,
           subscription.characterId,
-          loaded.session?.huntId,
+          loaded.session?.huntId ?? character.partyActivity?.huntId,
           party,
         );
         send({

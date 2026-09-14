@@ -211,12 +211,15 @@ export interface CharacterView {
   partySlots: number;
   partyMemberIds?: number[];
   partyBonus: number;
+  deathScene?: { huntId: string; at: number } | null;
+  partyActivity?: { huntId: string; memberIds: number[]; startedAt: number; session: SessionView } | null;
   caveParty: Array<{
     id: number;
     name: string;
     level: number;
     vocationId: number;
     active?: boolean;
+    diedInHunt?: boolean;
     experience?: number;
     health?: number;
     maxHealth?: number;

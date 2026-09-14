@@ -1,7 +1,7 @@
 import { NAME_STYLE } from './textStyle.js';
 import { fitPixelCanvas } from './pixelCanvas.js';
 import { CITY_WIDTH, CITY_HEIGHT, CITY_SPAWN, cityPath, cityWalkable, type CityPosition } from '@tibia-idle/data';
-import { AnimatedSprite, Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { AnimatedSprite, Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { itemsById, monstersById, mountsByServerId } from '@tibia-idle/data';
 import type { SimEvent } from '@tibia-idle/sim';
 import type { ActiveMonsterView } from '../api/types.js';
@@ -43,6 +43,8 @@ export const VOCATION_LOOK: Record<number, number> = {
 };
 
 interface SpriteEntry {
+  dead?: boolean;
+  corpseSprite?: Sprite;
   root: Container;
   sprite: AnimatedSprite;
   label: Text;
@@ -79,6 +81,7 @@ interface SpriteEntry {
 }
 
 export interface PlayerView {
+  dead?: boolean;
   cityNpc?: 'merchant';
   cityPosition?: CityPosition;
   id?: number;
@@ -512,7 +515,8 @@ export class CombatScene {
             });
           }
           this.allies.set(ally.name, created);
-          void this.drawMount(created, ally.appearance);
+          this.setCorpse(created, Boolean(ally.dead));
+          if (!created.dead) void this.drawMount(created, ally.appearance);
         }
         return;
       }
@@ -521,6 +525,8 @@ export class CombatScene {
       }
       existing.vocationId = ally.vocationId;
       existing.appearance = ally.appearance;
+      this.setCorpse(existing, Boolean(ally.dead));
+      if (existing.dead) return;
       this.layoutHud(existing, ally.health / Math.max(1, ally.maxHealth));
       void this.drawMount(existing, ally.appearance);
     });
@@ -557,6 +563,8 @@ export class CombatScene {
       }
     }
     if (!this.player) return;
+    this.setCorpse(this.player, Boolean(player.dead) || (!this.cityLobby && player.health <= 0));
+    if (this.player.dead) return;
     this.player.lastHealth = player.health;
     this.player.appearance = player.appearance;
     const look = player.appearance?.outfit || VOCATION_LOOK[player.vocationId] || 128;
@@ -644,6 +652,7 @@ export class CombatScene {
   }
 
   private drawMount(entry: SpriteEntry, appearance?: PlayerView['appearance']): void {
+    if (entry.dead) { if (entry.mountSprite) entry.mountSprite.visible = false; return; }
     const mountId = appearance?.mount ?? 0;
     if (mountId <= 0) {
       if (entry.mountSprite) {
@@ -920,10 +929,10 @@ export class CombatScene {
 
   private findHeroTargetForMonster(monster: SpriteEntry, uid?: number): SpriteEntry | null {
     const assigned = uid !== undefined ? this.monsterTargets.get(uid) : undefined;
-    if (assigned && assigned.root.alpha >= 1) return assigned;
+    if (assigned && !assigned.dead && assigned.root.alpha >= 1) return assigned;
     const heroes: SpriteEntry[] = [];
-    if (this.player) heroes.push(this.player);
-    for (const ally of this.allies.values()) heroes.push(ally);
+    if (this.player && !this.player.dead) heroes.push(this.player);
+    for (const ally of this.allies.values()) if (!ally.dead) heroes.push(ally);
     if (heroes.length === 0) return null;
     const target = chooseHeroTargetForMonster(
       { tileX: monster.destX, tileY: monster.destY },
@@ -936,7 +945,42 @@ export class CombatScene {
     return this.player ?? null;
   }
 
+  private setCorpse(entry: SpriteEntry, dead: boolean): void {
+    if (entry.dead === dead) return;
+    entry.dead = dead;
+    entry.label.visible = !dead;
+    entry.bar.visible = !dead;
+    if (entry.manaBar) entry.manaBar.visible = !dead;
+    if (entry.aura) entry.aura.visible = !dead;
+    if (entry.mountSprite) entry.mountSprite.visible = !dead;
+    if (dead) {
+      entry.walkLeft = 0;
+      entry.clickGoalX = undefined;
+      entry.clickGoalY = undefined;
+      entry.sprite.stop();
+      entry.sprite.visible = false;
+      // Use the native dead-human appearance, not a rotated walking outfit.
+      void Assets.load<Texture>('/sprites/player-corpse.png').then((texture) => {
+        if (!entry.dead || entry.root.destroyed || entry.corpseSprite) return;
+        texture.source.scaleMode = 'nearest';
+        const body = new Sprite(texture);
+        body.anchor.set(0.5, 1);
+        body.roundPixels = true;
+        entry.corpseSprite = body;
+        entry.root.addChildAt(body, 0);
+      }).catch((error) => console.error('corpse texture', error));
+    } else {
+      entry.corpseSprite?.destroy();
+      entry.corpseSprite = undefined;
+      entry.sprite.visible = true;
+      entry.sprite.rotation = 0;
+      entry.sprite.tint = 0xffffff;
+      this.face(entry, 0, 1, false, true);
+    }
+  }
+
   private tryAllyStrike(name: string, ally: SpriteEntry, target: SpriteEntry, delta: number): void {
+    if (ally.dead || target.dead) return;
     const key = `${name}:${Math.round(target.root.x)}:${Math.round(target.root.y)}`;
     const cooldown = (this.allyAttackCooldown.get(key) ?? 0) - delta;
     this.allyAttackCooldown.set(key, Math.max(0, cooldown));
@@ -1326,8 +1370,8 @@ export class CombatScene {
       if (target) this.chase(player, target.destX, target.destY);
     }
     const heroes: SpriteEntry[] = [];
-    if (player && player.root.alpha >= 1) heroes.push(player);
-    heroes.push(...[...this.allies.values()].filter((entry) => entry.root.alpha >= 1));
+    if (player && !player.dead && player.root.alpha >= 1) heroes.push(player);
+    heroes.push(...[...this.allies.values()].filter((entry) => !entry.dead && entry.root.alpha >= 1));
     const liveMonsterIds = new Set<number>();
     [...this.sprites.entries()]
       .sort(([left], [right]) => left - right)
@@ -1346,7 +1390,7 @@ export class CombatScene {
       if (!liveMonsterIds.has(uid)) this.monsterTargets.delete(uid);
     }
     for (const [name, ally] of this.allies) {
-      if (ally.walkLeft > 0 || ally.root.alpha < 1) continue;
+      if (ally.dead || ally.walkLeft > 0 || ally.root.alpha < 1) continue;
       const localReserved = this.occupiedTiles(ally);
       const target = this.closestMonster(ally) ?? player;
       if (!target) continue;
@@ -1400,6 +1444,7 @@ export class CombatScene {
   }
 
   private advanceWalk(entry: SpriteEntry, delta: number): void {
+    if (entry.dead) return;
     if (entry.walkLeft <= 0) return;
     entry.walkLeft = Math.max(0, entry.walkLeft - delta);
     const progress = 1 - entry.walkLeft / entry.stepMs;
