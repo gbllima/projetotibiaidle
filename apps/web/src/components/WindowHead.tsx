@@ -17,6 +17,8 @@ export function WindowHead({
   open?: boolean;
   onToggle?: () => void;
 }) {
+  const displayTitle = title === 'Build' ? 'Atributos' : title;
+
   return (
     <header className={`window-head ${collapsible ? 'window-head-dock' : ''}`}>
       {collapsible ? (
@@ -28,12 +30,12 @@ export function WindowHead({
           title={open ? 'Minimizar' : 'Expandir'}
         >
           <span className="window-head-min" aria-hidden>{open ? '−' : '+'}</span>
-          <span className="window-head-title">{title}</span>
+          <span className="window-head-title">{displayTitle}</span>
         </button>
       ) : (
         <div className="window-head-title-wrap">
           <span className="window-head-accent" aria-hidden />
-          <h2 className="window-head-title">{title}</h2>
+          <h2 className="window-head-title">{displayTitle}</h2>
         </div>
       )}
       {extra ? <div className="window-head-extra">{extra}</div> : null}
