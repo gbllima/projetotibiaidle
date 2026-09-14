@@ -57,6 +57,7 @@ type CorpseRecord = {
 
 const records = new WeakMap<object, CorpseRecord[]>();
 const deathKeys = new WeakMap<object, Set<string>>();
+const lethalPartyMembers = new WeakMap<object, Set<number>>();
 let itemAtlasPromise: ReturnType<typeof loadAtlas> | null = null;
 
 function sceneKey(scene: SceneInternals): object {
@@ -83,6 +84,16 @@ function seenDeaths(scene: SceneInternals): Set<string> {
   return set;
 }
 
+function lethalMembers(scene: SceneInternals): Set<number> {
+  const key = sceneKey(scene);
+  let set = lethalPartyMembers.get(key);
+  if (!set) {
+    set = new Set<number>();
+    lethalPartyMembers.set(key, set);
+  }
+  return set;
+}
+
 function clearCorpses(scene: SceneInternals): void {
   for (const record of corpseRecords(scene)) {
     window.clearTimeout(record.fadeTimer);
@@ -91,6 +102,7 @@ function clearCorpses(scene: SceneInternals): void {
   }
   records.set(sceneKey(scene), []);
   seenDeaths(scene).clear();
+  lethalMembers(scene).clear();
 }
 
 function genderFromEntry(entry: SceneEntry): 'm' | 'f' {
@@ -103,11 +115,14 @@ function genderFromEntry(entry: SceneEntry): 'm' | 'f' {
   return 'm';
 }
 
+function allyById(scene: SceneInternals, id: number): SceneEntry | undefined {
+  return [...scene.allies.values()].find((entry) => entry.characterId === id);
+}
+
 function entryForDeath(scene: SceneInternals, event: SimEvent): SceneEntry | null {
   if (event.actorId !== undefined) {
-    for (const ally of scene.allies.values()) {
-      if (ally.characterId === event.actorId) return ally;
-    }
+    const ally = allyById(scene, event.actorId);
+    if (ally) return ally;
   }
   return scene.player;
 }
@@ -185,6 +200,17 @@ const prototype = CombatScene.prototype as unknown as CombatPrototype;
 if (!prototype.__deathCorpsePatchApplied) {
   const originalPlayOne = prototype.playOne;
   prototype.playOne = function patchedDeathEvent(this: SceneInternals, event: SimEvent): void {
+    // Secondary party sessions do not currently forward player_death itself, but
+    // they do forward the final incoming damage with actorId. Mark only genuinely
+    // lethal combat removals so manually disabling a party member never leaves a corpse.
+    if ((event.type === 'monster_attack' || event.type === 'condition') && event.actorId !== undefined) {
+      const ally = allyById(this, event.actorId);
+      const damage = Math.max(0, event.amount ?? 0);
+      if (ally && damage > 0 && damage >= Math.max(1, ally.lastHealth)) {
+        lethalMembers(this).add(event.actorId);
+      }
+    }
+
     if (event.type === 'player_death') {
       const entry = entryForDeath(this, event);
       if (entry) {
@@ -204,12 +230,17 @@ if (!prototype.__deathCorpsePatchApplied) {
   ): void {
     if (!this.cityLobby) {
       const incomingNames = new Set(allies.map((ally) => ally.name));
+      const lethal = lethalMembers(this);
       for (const [name, entry] of this.allies) {
-        // Party members are removed from the renderer when their hunt session is
-        // no longer active. If they were alive on the previous frame, leave the
-        // corpse on their last SQM before the normal sync destroys their actor.
-        if (!incomingNames.has(name) && entry.characterId !== undefined && entry.lastHealth > 0) {
+        // A party member that disappears after a lethal server hit died. Leave
+        // the corpse on the last known SQM before normal sync destroys the actor.
+        if (
+          !incomingNames.has(name)
+          && entry.characterId !== undefined
+          && lethal.has(entry.characterId)
+        ) {
           spawnCorpse(this, entry, `character:${entry.characterId}`);
+          lethal.delete(entry.characterId);
         }
       }
     }
