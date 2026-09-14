@@ -17,9 +17,19 @@ import { CombatScene } from './combat.js';
  */
 const PARTY_UID_STRIDE = 10_000_000;
 
+/**
+ * Creature atlases contain many 64x64+ multi-tile monsters. The game viewport is
+ * intentionally compact, so rendering those at raw atlas size makes large
+ * creatures cover party members, nameplates and neighbouring SQMs. Scale only
+ * monster containers; players, allies, movement tiles and combat calculations
+ * stay at their original size.
+ */
+const MONSTER_RENDER_SCALE = 0.75;
+
 type SceneRoot = {
   alpha: number;
   destroyed?: boolean;
+  scale: { set(value: number): void };
 };
 
 type SceneEntry = {
@@ -171,6 +181,12 @@ if (!prototype.__partyMovementPatchApplied) {
     allies: AllyView[] = [],
   ): void {
     originalSync.call(this, active, player, allies);
+
+    // Large atlas creatures are intentionally reduced only at render time.
+    // Their tile, pathfinding, attacks, HP and server simulation are untouched.
+    for (const monster of this.sprites.values()) {
+      monster.root.scale.set(MONSTER_RENDER_SCALE);
+    }
 
     // Base CombatScene originally seeded new allies with HP=1 and did not keep
     // lastHealth current. Mirror the authoritative snapshot so death can remove
