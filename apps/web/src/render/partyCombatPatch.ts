@@ -56,6 +56,7 @@ type SceneRoot = {
 type SceneEntry = {
   root: SceneRoot;
   characterId?: number;
+  dead?: boolean;
   lastHealth: number;
   tileX: number;
   tileY: number;
@@ -72,6 +73,7 @@ type AllyView = {
   id?: number;
   name: string;
   health: number;
+  dead?: boolean;
 };
 
 type SceneInternals = {
@@ -125,7 +127,7 @@ function victimMap(scene: SceneInternals): Map<number, number> {
 }
 
 function isLiving(entry: SceneEntry | null | undefined): entry is SceneEntry {
-  return Boolean(entry && !entry.root.destroyed && entry.root.alpha > 0.05 && entry.lastHealth > 0);
+  return Boolean(entry && !entry.dead && !entry.root.destroyed && entry.root.alpha > 0.05 && entry.lastHealth > 0);
 }
 
 function partyAllies(scene: SceneInternals): SceneEntry[] {
@@ -285,11 +287,13 @@ if (!prototype.__partyMovementPatchApplied) {
 
     // Base CombatScene originally seeded new allies with HP=1 and did not keep
     // lastHealth current. Mirror the authoritative snapshot so death can remove
-    // that character from aggro selection immediately.
+    // that character from aggro selection immediately. A corpse may already have
+    // had its HP restored in persistent character state, so the explicit dead flag
+    // always wins over that restored value.
     for (const ally of allies) {
       if (ally.id === undefined) continue;
       const entry = allyById(this, ally.id);
-      if (entry) entry.lastHealth = ally.health;
+      if (entry) entry.lastHealth = ally.dead ? 0 : ally.health;
     }
 
     const victims = victimMap(this);
