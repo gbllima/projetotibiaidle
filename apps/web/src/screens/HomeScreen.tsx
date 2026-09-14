@@ -54,8 +54,8 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 
       <section className="landing-fair-economy" aria-label="Economia justa">
         <div className="landing-fair-seal"><span>⚖</span><strong>FAIR PLAY</strong></div>
-        <div className="landing-fair-copy"><small>ECONOMIA JUSTA</small><h2>NÃO É <em>PAY-TO-WIN</em></h2><p>Seu progresso vem do jogo. Evolução, hunts, loot e conquistas são construídos jogando — dinheiro não compra vitória.</p></div>
-        <div className="landing-fair-points"><span>✓ PROGRESSÃO PELO JOGO</span><span>✓ ECONOMIA EQUILIBRADA</span><span>✓ COMPETIÇÃO JUSTA</span></div>
+        <div className="landing-fair-copy"><small>ECONOMIA JUSTA</small><h2>SEM PODER <em>EXCLUSIVO PAGO</em></h2><p>Equipamentos, hunts e conquistas continuam sendo obtidos jogando. VIP e boosts aceleram ou ampliam conveniências, mas não liberam equipamentos exclusivos de poder.</p></div>
+        <div className="landing-fair-points"><span>✓ EQUIPAMENTOS PELO JOGO</span><span>✓ SEM GEAR EXCLUSIVO PAGO</span><span>✓ COMPETIÇÃO TRANSPARENTE</span></div>
       </section>
 
       <section id="servidor" className="landing-stats">
