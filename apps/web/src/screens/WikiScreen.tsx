@@ -1,47 +1,410 @@
 import { useMemo, useState } from 'react';
-import { hunts, monsters, items, vocations, spellsCatalog, charms, bossEncounters, outfitsCatalog, mountsCatalog, stages } from '@tibia-idle/data';
+import {
+  hunts,
+  monsters,
+  items,
+  vocations,
+  spellsCatalog,
+  charms,
+  bossEncounters,
+  outfitsCatalog,
+  mountsCatalog,
+  stages,
+} from '@tibia-idle/data';
 import { GUILD_COST, partySlotPrices, SHOP, IMBUEMENTS, WHEEL_NODES } from '@tibia-idle/sim';
+import { CreatureIcon } from '../components/CreatureIcon.js';
 import './portal.css';
+import './wiki-guide.css';
 
-const GUIDES = [
-  { title: 'Primeiros passos — tutorial', paragraphs: [
-    '1. Abra Minha conta na página inicial, entre na sua conta ou registre-se. O painel mostra seus personagens, saldos e progresso sem iniciar o jogo.',
-    '2. Crie um personagem e escolha a vocação. Knight luta próximo dos monstros; Paladin usa armas à distância; Sorcerer e Druid usam magia; Monk tem suas próprias habilidades de combate.',
-    '3. Entre com o personagem. A Cidade é a Safe Zone: você está fora da caçada, pode organizar o equipamento, acessar o depósito e recuperar stamina.',
-    '4. Abra Itens para conferir armas, armadura e mochila. Os itens precisam ser compatíveis com a classe, nível e slot do personagem.',
-    '5. Abra o Helper e configure ataque, poções e cura. Confira os suprimentos antes de sair. As opções de fuga e falta de suprimentos ajudam a encerrar uma caçada perigosa.',
-    '6. Abra Hunts e escolha um local liberado. O nível mínimo do conteúdo não pode superar o nível do principal da party. O desbloqueio acompanha o aumento do nível.',
-    '7. Escolha a duração e inicie a caçada. Os suprimentos são preparados para a viagem e têm custo. Se a cave estiver cheia, seu personagem pode entrar na fila.',
-    '8. O combate acontece automaticamente. A próxima onda surge inteira quando a anterior termina e a taxa de surgimento da cave permite. Só derrotar monstros gera a XP de combate.',
-    '9. Para formar uma party, abra Config no painel Party. Adicione ou arraste seus personagens para Formação, escolha o Principal e salve. Arrastar para Principal não remove o personagem da formação.',
-    '10. Use o status do membro no painel para ativá-lo na caçada do principal. Somente membros ativos na mesma caçada recebem a divisão de XP. Com três, cada um recebe um terço; sobras inteiras alternam entre os participantes.',
-    '11. Acompanhe HP, mana, XP e stamina. O botão Cidade encerra as caçadas da formação e retorna à zona segura. Treino online é acessível no topo e na janela de caçadas.',
-    '12. Venda loot, melhore o equipamento, consulte Bestiário, Prey e Progressão. Use Minha conta para acompanhar os personagens sem abrir o jogo. Volte à Wiki para comparar conteúdo e requisitos.',
-  ] },
-  { title: 'Conta, personagens e segurança', paragraphs: ['A conta reúne os personagens e suas permissões. Ouro, coins, equipamento e progresso são armazenados por personagem; os totais do painel somam esses saldos.', 'A seleção de personagens informa o limite da conta. Cada personagem tem vocação, aparência, nível, habilidades e inventários próprios. A administração está disponível somente para contas autorizadas pelo servidor.'] },
-  { title: 'Cidade, stamina e descanso', paragraphs: ['Cidade é a Safe Zone, fora de uma hunt. A recuperação da stamina usa o tempo descansando, inclusive com a tela aberta e com consultas frequentes ao servidor.', 'O limite é 42 horas. Os primeiros 10 minutos contínuos de descanso são a espera inicial. Até 39 horas, cada 3 minutos de descanso recuperam 1 minuto de stamina; de 39 a 42 horas, cada 6 minutos recuperam 1 minuto. Frações de tempo são preservadas entre atualizações.', 'Ao voltar a caçar, o período contínuo de descanso é reiniciado. Stamina baixa reduz os benefícios da caçada; confira os indicadores antes de uma viagem longa.'] },
-  { title: 'Caçadas, ondas e acesso por nível', paragraphs: ['O nível mínimo cadastrado da cave define o acesso. O principal nível 51 pode entrar em conteúdo de nível 51 ou inferior; nível 52 permanece bloqueado. Bosses, raids e eventos usam seu nível mínimo. Os companheiros usam a elegibilidade do principal.', 'Recomendação de combate e nível mínimo são conceitos diferentes: uma cave liberada ainda pode ser difícil para seu equipamento e suas habilidades. Monstros, taxas de XP, loot e vocações podem ser consultados no catálogo.', 'As ondas são completas; não há reposição contínua no meio de uma onda. O surgimento acumula crédito pela taxa configurada da caçada, limitado a uma onda. O dano alto não remove esse limite.'] },
-  { title: 'Party, principal e experiência', paragraphs: ['A formação comporta até três personagens da mesma conta. Um personagem não pode pertencer a duas formações ao mesmo tempo. Salvar a formação também funciona na cidade; estar na formação não ativa automaticamente uma caçada.', 'A morte de um monstro gera um prêmio de XP que é dividido igualmente entre os participantes ativos na mesma hunt naquele momento. Inativos não recebem XP compartilhada. Consultar o membro ou o principal não duplica o prêmio. A divisão não exige níveis semelhantes.', 'Itens abre o equipamento e a mochila compartilhada. Aparência permite editar o personagem selecionado. O principal pode ser trocado pelos cards da formação.', 'Segundo slot: ' + partySlotPrices(1).gold.toLocaleString('pt-BR') + ' gold. Terceiro slot: ' + partySlotPrices(2).gold.toLocaleString('pt-BR') + ' gold. Os slots adicionais da party são desbloqueados somente com gold. Convites entre contas não estão disponíveis nesta formação.'] },
-  { title: 'Combate, classes, Helper e suprimentos', paragraphs: ['A vocação define habilidades, equipamento e magias compatíveis. Nível, skills, magic level, arma, armadura, resistências, buffs e condições influenciam o combate.', 'O Helper organiza autoataque, prioridade de magias, cura, poções, runas, suporte e critérios de parada. Use limites de vida e mana adequados; as ações consomem recursos e respeitam cooldowns.', 'Os suprimentos incluem poções, munição e outros consumíveis configurados. O servidor calcula o pacote e o custo; se houver recursos no armazém, o reabastecimento pode aproveitá-los antes de comprar.'] },
-  { title: 'Inventários, equipamentos e economia', paragraphs: ['Equipamento tem slots e restrições por classe e nível. Mochila, suprimentos, loot da caçada e depósito têm funções próprias. Confira a origem de um item ao equipar, usar, mover ou vender.', 'O loot depende dos monstros derrotados e seus sorteios. A tabela de cada monstro lista as entradas de loot da base. Ouro, preço de venda e preço de compra não são necessariamente iguais.', 'Mercado permite negociar com outros jogadores quando o item é negociável. A Loja reúne ofertas, serviços e consumíveis. Custos e requisitos exibidos são validados pelo servidor.'] },
-  { title: 'Progressão, Bestiário, Charms e Prey', paragraphs: ['Nível aumenta com experiência. Habilidades de combate, magic level e treino têm progressões próprias. A tabela de estágios do catálogo mostra multiplicadores da base.', 'Derrotar espécies avança o Bestiário. Os estágios revelam informações e concedem progresso para charms. Charms podem ser vinculados conforme seus requisitos.', 'Prey usa slots, seleção de criaturas e bônus temporários de dano, defesa, experiência ou loot. Rerolls, wildcards, bloqueios e opções automáticas consomem os recursos indicados na interface.'] },
-  { title: 'Treino online e offline', paragraphs: ['Treino online possui salas e alvos próprios, acessíveis ao lado de Cidade e na janela de conteúdo. O personagem precisa estar fora de uma caçada para treinar.', 'Armas de exercise possuem cargas e regras específicas. Treino de skills não equivale à XP compartilhada de matar monstros. O treino offline e a recuperação de stamina são processados conforme o tempo elegível do personagem.'] },
-  { title: 'Bosses, raids, eventos e Bosstiário', paragraphs: ['Conteúdo especial é listado com nível mínimo, categoria, condições e cooldown. Sua disponibilidade é validada novamente no servidor, inclusive quando o personagem vem da fila.', 'Concluir encontros pode registrar mortes de boss, recompensas e cooldowns. Consulte os encontros no catálogo para níveis, criaturas, descrições e tempos configurados.'] },
-  { title: 'Guilds e comunidade', paragraphs: ['Abra Guild no menu para criar, entrar, visualizar membros ou sair. Fundar uma guild custa ' + GUILD_COST.toLocaleString('pt-BR') + ' gold. O líder pode expulsar membros; se sair com outros membros presentes, a liderança é transferida.', 'Guild não é party: ela organiza a comunidade, enquanto a party organiza os participantes da caçada e a divisão de XP. Os canais de chat e o ranking permitem acompanhar a comunidade.'] },
-  { title: 'Forja, imbuements e roda de habilidades', paragraphs: ['A forja usa recursos, slots e tiers de equipamento. Fusão, transferência e conversões seguem seus custos, compatibilidade e resultados definidos no jogo.', 'Imbuements oferecem bônus com duração e reagentes. Confira slots aceitos, tiers, custos e ingredientes no catálogo. Equipar um item não ignora as restrições de sua classe.', 'A roda de habilidades possui nós, limites de rank e pontos ligados ao progresso. A interface mostra pontos disponíveis e requisitos antes de aplicar uma melhoria.'] },
-  { title: 'Bênçãos, morte e encerramento de hunts', paragraphs: ['Bênçãos influenciam as penalidades de morte. O botão de bênçãos do painel abre suas opções e preços. Não confunda bênçãos com invulnerabilidade.', 'A morte encerra a sessão e aplica as penalidades calculadas pelo servidor. Ao voltar ao templo, vida e mana são restauradas. Uma parada normal encerra a hunt e trata loot e suprimentos restantes conforme a política configurada.'] },
-  { title: 'VIP, boosts, recompensas e aparência', paragraphs: ['VIP e boosts são temporários. A duração e os bônus dependem da oferta ou recompensa. Daily tem controle diário; códigos e ofertas exigem validação no servidor.', 'Outfits, cores, addons e montarias dependem de desbloqueios, compatibilidade e opções disponíveis. Aparência muda a apresentação do personagem e não concede automaticamente os atributos de um equipamento.', 'Roleta e outros sorteios usam custos e prêmios próprios. Consulte a interface antes de gastar coins; resultados aleatórios não são garantidos.'] },
-  { title: 'Progresso offline e perguntas frequentes', paragraphs: ['Fechar o navegador não significa parar uma caçada ativa. O servidor simula o período elegível quando o personagem é consultado. O limite de recuperação é 8 horas para conta gratuita e 24 horas para VIP; períodos considerados offline usam 70% da eficiência normal de XP e loot.', 'Não recebi XP na party: confira se o membro está ativo, na mesma hunt e se algum monstro morreu. Equipamento e classe podem fazer personagens matarem em ritmos diferentes, mas a divisão do prêmio é igual entre os elegíveis.', 'Não recuperei stamina ainda: confira se está realmente fora da hunt, espere o atraso inicial e depois o tempo necessário para recuperar um minuto. O contador não sobe a cada segundo.', 'Não consigo entrar em conteúdo: confira nível mínimo do principal, slots da party, suprimentos, custo, cooldown e disponibilidade da cave. Consulte a mensagem do servidor.'] },
+type JourneyStep = {
+  number: number;
+  phase: string;
+  title: string;
+  intro: string;
+  learn: string[];
+  doNow: string[];
+  readyWhen: string;
+  tip?: string;
+  visual?: 'vocations' | 'first-hunt' | 'cycle' | 'party' | 'progression' | 'endgame';
+};
+
+const VOCATION_EXAMPLES = [
+  { name: 'Knight', lookType: 131, role: 'Resistente e corpo a corpo', hint: 'Boa escolha para quem gosta de ficar perto dos monstros.' },
+  { name: 'Paladin', lookType: 137, role: 'Ataque à distância', hint: 'Combina alcance, dano e boa sobrevivência.' },
+  { name: 'Sorcerer', lookType: 130, role: 'Magia ofensiva', hint: 'Dano mágico forte, exige atenção a mana e proteção.' },
+  { name: 'Druid', lookType: 144, role: 'Magia e suporte', hint: 'Cura, suporte e dano mágico.' },
+  { name: 'Monk', lookType: 128, role: 'Combate próprio', hint: 'Estilo diferente, com habilidades e progressão próprias.' },
+] as const;
+
+const JOURNEY_STEPS: JourneyStep[] = [
+  {
+    number: 1,
+    phase: 'COMEÇO',
+    title: 'Crie seu personagem e escolha como você quer lutar',
+    intro: 'Você não precisa conhecer Tibia para começar. A vocação é apenas o estilo de combate do seu personagem. Escolha pelo jeito que parece mais divertido para você, não pela ideia de “classe mais forte”.',
+    learn: [
+      'Knight luta perto dos inimigos e aguenta bastante dano.',
+      'Paladin prefere distância e usa armas de longo alcance.',
+      'Sorcerer causa muito dano mágico e depende bastante de mana.',
+      'Druid mistura magia, cura e suporte.',
+      'Monk possui um estilo próprio de combate e evolução.',
+    ],
+    doNow: [
+      'Abra Minha conta e crie um personagem.',
+      'Escolha um nome e uma vocação.',
+      'Entre no jogo. Você aparecerá na Cidade, que é a área segura.',
+    ],
+    readyWhen: 'Quando você estiver dentro da Cidade e conseguir ver HP, mana, equipamento e os menus do personagem.',
+    visual: 'vocations',
+  },
+  {
+    number: 2,
+    phase: 'PREPARAÇÃO',
+    title: 'Entenda a Cidade antes de sair para caçar',
+    intro: 'Cidade é sua base. Aqui você não está lutando. É o lugar para organizar equipamento, conferir mochila, descansar e preparar a próxima caçada.',
+    learn: [
+      'HP é sua vida. Se chegar a zero durante a hunt, o personagem morre e a sessão termina para ele.',
+      'Mana é o recurso usado por muitas magias e habilidades.',
+      'XP é experiência. Quando acumula o suficiente, seu nível aumenta.',
+      'Stamina representa o tempo de caça eficiente. Ela se recupera enquanto você fica fora da hunt.',
+      'Helper é o “piloto automático”: controla ataque, cura, poções, magias, fuga e outras decisões do combate.',
+    ],
+    doNow: [
+      'Abra Itens e veja o que está equipado.',
+      'Abra o Helper e confirme que ataque automático e cura estão configurados.',
+      'Veja sua stamina e seu ouro antes de escolher uma hunt.',
+    ],
+    readyWhen: 'Quando você souber onde olhar sua vida, mana, XP e onde configurar o Helper.',
+    tip: 'No começo, não tente decorar todos os sistemas. Você só precisa saber: personagem preparado → Hunt → ganhar XP e loot → voltar mais forte.',
+  },
+  {
+    number: 3,
+    phase: 'PRIMEIRA HUNT',
+    title: 'Faça sua primeira caçada e aprenda o ciclo básico do jogo',
+    intro: 'Hunt é a área de caça. Você escolhe uma cave liberada e o personagem combate automaticamente. A primeira referência do jogo é a Venore Rotworm Cave.',
+    learn: [
+      'Cave e Hunt significam, na prática, o lugar onde seu personagem vai lutar.',
+      'Cada hunt possui monstros, nível de acesso, XP, loot e dificuldade diferentes.',
+      'Os monstros aparecem em ondas. Ao derrotá-los, você recebe XP e pode receber loot.',
+      'Loot são os itens e moedas deixados pelos monstros. Depois eles ajudam a financiar equipamentos e novas viagens.',
+      'Supplies são os consumíveis da viagem, como poções e munições. Caçar tem custo.',
+    ],
+    doNow: [
+      'Abra Hunts.',
+      'Escolha uma hunt liberada para seu nível. No início, procure a Venore Rotworm Cave.',
+      'Confira duração, custo e suprimentos.',
+      'Inicie a hunt e observe: dano → morte do monstro → XP → loot → próxima onda.',
+    ],
+    readyWhen: 'Quando você entender de onde vêm XP e loot e conseguir iniciar e encerrar uma hunt sozinho.',
+    visual: 'first-hunt',
+  },
+  {
+    number: 4,
+    phase: 'EVOLUÇÃO',
+    title: 'Repita o ciclo: XP, nível, equipamento e hunts melhores',
+    intro: 'A progressão principal é simples: você caça para ganhar XP e loot; sobe de nível; melhora seus atributos e equipamentos; então passa a aguentar hunts mais difíceis e lucrativas.',
+    learn: [
+      'Level é o nível geral do personagem e libera conteúdos.',
+      'Skills são habilidades de combate que evoluem separadamente.',
+      'Magic Level mede a evolução mágica das vocações que usam magia.',
+      'Equipamento melhora ataque, defesa e outras características.',
+      'Uma hunt estar liberada não significa que ela será confortável: equipamento e configuração também importam.',
+    ],
+    doNow: [
+      'Quando uma hunt ficar fácil, abra Hunts e compare as próximas opções liberadas.',
+      'Use parte do lucro para melhorar equipamento e manter suprimentos.',
+      'Se estiver morrendo, volte uma etapa: hunt mais fácil, equipamento melhor ou Helper mais seguro.',
+    ],
+    readyWhen: 'Quando você já consegue decidir sozinho se deve continuar na cave atual ou avançar para uma mais difícil.',
+    visual: 'cycle',
+  },
+  {
+    number: 5,
+    phase: 'PARTY',
+    title: 'Monte uma party quando quiser evoluir personagens juntos',
+    intro: 'Party é um grupo de personagens que participa da mesma hunt. No seu projeto, a formação pode ter até três personagens da mesma conta e existe um Principal que comanda a caçada.',
+    learn: [
+      'O Principal define a hunt e é a referência da formação.',
+      'Membros ativos na mesma hunt dividem a XP dos monstros derrotados.',
+      'Tank é o personagem preparado para receber pressão; DPS foca em dano; SUP oferece suporte.',
+      'Se um membro morrer, os monstros dele passam a procurar outro membro vivo da party.',
+      'O segundo slot custa ' + partySlotPrices(1).gold.toLocaleString('pt-BR') + ' gold e o terceiro custa ' + partySlotPrices(2).gold.toLocaleString('pt-BR') + ' gold.',
+    ],
+    doNow: [
+      'Abra Config no painel Party.',
+      'Adicione seus personagens e escolha quem será o Principal.',
+      'Salve a formação e inicie uma hunt compatível.',
+      'Acompanhe HP e mana de cada membro. Um membro morto fica identificado no painel.',
+    ],
+    readyWhen: 'Quando você entende quem é o Principal e consegue identificar quem está vivo, morto e recebendo XP.',
+    visual: 'party',
+  },
+  {
+    number: 6,
+    phase: 'MIDGAME',
+    title: 'Comece a usar os sistemas que aceleram e especializam sua evolução',
+    intro: 'Depois que o ciclo básico já estiver natural, entram os sistemas de progressão. Não tente aprender todos no primeiro dia; vá adicionando um de cada vez.',
+    learn: [
+      'Bestiário: progresso por espécie de monstro conforme você derrota aquela criatura.',
+      'Charms: bônus que podem ser desbloqueados e vinculados a criaturas.',
+      'Prey: bônus temporários ligados a monstros, como XP, dano, defesa ou loot.',
+      'Tasks: objetivos de matar determinadas criaturas para receber progresso e recompensas.',
+      'Treino: melhora skills ou magic level sem depender apenas do ritmo das hunts.',
+    ],
+    doNow: [
+      'Escolha uma criatura que você já caça bastante e acompanhe seu Bestiário.',
+      'Veja se existe Prey útil para sua hunt atual.',
+      'Use treino quando quiser fortalecer a habilidade principal da sua vocação.',
+    ],
+    readyWhen: 'Quando você já usa pelo menos um sistema de progressão além de simplesmente ganhar level.',
+    visual: 'progression',
+  },
+  {
+    number: 7,
+    phase: 'ALTO NÍVEL',
+    title: 'Aperfeiçoe o personagem com Imbuements, Forja, Wheel e Bosses',
+    intro: 'No alto nível, a diferença deixa de ser apenas “ter mais level”. Sua configuração, equipamento e sistemas avançados passam a pesar muito mais.',
+    learn: [
+      'Imbuements colocam bônus temporários em equipamentos compatíveis.',
+      'Forja melhora e transforma equipamentos usando recursos próprios.',
+      'Wheel distribui pontos em melhorias ligadas à progressão do personagem.',
+      'Bosses são encontros especiais com requisitos, recompensas e cooldowns.',
+      'Bosstiário registra sua progressão contra bosses e ajuda a estruturar objetivos de longo prazo.',
+    ],
+    doNow: [
+      'Comece por um sistema avançado de cada vez.',
+      'Compare o custo de uma melhoria com o ganho real que ela traz para sua hunt.',
+      'Antes de entrar em boss, confira nível mínimo, cooldown, supplies e sobrevivência da party.',
+    ],
+    readyWhen: 'Quando seu personagem já possui uma build planejada e você escolhe upgrades pensando no conteúdo que quer enfrentar.',
+  },
+  {
+    number: 8,
+    phase: 'ENDGAME',
+    title: 'Endgame: transforme evolução em objetivos de longo prazo',
+    intro: 'Endgame não é “zerar o jogo”. É quando seu foco passa de aprender o básico para otimizar personagens e completar objetivos difíceis de forma cada vez mais eficiente.',
+    learn: [
+      'Caçar conteúdos de alto nível com boa relação entre XP, lucro e risco.',
+      'Montar parties com funções que se complementam.',
+      'Completar Bestiário, Charms, Bosstiário e progressões avançadas.',
+      'Otimizar equipamentos, Imbuements, Forja, Wheel e configurações do Helper.',
+      'Enfrentar bosses, raids e eventos e perseguir recompensas raras.',
+      'Gerenciar economia, loot, mercado e recursos para financiar novos upgrades.',
+    ],
+    doNow: [
+      'Defina um objetivo: level, boss, item, Bestiário ou melhoria de equipamento.',
+      'Ajuste sua hunt e sua build para esse objetivo.',
+      'Meça se você está melhorando: sobrevivência, XP/h, lucro/h e tempo para matar.',
+    ],
+    readyWhen: 'Não existe “fim” obrigatório. No endgame, você escolhe qual meta quer perseguir em seguida.',
+    visual: 'endgame',
+  },
 ];
 
-const CATALOGS = { 'Caçadas': hunts, 'Monstros': monsters, 'Itens': items, 'Vocações': vocations, 'Magias': spellsCatalog, 'Bosses e eventos': bossEncounters, 'Charms': charms, 'Outfits': outfitsCatalog, 'Montarias': mountsCatalog, 'Imbuements': IMBUEMENTS, 'Roda de habilidades': WHEEL_NODES, 'Loja': SHOP, 'Estágios': [stages] };
-const LABELS: Record<string, string> = { id: 'Identificação', name: 'Nome', description: 'Descrição', level: 'Nível mínimo', minLevel: 'Nível mínimo', levelRequired: 'Nível exigido', location: 'Local', monsters: 'Monstros', expectedXpPerHour: 'XP base por hora', expectedLootPerHour: 'Loot previsto por hora', premium: 'Premium', partySizes: 'Formações', health: 'Vida', experience: 'Experiência', speed: 'Velocidade', armor: 'Armadura', defense: 'Defesa', attack: 'Ataque', loot: 'Loot', chance: 'Chance (escala da base)', maxCount: 'Quantidade máxima', itemId: 'Item', itemName: 'Nome do item', attacks: 'Ataques', elements: 'Elementos', immunities: 'Imunidades', mana: 'Mana', words: 'Palavras', cooldown: 'Cooldown', vocations: 'Vocações', sellPrice: 'Preço de venda', buyPrice: 'Preço de compra', weight: 'Peso (base)', slot: 'Slot', type: 'Tipo', duration: 'Duração (base)', charges: 'Cargas', cost: 'Custo', tiers: 'Tiers', slots: 'Slots', range: 'Alcance', bonuses: 'Bônus', bestiary: 'Bestiário', category: 'Categoria', unlocked: 'Desbloqueado', from: 'Origem', price: 'Preço', currency: 'Moeda' };
+const GLOSSARY = [
+  ['Hunt / Cave', 'Lugar onde o personagem combate monstros automaticamente.'],
+  ['Vocação', 'A classe do personagem: Knight, Paladin, Sorcerer, Druid, Monk etc.'],
+  ['XP', 'Experiência usada para subir de nível.'],
+  ['Loot', 'Itens e moedas obtidos ao derrotar monstros.'],
+  ['Supplies', 'Consumíveis usados na viagem, como poções e munição.'],
+  ['Helper', 'Configuração automática de ataque, cura, poções, magias e segurança.'],
+  ['Stamina', 'Tempo de caça eficiente; recupera enquanto o personagem descansa fora da hunt.'],
+  ['Party', 'Grupo de personagens que luta na mesma hunt e pode compartilhar XP.'],
+  ['Bestiário', 'Progresso individual contra cada espécie de monstro.'],
+  ['Prey', 'Bônus temporário associado a uma criatura.'],
+  ['Charm', 'Bônus de progressão que pode ser associado a monstros.'],
+  ['Boss', 'Inimigo especial com regras, requisitos e recompensas próprias.'],
+  ['Endgame', 'Fase em que o foco passa para otimização e objetivos difíceis de longo prazo.'],
+] as const;
+
+const CATALOGS = {
+  Caçadas: hunts,
+  Monstros: monsters,
+  Itens: items,
+  Vocações: vocations,
+  Magias: spellsCatalog,
+  'Bosses e eventos': bossEncounters,
+  Charms: charms,
+  Outfits: outfitsCatalog,
+  Montarias: mountsCatalog,
+  Imbuements: IMBUEMENTS,
+  'Roda de habilidades': WHEEL_NODES,
+  Loja: SHOP,
+  Estágios: [stages],
+};
+
+const LABELS: Record<string, string> = {
+  id: 'Identificação', name: 'Nome', description: 'Descrição', level: 'Nível mínimo', minLevel: 'Nível mínimo',
+  levelRequired: 'Nível exigido', location: 'Local', monsters: 'Monstros', expectedXpPerHour: 'XP base por hora',
+  expectedLootPerHour: 'Loot previsto por hora', premium: 'Premium', partySizes: 'Formações', health: 'Vida',
+  experience: 'Experiência', speed: 'Velocidade', armor: 'Armadura', defense: 'Defesa', attack: 'Ataque', loot: 'Loot',
+  chance: 'Chance (escala da base)', maxCount: 'Quantidade máxima', itemId: 'Item', itemName: 'Nome do item', attacks: 'Ataques',
+  elements: 'Elementos', immunities: 'Imunidades', mana: 'Mana', words: 'Palavras', cooldown: 'Cooldown', vocations: 'Vocações',
+  sellPrice: 'Preço de venda', buyPrice: 'Preço de compra', weight: 'Peso (base)', slot: 'Slot', type: 'Tipo', duration: 'Duração (base)',
+  charges: 'Cargas', cost: 'Custo', tiers: 'Tiers', slots: 'Slots', range: 'Alcance', bonuses: 'Bônus', bestiary: 'Bestiário',
+  category: 'Categoria', unlocked: 'Desbloqueado', from: 'Origem', price: 'Preço', currency: 'Moeda',
+};
+
 function DetailValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
   if (value === null || value === undefined) return <span>—</span>;
   if (typeof value === 'boolean') return <span>{value ? 'Sim' : 'Não'}</span>;
-  if (Array.isArray(value)) return value.length ? <ul>{value.map((entry, index) => <li key={index}><DetailValue value={entry} depth={depth + 1} /></li>)}</ul> : <span>Sem registros</span>;
-  if (typeof value === 'object') return <dl className="wiki-detail">{Object.entries(value).filter(([key]) => !['clientId', 'hasSprite', 'sprites', 'flags'].includes(key)).map(([key, entry]) => <div key={key}><dt>{LABELS[key] ?? key.replace(/([A-Z])/g, ' $1')}</dt><dd><DetailValue value={entry} depth={depth + 1} /></dd></div>)}</dl>;
+  if (Array.isArray(value)) {
+    return value.length
+      ? <ul>{value.map((entry, index) => <li key={index}><DetailValue value={entry} depth={depth + 1} /></li>)}</ul>
+      : <span>Sem registros</span>;
+  }
+  if (typeof value === 'object') {
+    return <dl className="wiki-detail">{Object.entries(value)
+      .filter(([key]) => !['clientId', 'hasSprite', 'sprites', 'flags'].includes(key))
+      .map(([key, entry]) => <div key={key}><dt>{LABELS[key] ?? key.replace(/([A-Z])/g, ' $1')}</dt><dd><DetailValue value={entry} depth={depth + 1} /></dd></div>)}</dl>;
+  }
   return <span>{typeof value === 'number' ? value.toLocaleString('pt-BR') : String(value)}</span>;
+}
+
+function monsterIdByName(name: string): string | undefined {
+  return monsters.find((monster) => String(monster.name).toLowerCase() === name.toLowerCase())?.id;
+}
+
+function MonsterExample({ name, caption }: { name: string; caption: string }) {
+  return <div className="wiki-monster-example">
+    <CreatureIcon monsterId={monsterIdByName(name)} size={78} label={name} />
+    <strong>{name}</strong>
+    <small>{caption}</small>
+  </div>;
+}
+
+function VocationVisual() {
+  return <div className="wiki-vocation-grid">
+    {VOCATION_EXAMPLES.map((vocation) => <article key={vocation.name}>
+      <CreatureIcon lookType={vocation.lookType} size={72} label={vocation.name} />
+      <div><strong>{vocation.name}</strong><span>{vocation.role}</span><small>{vocation.hint}</small></div>
+    </article>)}
+  </div>;
+}
+
+function FirstHuntVisual() {
+  return <div className="wiki-first-hunt-visual" aria-label="Exemplo visual da primeira hunt">
+    <div><CreatureIcon lookType={131} size={82} label="Seu personagem" /><strong>Você</strong><small>Ataca automaticamente</small></div>
+    <span className="wiki-combat-arrow">→</span>
+    <div><CreatureIcon monsterId={monsterIdByName('Rotworm')} size={92} label="Rotworm" /><strong>Rotworm</strong><small>Monstro da primeira referência</small></div>
+    <span className="wiki-combat-arrow">→</span>
+    <div className="wiki-reward-icon"><span>XP</span><b>+</b><strong>Loot</strong><small>Você fica mais forte</small></div>
+  </div>;
+}
+
+function CycleVisual() {
+  return <div className="wiki-cycle" aria-label="Ciclo de evolução">
+    {['Caçar', 'Ganhar XP', 'Subir nível', 'Melhorar equipamento', 'Liberar hunt melhor'].map((label, index) => <div key={label}>
+      <span>{index + 1}</span><strong>{label}</strong>{index < 4 && <b>→</b>}
+    </div>)}
+  </div>;
+}
+
+function PartyVisual() {
+  return <div className="wiki-party-visual">
+    <article><span>TANK</span><CreatureIcon lookType={131} size={70} label="Tank" /><strong>Segura pressão</strong></article>
+    <article><span>DPS</span><CreatureIcon lookType={137} size={70} label="DPS" /><strong>Foca em dano</strong></article>
+    <article><span>SUP</span><CreatureIcon lookType={144} size={70} label="Suporte" /><strong>Cura e ajuda</strong></article>
+  </div>;
+}
+
+function ProgressionVisual({ endgame = false }: { endgame?: boolean }) {
+  const examples = endgame
+    ? [['Giant Spider', 'Conteúdo perigoso'], ['Demon', 'Alto nível'], ['Ferumbras', 'Objetivo de endgame']]
+    : [['Rotworm', 'Começo'], ['Dragon', 'Intermediário'], ['Giant Spider', 'Mais exigente'], ['Demon', 'Alto nível']];
+  return <div className="wiki-monster-road">
+    {examples.map(([name, caption], index) => <div className="wiki-road-entry" key={name}>
+      <MonsterExample name={name} caption={caption} />
+      {index < examples.length - 1 && <span>→</span>}
+    </div>)}
+  </div>;
+}
+
+function StepVisual({ kind }: { kind: JourneyStep['visual'] }) {
+  if (kind === 'vocations') return <VocationVisual />;
+  if (kind === 'first-hunt') return <FirstHuntVisual />;
+  if (kind === 'cycle') return <CycleVisual />;
+  if (kind === 'party') return <PartyVisual />;
+  if (kind === 'progression') return <ProgressionVisual />;
+  if (kind === 'endgame') return <ProgressionVisual endgame />;
+  return null;
+}
+
+function BeginnerGuide({ query, onPlay }: { query: string; onPlay: () => void }) {
+  const needle = query.trim().toLowerCase();
+  const filteredSteps = JOURNEY_STEPS.filter((step) => {
+    if (!needle) return true;
+    return [step.phase, step.title, step.intro, step.readyWhen, step.tip ?? '', ...step.learn, ...step.doNow]
+      .join(' ').toLowerCase().includes(needle);
+  });
+  const filteredGlossary = GLOSSARY.filter(([term, description]) => !needle || `${term} ${description}`.toLowerCase().includes(needle));
+
+  return <>
+    <section className="wiki-beginner-hero">
+      <div>
+        <span>SE VOCÊ NUNCA JOGOU TIBIA, COMECE AQUI</span>
+        <h2>Do primeiro personagem ao endgame</h2>
+        <p>Este guia não pressupõe nenhum conhecimento. Siga os passos na ordem. Cada etapa explica <b>o que é</b>, <b>o que você deve fazer agora</b> e <b>como saber se já pode avançar</b>.</p>
+        <div className="wiki-beginner-actions"><button onClick={onPlay}>Criar personagem / jogar</button><a href="#wiki-step-1">Começar o guia ↓</a></div>
+      </div>
+      <div className="wiki-beginner-scene">
+        <CreatureIcon lookType={131} size={88} label="Aventureiro" />
+        <span>→</span>
+        <CreatureIcon monsterId={monsterIdByName('Rotworm')} size={88} label="Rotworm" />
+        <span>→</span>
+        <CreatureIcon monsterId={monsterIdByName('Demon')} size={96} label="Demon" />
+      </div>
+    </section>
+
+    <section className="wiki-roadmap-intro">
+      <h3>Seu caminho de evolução</h3>
+      <div className="wiki-roadmap-line">
+        {JOURNEY_STEPS.map((step) => <a href={`#wiki-step-${step.number}`} key={step.number}><b>{step.number}</b><span>{step.phase}</span></a>)}
+      </div>
+    </section>
+
+    {filteredSteps.map((step) => <article className="wiki-journey-step" id={`wiki-step-${step.number}`} key={step.number}>
+      <header>
+        <div className="wiki-step-number">{step.number}</div>
+        <div><span>{step.phase}</span><h3>{step.title}</h3><p>{step.intro}</p></div>
+      </header>
+      {step.visual && <StepVisual kind={step.visual} />}
+      <div className="wiki-step-columns">
+        <section><h4>Entenda isto</h4><ul>{step.learn.map((line) => <li key={line}>{line}</li>)}</ul></section>
+        <section className="wiki-do-now"><h4>Faça agora</h4><ol>{step.doNow.map((line) => <li key={line}>{line}</li>)}</ol></section>
+      </div>
+      {step.tip && <p className="wiki-step-tip"><b>Dica:</b> {step.tip}</p>}
+      <div className="wiki-ready"><span>✓</span><div><b>Você pode avançar quando:</b><p>{step.readyWhen}</p></div></div>
+    </article>)}
+
+    {!filteredSteps.length && <p className="wiki-empty-search">Nenhuma etapa do guia corresponde à sua busca.</p>}
+
+    {!needle && <section className="wiki-help-card">
+      <h3>Travou? Use esta regra simples</h3>
+      <div className="wiki-help-grid">
+        <article><b>Estou morrendo muito</b><p>Volte para uma hunt mais fácil, melhore equipamento, aumente segurança do Helper e confira supplies.</p></article>
+        <article><b>Minha XP está baixa</b><p>Veja se a hunt ainda combina com seu nível, confira skills/magic level, equipamento, Prey e composição da party.</p></article>
+        <article><b>Não consigo entrar na hunt</b><p>Confira nível mínimo do Principal, slots de party, custo, supplies, cooldown e disponibilidade da cave.</p></article>
+        <article><b>Não sei o que melhorar</b><p>Escolha só um objetivo: sobreviver melhor, matar mais rápido ou aumentar lucro. Faça um upgrade que ataque esse problema.</p></article>
+      </div>
+    </section>}
+
+    {filteredGlossary.length > 0 && <section className="wiki-glossary">
+      <h3>Dicionário rápido para quem nunca jogou Tibia</h3>
+      <p>Você verá estas palavras várias vezes no jogo. Não precisa decorar: volte aqui sempre que tiver dúvida.</p>
+      <div>{filteredGlossary.map(([term, description]) => <article key={term}><b>{term}</b><span>{description}</span></article>)}</div>
+    </section>}
+
+    {!needle && <section className="wiki-final-path">
+      <div><span>INÍCIO</span><MonsterExample name="Rotworm" caption="Aprender o básico" /></div>
+      <b>→</b>
+      <div><span>MIDGAME</span><MonsterExample name="Dragon" caption="Construir sua build" /></div>
+      <b>→</b>
+      <div><span>ALTO NÍVEL</span><MonsterExample name="Demon" caption="Otimizar o personagem" /></div>
+      <b>→</b>
+      <div><span>ENDGAME</span><MonsterExample name="Ferumbras" caption="Objetivos de longo prazo" /></div>
+    </section>}
+  </>;
 }
 
 export function WikiScreen({ onHome, onPlay }: { onHome: () => void; onPlay: () => void }) {
@@ -50,17 +413,63 @@ export function WikiScreen({ onHome, onPlay }: { onHome: () => void; onPlay: () 
   const [page, setPage] = useState(0);
   const catalog = CATALOGS[section as keyof typeof CATALOGS];
   const entries = useMemo(() => {
-    const all = catalog ? (Array.isArray(catalog) ? catalog : Object.values(catalog)) as unknown as Record<string, unknown>[] : [];
+    const all = catalog
+      ? (Array.isArray(catalog) ? catalog : Object.values(catalog)) as unknown as Record<string, unknown>[]
+      : [];
     return all.filter((entry) => String(entry.name ?? entry.id ?? section).toLowerCase().includes(query.toLowerCase()));
   }, [catalog, query, section]);
-  const guides = GUIDES.filter((guide) => [guide.title, ...guide.paragraphs].join(' ').toLowerCase().includes(query.toLowerCase()));
-  return <main className="portal-page"><header className="portal-nav"><button onClick={onHome}>← Início</button><strong>WIKI · IDLE KNOCK TIBIA</strong><button onClick={onPlay}>Jogar</button></header><div className="portal-content">
-    <div className="portal-heading"><span>MANUAL DO AVENTUREIRO</span><h1>Wiki do jogo</h1><p>Tutorial, regras e catálogo completo dos registros disponíveis nesta versão do jogo.</p></div>
-    <div className="wiki-layout"><aside className="wiki-sidebar">{['Guia e tutorial', ...Object.keys(CATALOGS)].map((label) => <button className={section === label ? 'on' : ''} key={label} onClick={() => { setSection(label); setQuery(''); setPage(0); }}>{label}</button>)}</aside>
-      <section className="wiki-main"><h2>{section}</h2><input aria-label="Buscar na Wiki" placeholder="Buscar nesta seção…" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} />
-        {section === 'Guia e tutorial' ? <>{guides.map((guide, index) => <details className="wiki-guide" key={guide.title} open={index === 0 || !!query}><summary>{guide.title}</summary>{guide.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</details>)}{!guides.length && <p>Nenhum tópico encontrado.</p>}</>
-          : <><p>{entries.length.toLocaleString('pt-BR')} registros. Abra um registro para consultar atributos, requisitos e detalhes da base. Unidades não normalizadas estão identificadas como valores da base.</p>{entries.slice(page * 30, page * 30 + 30).map((entry, index) => <details className="wiki-guide" key={String(entry.id ?? entry.name ?? index)}><summary>{String(entry.name ?? entry.id ?? 'Tabela de estágios')} {entry.level !== undefined && <small>· nível {String(entry.level)}</small>}</summary><DetailValue value={entry} /></details>)}<div className="wiki-pagination"><button disabled={page === 0} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page + 1} de {Math.max(1, Math.ceil(entries.length / 30))}</span><button disabled={(page + 1) * 30 >= entries.length} onClick={() => setPage(page + 1)}>Próxima</button></div></>}
-      </section>
+
+  return <main className="portal-page">
+    <header className="portal-nav">
+      <button onClick={onHome}>← Início</button>
+      <strong>WIKI · IDLE KNOCK TIBIA</strong>
+      <button onClick={onPlay}>Jogar</button>
+    </header>
+    <div className="portal-content">
+      <div className="portal-heading">
+        <span>MANUAL DO AVENTUREIRO</span>
+        <h1>Wiki do jogo</h1>
+        <p>Se você nunca jogou Tibia, comece pelo guia. Quando já souber o básico, use os catálogos para consultar monstros, hunts, itens e sistemas específicos.</p>
+      </div>
+
+      <div className="wiki-layout">
+        <aside className="wiki-sidebar">
+          <button className={section === 'Guia e tutorial' ? 'on' : ''} onClick={() => { setSection('Guia e tutorial'); setQuery(''); setPage(0); }}>▶ Comece aqui</button>
+          <div className="wiki-sidebar-label">CATÁLOGO</div>
+          {Object.keys(CATALOGS).map((label) => <button className={section === label ? 'on' : ''} key={label} onClick={() => { setSection(label); setQuery(''); setPage(0); }}>{label}</button>)}
+        </aside>
+
+        <section className="wiki-main">
+          <div className="wiki-section-head">
+            <div><span>{section === 'Guia e tutorial' ? 'GUIA DO INICIANTE' : 'CATÁLOGO DO JOGO'}</span><h2>{section === 'Guia e tutorial' ? 'Comece aqui — do zero ao endgame' : section}</h2></div>
+          </div>
+          <input aria-label="Buscar na Wiki" placeholder={section === 'Guia e tutorial' ? 'Ex.: party, stamina, morrer, boss…' : 'Buscar nesta seção…'} value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} />
+
+          {section === 'Guia e tutorial'
+            ? <BeginnerGuide query={query} onPlay={onPlay} />
+            : <>
+              <p>{entries.length.toLocaleString('pt-BR')} registros. Abra um registro para consultar atributos, requisitos e detalhes da base.</p>
+              {entries.slice(page * 30, page * 30 + 30).map((entry, index) => {
+                const monsterId = section === 'Monstros' && typeof entry.id === 'string' ? entry.id : undefined;
+                return <details className="wiki-guide wiki-catalog-entry" key={String(entry.id ?? entry.name ?? index)}>
+                  <summary>
+                    {monsterId && <CreatureIcon monsterId={monsterId} size={42} label={String(entry.name ?? entry.id)} />}
+                    <span>{String(entry.name ?? entry.id ?? 'Tabela de estágios')} {entry.level !== undefined && <small>· nível {String(entry.level)}</small>}</span>
+                  </summary>
+                  <DetailValue value={entry} />
+                </details>;
+              })}
+              {!entries.length && <p>Nenhum registro encontrado.</p>}
+              <div className="wiki-pagination">
+                <button disabled={page === 0} onClick={() => setPage(page - 1)}>Anterior</button>
+                <span>Página {page + 1} de {Math.max(1, Math.ceil(entries.length / 30))}</span>
+                <button disabled={(page + 1) * 30 >= entries.length} onClick={() => setPage(page + 1)}>Próxima</button>
+              </div>
+            </>}
+        </section>
+      </div>
+
+      <p className="portal-note">Guildas são um sistema social separado da party. Criar uma guild custa {GUILD_COST.toLocaleString('pt-BR')} gold.</p>
     </div>
-  </div></main>;
+  </main>;
 }
