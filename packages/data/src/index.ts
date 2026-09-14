@@ -78,14 +78,23 @@ export function calibratedLevelFor(huntId: string, vocationId?: number): number 
 }
 
 /**
- * Level shown and enforced by the game. Starter level-8 zones remain available
- * immediately; later zones use the vocation-specific calibrated requirement.
+ * Only deliberately safe starter caves bypass the simulation-derived level.
+ * Several source-data hunts are tagged level 8 despite having much higher
+ * throughput/danger (Terramites, Amazons, etc.); exposing all of them to a new
+ * character made the first hunt capable of ending immediately. Keep the opening
+ * predictable and let every other cave unlock through normal calibration.
  */
+const STARTER_HUNT_IDS: ReadonlySet<string> = new Set([
+  'venore-rotworm-cave',
+  'darashia-rotworm-caves',
+]);
+
+/** Level shown and enforced by the game. */
 export function recommendedLevelFor(huntId: string, vocationId?: number): number | null {
   const calibrated = calibratedLevelFor(huntId, vocationId);
   if (calibrated === null) return null;
   const hunt = huntsById.get(huntId);
-  return hunt?.level !== undefined && hunt.level <= 8 ? hunt.level : calibrated;
+  return hunt?.level !== undefined && STARTER_HUNT_IDS.has(huntId) ? hunt.level : calibrated;
 }
 
 /** Explicit alias for code that deals with access rather than calibration. */
@@ -119,10 +128,7 @@ export const wandsById: ReadonlyMap<number, WandStats> = new Map(wands.map((wand
 export const outfitsCatalogById: ReadonlyMap<string, OutfitCatalogEntry> = new Map(
   outfitsCatalog.map((entry) => [entry.id, entry]),
 );
-export const mountsCatalogById: ReadonlyMap<string, MountCatalogEntry> = new Map(
-  mountsCatalog.map((entry) => [entry.id, entry]),
-);
-export const mountsByServerId: ReadonlyMap<number, MountCatalogEntry> = new Map(
+export const mountsCatalogById: ReadonlyMap<number, MountCatalogEntry> = new Map(
   mountsCatalog.map((entry) => [entry.mount, entry]),
 );
 
