@@ -229,15 +229,15 @@ export function HuntModal({
         {!bossMode && !trainingMode && (
           <>
             <div className="hunt-hours-bar box-tools">
-              {([1, 4, 8, 24] as const).map((value) => (
+              {([1, 4, 8, 16, 24] as const).map((value) => (
                 <button
                   key={value}
                   className={`btn hunt-hour-btn ${hours === value ? 'gold on' : ''}`}
                   type="button"
-                  title={value === 24 && !character.premium ? 'Conta grátis acumula no máximo 8h de progresso quando o jogo fica fechado.' : undefined}
+                  title={value === 24 && !character.premium ? 'Conta grátis acumula no máximo 16h de progresso quando o jogo fica fechado.' : undefined}
                   onClick={() => setHours(value)}
                 >
-                  {value}h{value === 24 && !character.premium ? ' · VIP offline' : ''}
+                  {value}h{value === 16 && !character.premium ? ' · limite grátis' : value === 24 && !character.premium ? ' · VIP offline' : ''}
                 </button>
               ))}
             </div>
@@ -245,7 +245,7 @@ export function HuntModal({
             <p className="hunt-callout-inline hunt-modal-hint">
               {character.premium
                 ? 'VIP ativo: ao fechar o jogo, esta conta pode acumular até 24h de progresso offline.'
-                : 'Conta grátis: ao fechar o jogo, o progresso offline acumula no máximo 8h. Selecionar 24h prepara supplies para 24h, mas não aumenta esse teto.'}
+                : 'Conta grátis: ao fechar o jogo, o progresso offline acumula no máximo 16h. Selecionar 24h prepara supplies para 24h, mas não aumenta esse teto.'}
             </p>
           </>
         )}
