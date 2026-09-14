@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   advance, createCharacter, defaultSupplies, deriveStats, describeSession, formatCombatLog, huntThroughput,
-  magicProgressPercent, skillProgressPercent, startSession,
-  BOSS_HEALTH_MULT, WAVE_CYCLE_KILLS, WAVE_PACK, wavePackSize,
+  magicProgressPercent, skillProgressPercent, startSession, TICK_MS,
+  BOSS_HEALTH_MULT, WAVE_CYCLE_KILLS, WAVE_PACK, waveActiveLimit, wavePackSize,
 } from '../src/index.js';
 
 const HUNT = 'elf-cave-ab-dendriel';
+const NORMAL_WAVE_DELAY_TICKS = Math.round(3000 / TICK_MS);
+const BOSS_WAVE_DELAY_TICKS = Math.round(5000 / TICK_MS);
 
 describe('combat feedback events', () => {
   it('emits healing spell words when the knight is hurt', () => {
@@ -155,7 +157,7 @@ describe('wave 10', () => {
     expect(view?.packSize).toBe(1);
   });
 
-  it('fills wave 2 as soon as wave 1 is dead', () => {
+  it('opens wave 2 after the transition with the active-floor cap', () => {
     const character = createCharacter('Bowen', 4);
     character.policy.stopWhenOutOfSupplies = false;
     character.policy.fleeAt = 0;
@@ -164,13 +166,13 @@ describe('wave 10', () => {
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
     session.spawnCredits = WAVE_PACK[1]!;
-    const events = advance(session, 1, { maxEvents: 40 });
+    const events = advance(session, NORMAL_WAVE_DELAY_TICKS, { maxEvents: 80 });
     expect(describeSession(session)?.wave).toBe(2);
-    expect(session.active.length).toBe(WAVE_PACK[1]);
-    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
+    expect(session.active.length).toBe(waveActiveLimit(1));
+    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(waveActiveLimit(1));
   });
 
-  it('fills wave 3 as soon as wave 2 is dead', () => {
+  it('opens wave 3 after the transition with the active-floor cap', () => {
     const character = createCharacter('Bowen', 4);
     character.policy.stopWhenOutOfSupplies = false;
     character.policy.fleeAt = 0;
@@ -178,12 +180,12 @@ describe('wave 10', () => {
     session.totals.kills = WAVE_PACK[0] + WAVE_PACK[1];
     session.active = [];
     session.spawnCredits = WAVE_PACK[2]!;
-    advance(session, 1, { maxEvents: 40 });
+    advance(session, NORMAL_WAVE_DELAY_TICKS, { maxEvents: 80 });
     expect(describeSession(session)?.wave).toBe(3);
-    expect(session.active.length).toBe(WAVE_PACK[2]);
+    expect(session.active.length).toBe(waveActiveLimit(2));
   });
 
-  it('opens the next wave once spawn credits cover the pack', () => {
+  it('spends spawn credits when opening a capped wave group', () => {
     const character = createCharacter('Bowen', 4);
     character.policy.stopWhenOutOfSupplies = false;
     character.policy.fleeAt = 0;
@@ -191,10 +193,13 @@ describe('wave 10', () => {
     session.totals.kills = WAVE_PACK[0];
     session.active = [];
     session.spawnCredits = WAVE_PACK[1]!;
-    const events = advance(session, 1, { maxEvents: 40 });
+    const beforeCredits = session.spawnCredits;
+    const events = advance(session, NORMAL_WAVE_DELAY_TICKS, { maxEvents: 80 });
+    const spawned = events.filter((event) => event.type === 'monster_spawn').length;
     expect(describeSession(session)?.wave).toBe(2);
-    expect(session.active.length).toBe(WAVE_PACK[1]);
-    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(WAVE_PACK[1]);
+    expect(session.active.length).toBe(waveActiveLimit(1));
+    expect(spawned).toBe(waveActiveLimit(1));
+    expect(session.spawnCredits).toBeLessThan(beforeCredits);
     expect(session.spawnCredits).toBeGreaterThanOrEqual(0);
   });
 
@@ -212,7 +217,7 @@ describe('wave 10', () => {
     session.totals.kills = WAVE_CYCLE_KILLS - 1;
     session.active = [];
     session.spawnCredits = 4;
-    advance(session, 1, { maxEvents: 20 });
+    advance(session, BOSS_WAVE_DELAY_TICKS, { maxEvents: 80 });
     expect(session.active.length).toBe(1);
     expect(session.active[0]?.monsterId).toBe(toughest.id);
     expect(session.active[0]?.maxHealth).toBe(toughest.health * BOSS_HEALTH_MULT);
