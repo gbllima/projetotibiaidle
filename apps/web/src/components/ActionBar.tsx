@@ -29,7 +29,6 @@ type BarMember = {
 };
 
 type RotationTarget = BarMember & { slot: number };
-
 type RotationTab = 'all' | 'attack' | 'area' | 'runes';
 
 export function spellAccentClass(damageType: string): string {
@@ -47,13 +46,7 @@ export function spellShortLabel(spell: Spell): string {
   return word.length > 5 ? word.slice(0, 5) : word;
 }
 
-function PortraitImage({
-  appearance,
-  vocationId,
-}: {
-  appearance?: CharacterView['appearance'];
-  vocationId: number;
-}) {
+function PortraitImage({ appearance, vocationId }: { appearance?: CharacterView['appearance']; vocationId: number }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
@@ -71,9 +64,7 @@ function PortraitImage({
     });
     return () => { alive = false; };
   }, [appearance]);
-  return url
-    ? <img src={url} alt="" />
-    : <span className="action-bar__portrait-fallback">{VOC_SHORT[vocationId] ?? '?'}</span>;
+  return url ? <img src={url} alt="" /> : <span className="action-bar__portrait-fallback">{VOC_SHORT[vocationId] ?? '?'}</span>;
 }
 
 function configuredSpells(member: BarMember): Array<Spell | null> {
@@ -97,12 +88,15 @@ function configuredSpells(member: BarMember): Array<Spell | null> {
   return Array.from({ length: BAR_SLOTS }, (_, index) => chosen[index] ?? null);
 }
 
-function RotationModal({
-  target,
-  onClose,
-  onSaved,
-  onOpenHelper,
-}: {
+function policyForRotation(member: BarMember): MiniPolicy {
+  if (member.policy.spellPriority.length > 0) return member.policy;
+  return {
+    ...member.policy,
+    spellPriority: configuredSpells(member).flatMap((spell) => spell ? [spell.id] : []),
+  };
+}
+
+function RotationModal({ target, onClose, onSaved, onOpenHelper }: {
   target: RotationTarget;
   onClose: () => void;
   onSaved: (characterId: number, policy: MiniPolicy) => void;
@@ -114,8 +108,8 @@ function RotationModal({
   const [loading, setLoading] = useState(false);
   const [full, setFull] = useState<CharacterView | null>(target.full ?? null);
   const [policy, setPolicy] = useState<MiniPolicy>({
-    spellPriority: [...(target.policy.spellPriority ?? [])],
-    disabledSpells: [...(target.policy.disabledSpells ?? [])],
+    spellPriority: [...target.policy.spellPriority],
+    disabledSpells: [...target.policy.disabledSpells],
     runeId: target.policy.runeId,
   });
 
@@ -128,8 +122,11 @@ function RotationModal({
     void api.character(target.id).then((result) => {
       if (!alive) return;
       setFull(result.character);
+      const serverPriority = result.character.policy.spellPriority.length > 0
+        ? result.character.policy.spellPriority
+        : target.policy.spellPriority;
       setPolicy({
-        spellPriority: [...result.character.policy.spellPriority],
+        spellPriority: [...serverPriority],
         disabledSpells: [...result.character.policy.disabledSpells],
         runeId: result.character.policy.runeId,
       });
@@ -229,7 +226,7 @@ function RotationModal({
                 <div className="rotation-entry-copy">
                   <strong>{spell.name}</strong>
                   <b>{spell.words}</b>
-                  <small>lvl {spell.level} · {spell.mana} mana · cd {Math.max(1, Math.round(spell.cooldownMs / 1000))}s · {spell.area ? 'Área' : 'Alvo'}</small>
+                  <small>lvl {spell.level} · {spell.mana} mana · cd {Math.max(1, Math.round(spell.cooldown / 1000))}s · {spell.area ? 'Área' : 'Alvo'}</small>
                 </div>
                 <div className="rotation-entry-state">
                   {rank >= 0 && <span>#{rank + 1}</span>}
@@ -326,12 +323,7 @@ export function ActionBar(props: {
             const slots = configuredSpells(member);
             return (
               <div className="action-bar__character-group" key={member.id}>
-                <button
-                  type="button"
-                  className="action-bar__portrait-button"
-                  title={`${member.name} — abrir Helper`}
-                  onClick={() => props.onOpenHelper(member.id)}
-                >
+                <button type="button" className="action-bar__portrait-button" title={`${member.name} — abrir Helper`} onClick={() => props.onOpenHelper(member.id)}>
                   <span className="action-bar__portrait">
                     <PortraitImage appearance={member.appearance} vocationId={member.vocationId} />
                     <span className="action-bar__portrait-tag">{VOC_SHORT[member.vocationId] ?? '?'}</span>
@@ -343,11 +335,9 @@ export function ActionBar(props: {
                     key={`${member.id}-slot-${slot}`}
                     className={`action-bar__skill ${spell ? spellAccentClass(spell.damageType) : 'action-bar__skill--empty'} ${spell ? 'is-on' : ''}`}
                     title={spell ? `${spell.name} — abrir Rotação do slot ${slot + 1}` : `Slot ${slot + 1} vazio — configurar rotação`}
-                    onClick={() => setRotation({ ...member, slot })}
+                    onClick={() => setRotation({ ...member, policy: policyForRotation(member), slot })}
                   >
-                    {spell ? (
-                      <SpellIcon spell={spell} className="action-bar__skill-img" fallbackClassName="action-bar__skill-icon" fallback={spellShortLabel(spell)} />
-                    ) : <span className="action-bar__plus">+</span>}
+                    {spell ? <SpellIcon spell={spell} className="action-bar__skill-img" fallbackClassName="action-bar__skill-icon" fallback={spellShortLabel(spell)} /> : <span className="action-bar__plus">+</span>}
                     <span className="action-bar__slot-index">{slot + 1}</span>
                   </button>
                 ))}
