@@ -6,6 +6,7 @@ import {
   magicProgressPercent,
   skillProgressPercent,
 } from '@tibia-idle/sim';
+import { api } from '../api/client.js';
 import type { CharacterView, EquippedItem } from '../api/types.js';
 import { formatNumber, formatStamina, itemRarity } from '../format.js';
 import { useLocale } from '../i18n/Locale.js';
@@ -13,7 +14,9 @@ import { outfitIconUrl } from '../render/outfitIcon.js';
 import { PAPERDOLL_SLOTS } from '../ui/paperdollSlots.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSlot } from './ItemSlot.js';
+import { PartyPortrait } from './PartyPortrait.js';
 import './BuildPanel.css';
+import './PartyAttributeTabs.css';
 
 const VOC_SHORT: Record<number, string> = {
   1: 'Sorcerer', 2: 'Druid', 3: 'Paladin', 4: 'Knight', 5: 'Master Sorcerer',
@@ -30,6 +33,7 @@ const ATTRIBUTE_TABS = [
 ] as const;
 
 type AttributeTab = (typeof ATTRIBUTE_TABS)[number]['id'];
+type PartyMemberView = CharacterView['caveParty'][number];
 
 const SKILL_LABELS: Record<SkillName, string> = {
   fist: 'Fist Fighting',
@@ -250,11 +254,158 @@ function BuildPortrait({ character }: { character: CharacterView }) {
   );
 }
 
-export function BuildPanel({ character }: { character: CharacterView }) {
+function principalAsPartyMember(character: CharacterView): PartyMemberView {
+  return {
+    id: character.id,
+    name: character.name,
+    level: character.level,
+    vocationId: character.vocation.id,
+    active: character.session?.status === 'active',
+    self: true,
+    appearance: character.appearance,
+  };
+}
+
+function PartyAttributeSelector({
+  principal,
+  members,
+  selectedId,
+  onSelect,
+}: {
+  principal: CharacterView;
+  members: PartyMemberView[];
+  selectedId: number;
+  onSelect: (id: number) => void;
+}) {
+  const hunting = principal.session?.status === 'active';
+  return (
+    <nav className="attr-party-switcher" aria-label="Personagens da party">
+      {members.map((member) => {
+        const dead = hunting && member.active === false;
+        return (
+          <button
+            key={member.id}
+            type="button"
+            className={`attr-party-member ${selectedId === member.id ? 'on' : ''} ${dead ? 'dead' : ''}`}
+            onClick={() => onSelect(member.id)}
+            aria-pressed={selectedId === member.id}
+          >
+            <PartyPortrait appearance={member.appearance} size={34} />
+            <span className="attr-party-member-copy">
+              <strong>{member.name}</strong>
+              <small>Lv {member.level} · {VOC_SHORT[member.vocationId] ?? `Vocação ${member.vocationId}`}</small>
+            </span>
+            {dead ? <em>Morto</em> : member.id === principal.id ? <em>Principal</em> : null}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function BuildPanel({ character: principal }: { character: CharacterView }) {
   const { t } = useLocale();
   const [inspectId, setInspectId] = useState<number | null>(null);
   const [tab, setTab] = useState<AttributeTab>('geral');
+  const [selectedId, setSelectedId] = useState(principal.id);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterView | null>(null);
+  const [partyLoading, setPartyLoading] = useState(false);
+  const [partyError, setPartyError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
+  const partyMembers = useMemo(() => {
+    const source = principal.caveParty?.length > 0
+      ? principal.caveParty
+      : [principalAsPartyMember(principal)];
+    const seen = new Set<number>();
+    const unique = source.filter((member) => {
+      if (seen.has(member.id)) return false;
+      seen.add(member.id);
+      return true;
+    });
+    if (!seen.has(principal.id)) unique.unshift(principalAsPartyMember(principal));
+    return unique;
+  }, [principal.id, principal.name, principal.level, principal.vocation.id, principal.session?.status, principal.appearance, principal.caveParty]);
+
+  useEffect(() => {
+    setSelectedId(principal.id);
+    setSelectedCharacter(null);
+    setPartyError(null);
+    setInspectId(null);
+  }, [principal.id]);
+
+  useEffect(() => {
+    if (partyMembers.some((member) => member.id === selectedId)) return;
+    setSelectedId(principal.id);
+    setSelectedCharacter(null);
+  }, [partyMembers, principal.id, selectedId]);
+
+  useEffect(() => {
+    setInspectId(null);
+    if (selectedId === principal.id) {
+      setSelectedCharacter(null);
+      setPartyLoading(false);
+      setPartyError(null);
+      return;
+    }
+
+    let alive = true;
+    let first = true;
+    setSelectedCharacter(null);
+    setPartyLoading(true);
+    setPartyError(null);
+
+    const load = async () => {
+      try {
+        const result = await api.character(selectedId);
+        if (!alive) return;
+        setSelectedCharacter(result.character);
+        setPartyError(null);
+      } catch (error) {
+        if (!alive) return;
+        setPartyError(error instanceof Error ? error.message : 'Não foi possível carregar este personagem.');
+      } finally {
+        if (alive && first) setPartyLoading(false);
+        first = false;
+      }
+    };
+
+    void load();
+    const timer = window.setInterval(() => { void load(); }, 3_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [principal.id, reloadKey, selectedId]);
+
+  const selectedMember = partyMembers.find((member) => member.id === selectedId);
+  const viewedCharacter = selectedId === principal.id ? principal : selectedCharacter;
+
+  if (!viewedCharacter || viewedCharacter.id !== selectedId) {
+    return (
+      <div className="build-panel attr-panel">
+        <PartyAttributeSelector
+          principal={principal}
+          members={partyMembers}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
+        <div className="attr-party-loading">
+          <div>
+            <strong>{partyError ? 'Não foi possível carregar os atributos.' : `Carregando ${selectedMember?.name ?? 'personagem'}…`}</strong>
+            <p>{partyError ?? (partyLoading ? 'Buscando skills, equipamentos e procs reais no servidor.' : 'Aguarde um instante.')}</p>
+            {partyError && (
+              <button type="button" className="attr-party-retry" onClick={() => setReloadKey((value) => value + 1)}>
+                Tentar novamente
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const character = viewedCharacter;
   const now = Date.now();
   const vocation = getVocation(character.vocation.id);
   const proficiency = proficiencyPercent(character);
@@ -302,6 +453,13 @@ export function BuildPanel({ character }: { character: CharacterView }) {
 
   return (
     <div className="build-panel attr-panel">
+      <PartyAttributeSelector
+        principal={principal}
+        members={partyMembers}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+      />
+
       <header className="build-hero attr-hero">
         <BuildPortrait character={character} />
         <div className="build-hero-main">
