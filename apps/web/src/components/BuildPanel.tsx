@@ -435,10 +435,10 @@ export function BuildPanel({ character: principal }: { character: CharacterView 
   const comboBonus = Math.max(0, Math.min(20, currentCombo) - 1);
   const vibrancy = vibrancyChance(character, now);
 
-  const resistances = useMemo(() => RESISTANCES.map((entry) => ({
+  const resistances = RESISTANCES.map((entry) => ({
     ...entry,
     value: protectionPercent(character, entry.itemKey, entry.combat, now),
-  })), [character.equipment, character.imbuements, now]);
+  }));
 
   const activeImbueRows = activeImbues.map((entry) => {
     const spec = IMBUEMENTS.find((candidate) => candidate.id === entry.type);
