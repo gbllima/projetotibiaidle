@@ -11,6 +11,7 @@ import { DockBox } from './DockBox.js';
 import { ItemInspectModal } from './ItemInspectModal.js';
 import { ItemSlot } from './ItemSlot.js';
 import { LootConfigModal } from './LootConfigModal.js';
+import { SupplyConfigModal } from './SupplyConfigModal.js';
 import { PartyManagerModal } from './PartyManagerModal.js';
 import { PartyPanel } from './PartyPanel.js';
 
@@ -105,6 +106,7 @@ export function RightDock({
   const [partyBusy, setPartyBusy] = useState(false);
   const [blessOpen, setBlessOpen] = useState(false);
   const [lootConfigOpen, setLootConfigOpen] = useState(false);
+  const [supplyConfigOpen, setSupplyConfigOpen] = useState(false);
   const [lootPage, setLootPage] = useState(0);
   const [supplyPage, setSupplyPage] = useState(0);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -364,7 +366,7 @@ export function RightDock({
       </div>
     </DockBox>
 
-    <DockBox id="supply-pouch" title="Supply Pouch" extra={<span>Slots {view.supplies.filter((s) => s.count > 0).length} / {supplySlots}</span>}>
+    <DockBox id="supply-pouch" title="Supply Pouch" extra={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span>Slots {view.supplies.filter((s) => s.count > 0).length} / {supplySlots}</span><button type="button" className="btn" aria-label="Configurar Supply Pouch" disabled={busy} onClick={() => setSupplyConfigOpen(true)}>Config</button></span>}>
       <div className="grid8 supply-grid">
         {supplyPaged.visible.map((item, index) => <ItemSlot
           key={`supply-${supplyPaged.safePage}-${index}-${item.itemId}`}
@@ -404,6 +406,7 @@ export function RightDock({
       <button type="button" className="danger" disabled={busy || lootActionBusy} onClick={() => run(() => onDestroyItem(menu.itemId, menu.from, menu.count))}>Destruir</button>
     </div>}
 
+    {supplyConfigOpen && <SupplyConfigModal key={view.id} characterId={view.id} onClose={() => setSupplyConfigOpen(false)} />}
     {lootConfigOpen && <LootConfigModal
       character={view}
       lootItems={lootItems}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { itemsById, monstersById } from '@tibia-idle/data';
-import { isConsumableItem, isEquipableItem } from '@tibia-idle/sim';
+import { isConsumableItem, isEquipableItem, isSupplyItem } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { storedToken } from '../api/client.js';
 import { formatNumber, itemValue } from '../format.js';
@@ -40,7 +40,7 @@ const DEFAULT_PREFS: LootPrefs = {
   history: [],
 };
 
-async function requestPrefs(id: number, body?: Record<string, unknown>): Promise<LootPrefs & { character?: CharacterView }> {
+export async function requestPrefs(id: number, body?: Record<string, unknown>): Promise<LootPrefs & { character?: CharacterView }> {
   const token = storedToken();
   const response = await fetch(`/api/characters/${id}/loot-preferences`, {
     method: body ? 'POST' : 'GET',
@@ -59,7 +59,7 @@ function itemName(itemId: number): string {
   return itemsById.get(itemId)?.name ?? `#${itemId}`;
 }
 
-function LootItemIcon({ itemId, size = 32 }: { itemId: number; size?: number }) {
+export function LootItemIcon({ itemId, size = 32 }: { itemId: number; size?: number }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -228,7 +228,7 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
   const addContainer = () => {
     const item = findItem(containerInput);
     if (!item) return setError('Item não encontrado. Digite o nome ou ID correto.');
-    if (containerTarget === 'supply' && !isConsumableItem(item)) return setError('Este item não pode ser enviado para a Supply Pouch.');
+    if (containerTarget === 'supply' && !isSupplyItem(item)) return setError('Supply Pouch aceita somente poções de vida, mana e flechas.');
     void save({ itemId: item.id, container: containerTarget }).then(() => setContainerInput(''));
   };
 

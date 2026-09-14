@@ -1,4 +1,5 @@
 import { NAME_STYLE } from './textStyle.js';
+import { fitPixelCanvas } from './pixelCanvas.js';
 import { CITY_WIDTH, CITY_HEIGHT, CITY_SPAWN, cityPath, cityWalkable, type CityPosition } from '@tibia-idle/data';
 import { AnimatedSprite, Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { itemsById, monstersById, mountsByServerId } from '@tibia-idle/data';
@@ -112,6 +113,7 @@ const BOUNDS_CACHE = new Map<number, { minX: number; maxX: number; maxY: number 
  */
 export class CombatScene {
   private app: Application | null = null;
+  private stopCanvasFit?: () => void;
   private creatures: Atlas | null = null;
   private outfits: Atlas | null = null;
   private mounts: Atlas | null = null;
@@ -138,6 +140,8 @@ export class CombatScene {
   private monsterTargets = new Map<number, SpriteEntry>();
   private player: SpriteEntry | null = null;
   private floaters: Array<{ text: Text; life: number; maxLife: number; driftX: number }> = [];
+  private lastSpellWords = -Infinity;
+  private visualEffects = new Set<AnimatedSprite>();
   /** Stack index per creature so AOE numbers don't sit on top of each other. */
   private floatStacks = new Map<string, number>();
   private huntId = '';
@@ -174,6 +178,8 @@ export class CombatScene {
 
   /** Pull the canvas out of the DOM without touching the shared GPU atlases. */
   detach(): void {
+    this.stopCanvasFit?.();
+    this.stopCanvasFit = undefined;
     const canvas = this.app?.canvas;
     if (canvas?.parentElement) canvas.parentElement.removeChild(canvas);
   }
@@ -181,10 +187,14 @@ export class CombatScene {
   private attach(host: HTMLElement): void {
     if (!this.app) return;
     if (this.app.canvas.parentElement !== host) host.appendChild(this.app.canvas);
+    this.stopCanvasFit?.();
+    this.stopCanvasFit = fitPixelCanvas(this.app, host, COLS * TILE * SCALE, ROWS * TILE * SCALE);
     this.app.ticker.start();
   }
 
   private disposeApp(app: Application): void {
+    this.stopCanvasFit?.();
+    this.stopCanvasFit = undefined;
     // Never pass `true`: Pixi treats that as releaseGlobalResources and wipes
     // every atlas texture. React Strict Mode would then remount a blank scene.
     try {
@@ -328,6 +338,8 @@ export class CombatScene {
       this.player = null;
     }
     this.floaters = [];
+    this.visualEffects.clear();
+    this.lastSpellWords = -Infinity;
     this.floatStacks.clear();
     this.allyAttackCooldown.clear();
     this.monsterTargets.clear();
@@ -697,14 +709,14 @@ export class CombatScene {
       const count = event.count && event.count > 1 ? ` x${event.count}` : '';
       this.floatFree(6.5 * TILE, 4 * TILE, `${name}${count}`, 0xe8c547);
     } else if (event.type === 'heal' || event.type === 'potion') {
-      if (event.words && this.player) {
+      if (event.words && this.player && this.allowSpellWords(event)) {
         this.floatFree(this.player.root.x, this.player.root.y - 22, event.words, 0xe07030, 9);
       }
       if (this.player && (event.amount ?? 0) > 0) this.float(this.player, event.amount ?? 0, 0x6ecf7a, '+');
     } else if (event.type === 'level_up') {
       if (this.player) this.floatFree(this.player.root.x, this.player.root.y - 40, `Level ${event.level}!`, 0xe8c547, 11);
     } else if (event.type === 'player_attack') {
-      if (event.words && this.player) {
+      if (event.words && this.player && this.allowSpellWords(event)) {
         const caster = this.actorFor(event);
         this.floatFree(caster.root.x, caster.root.y - 22, event.words, 0xe07030, 9);
       }
@@ -745,7 +757,7 @@ export class CombatScene {
       const amount = event.amount ?? 0;
       if (amount > 0) this.float(this.player, amount, damageTint(event.damageType), '-', 11);
     } else if (event.type === 'buff') {
-      if (event.words && this.player) {
+      if (event.words && this.player && this.allowSpellWords(event)) {
         this.floatFree(this.player.root.x, this.player.root.y - 22, event.words, 0x6ecf7a, 9);
       }
     } else if (event.type === 'combo' && this.player) {
@@ -777,6 +789,14 @@ export class CombatScene {
       if (dead) this.playEffect(dead.root.x, dead.root.y - TILE / 2, 3);
     }
     this.playBursts(event);
+  }
+
+  private allowSpellWords(event: SimEvent): boolean {
+    if (this.actorFor(event) !== this.player) return false;
+    const now = performance.now();
+    if (now - this.lastSpellWords < 4000) return false;
+    this.lastSpellWords = now;
+    return true;
   }
 
   private playStrike(event: SimEvent): void {
@@ -948,7 +968,7 @@ export class CombatScene {
     const area = shape ?? 'square1';
     const cx = caster.tileX;
     const cy = caster.tileY;
-    for (const [dx, dy] of combatAreaOffsets(area, direction ?? DIRECTION_SOUTH)) {
+    for (const [dx, dy] of this.visualArea(combatAreaOffsets(area, direction ?? DIRECTION_SOUTH))) {
       this.playEffect((cx + dx) * TILE + TILE / 2, (cy + dy) * TILE + TILE / 2, effectId);
     }
   }
@@ -968,13 +988,22 @@ export class CombatScene {
     // Center on the creature (same height as hit bursts), then ±1 SQM around.
     const ox = focus.root.x;
     const oy = focus.root.y - TILE / 2;
-    for (const [dx, dy] of ammoAreaOffsets(shape)) {
+    for (const [dx, dy] of this.visualArea(ammoAreaOffsets(shape))) {
       this.playEffect(ox + dx * TILE, oy + dy * TILE, effectId);
     }
   }
 
+  /** Sample the complete footprint without covering every tile with a sprite. */
+  private visualArea(offsets: ReadonlyArray<readonly [number, number]>): ReadonlyArray<readonly [number, number]> {
+    if (offsets.length <= 5) return offsets;
+    return Array.from({ length: 5 }, (_, index) => offsets[Math.round(index * (offsets.length - 1) / 4)]!);
+  }
+
   private playEffect(x: number, y: number, effectId: number): void {
     if (!this.fx || this.fx.destroyed) return;
+    for (const sprite of this.visualEffects) if (sprite.destroyed) this.visualEffects.delete(sprite);
+    if (this.visualEffects.size >= 16) return;
+    if ([...this.visualEffects].some((sprite) => Math.abs(sprite.x - x) < TILE / 2 && Math.abs(sprite.y - y) < TILE / 2)) return;
     try {
       const frames = this.effects?.frames(effectId);
       const textures = frames?.textures.length
@@ -987,12 +1016,14 @@ export class CombatScene {
         sprite.anchor.set(0.5, 0.5);
         sprite.x = x;
         sprite.y = y;
+        sprite.alpha = 0.55;
         sprite.loop = false;
         sprite.animationSpeed = textures.length > 1 ? 0.35 : 0.05;
         sprite.onComplete = () => {
           if (!sprite.destroyed) sprite.destroy();
         };
         this.fx.addChild(sprite);
+        this.visualEffects.add(sprite);
         sprite.gotoAndPlay(0);
         if (textures.length <= 1) {
           window.setTimeout(() => {
@@ -1609,15 +1640,15 @@ export class CombatScene {
       else this.floatStacks.set(key, next);
     }, 280);
     const jitter = ((stack % 5) - 2) * 5;
-    const lift = 28 + stack * 10;
-    const size = kind === 'crit' ? 12 : 11;
+    const lift = 28 + (stack % 3) * 9;
+    const size = kind === 'crit' ? 10 : 9;
     this.spawnFloater(
       entry.root.x + jitter,
       entry.root.y - lift,
       `${prefix}${shown}`,
       color,
       size,
-      1200,
+      750,
     );
   }
 
@@ -1628,8 +1659,8 @@ export class CombatScene {
     color: number,
     kind: 'out' | 'in' | 'tag' | 'heal' = 'out',
   ): void {
-    const size = kind === 'tag' ? 9 : 10;
-    this.spawnFloater(x, y, label, color, size, 1000);
+    const size = kind === 'tag' ? 8 : 9;
+    this.spawnFloater(x, y, label, color, size, 700);
   }
 
   /** Legacy helpers used by loot / words / level-up. */
@@ -1653,6 +1684,8 @@ export class CombatScene {
   ): void {
     const layer = this.fx;
     if (!layer || layer.destroyed) return;
+    this.floaters = this.floaters.filter((floater) => !floater.text.destroyed);
+    while (this.floaters.length >= 12) this.floaters.shift()!.text.destroy();
     // Keep fx above floor/actors so hit numbers are never buried.
     if (this.world && layer.parent === this.world) this.world.addChild(layer);
     const text = new Text({
@@ -1663,7 +1696,7 @@ export class CombatScene {
         fontFamily: 'Verdana, Geneva, Tahoma, sans-serif',
         fontSize: size,
         fontWeight: 'bold',
-        stroke: { color: 0x000000, width: 3, join: 'round' },
+        stroke: { color: 0x000000, width: 2, join: 'round' },
         dropShadow: {
           color: 0x000000,
           alpha: 1,

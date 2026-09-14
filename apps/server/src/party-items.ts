@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { itemsById } from '@tibia-idle/data';
-import { addItemStack, backpackCapacity, isConsumableItem, removeWorn, wearItem, type CharacterState, type EquipSlot } from '@tibia-idle/sim';
+import { addItemStack, backpackCapacity, isSupplyItem, removeWorn, wearItem, type CharacterState, type EquipSlot } from '@tibia-idle/sim';
 import { accountFromHeader, AuthError } from './auth.js';
 import type { Database } from './db.js';
 import { describeCharacter, loadCharacter, type LoadedCharacter } from './game.js';
@@ -98,7 +98,10 @@ function prefs(character: CharacterState) {
     autoSell: Boolean(state.lootAutoSell),
     autoSellPercent: Math.max(10, Math.min(100, Math.floor(Number(state.lootAutoSellPercent) || 90))),
     sort: Boolean(state.lootSort),
-    containers: { ...(state.lootContainerByItem ?? {}) },
+    containers: Object.fromEntries(Object.entries(state.lootContainerByItem ?? {}).filter(([id, target]) => {
+      const item = itemsById.get(Number(id));
+      return target !== 'supply' || (item !== undefined && isSupplyItem(item));
+    })),
     history: Array.isArray(state.lootHistory) ? state.lootHistory.slice(-100) : [],
   };
 }
@@ -147,7 +150,7 @@ function tryRoute(sessionCharacter: CharacterState, itemId: number, count: numbe
     return true;
   }
   const item = itemsById.get(itemId);
-  if (!item || !isConsumableItem(item)) return false;
+  if (!item || !isSupplyItem(item)) return false;
   sessionCharacter.supplies ??= [];
   const supplies = sessionCharacter.supplies;
   const cap = Math.max(1, sessionCharacter.supplySlots ?? 20);
@@ -194,7 +197,7 @@ export function sweepIgnoredLoot(db: Database): void {
           continue;
         }
 
-        if (currentPrefs.autoSell && !protectedIds.has(itemId)) {
+        if (currentPrefs.autoSell && target !== 'supply' && !protectedIds.has(itemId)) {
           const unit = Number(itemsById.get(itemId)?.sellPrice ?? 0);
           if (unit > 0) {
             const gold = Math.floor(unit * count * currentPrefs.autoSellPercent / 100);
@@ -335,6 +338,12 @@ export function registerPartyItemRoutes(app: FastifyInstance, db: Database): voi
         }
         if (body.container !== undefined) {
           const target = String(body.container);
+          if (target === 'supply') {
+            const item = itemsById.get(itemId);
+            if (!item || !isSupplyItem(item)) throw new GameError('Escolha um item de suprimento válido.', 400);
+            if (next.containers[String(itemId)] !== 'supply' && Object.values(next.containers).filter((value) => value === 'supply').length >= 300) throw new GameError('Limite de 300 suprimentos atingido.', 400);
+            next.ignoredItemIds = next.ignoredItemIds.filter((id) => id !== itemId);
+          }
           if (target === 'pouch') delete next.containers[String(itemId)];
           else if (target === 'backpack' || target === 'supply' || target === 'warehouse') next.containers[String(itemId)] = target;
           else throw new GameError('Container inválido.', 400);

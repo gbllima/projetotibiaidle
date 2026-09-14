@@ -1,4 +1,5 @@
 import { NAME_STYLE } from './textStyle.js';
+import { fitPixelCanvas } from './pixelCanvas.js';
 import { AnimatedSprite, Application, Container, Sprite, Text, Texture } from 'pixi.js';
 import { DIRECTION_NORTH, GROUP_IDLE, GROUP_MOVING, loadAtlas, type Atlas } from './atlas.js';
 import { magicEffectId } from './effects.js';
@@ -69,6 +70,7 @@ function sitLocalSprite(sprite: Sprite | AnimatedSprite): void {
 
 export class TrainingRenderer {
   private app: Application | null = null;
+  private stopCanvasFit?: () => void;
   private floor: Container | null = null;
   private actors: Container | null = null;
   private fx: Container | null = null;
@@ -108,6 +110,8 @@ export class TrainingRenderer {
     this.app = app;
     app.canvas.style.imageRendering = 'pixelated';
     host.replaceChildren(app.canvas);
+    this.stopCanvasFit?.();
+    this.stopCanvasFit = fitPixelCanvas(app, host, SCENE_COLS * SCENE_TILE * SCALE, SCENE_ROWS * SCENE_TILE * SCALE);
     app.stage.scale.set(SCALE);
 
     const [tiles, items, outfits, effects, missiles] = await Promise.all([
@@ -365,10 +369,14 @@ export class TrainingRenderer {
   }
 
   detach(): void {
+    this.stopCanvasFit?.();
+    this.stopCanvasFit = undefined;
     this.app?.canvas.remove();
   }
 
   destroy(): void {
+    this.stopCanvasFit?.();
+    this.stopCanvasFit = undefined;
     this.dead = true;
     this.roomToken += 1;
     this.shots = [];

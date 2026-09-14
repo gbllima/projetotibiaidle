@@ -41,6 +41,15 @@ export const ITEM_MARKET_CATEGORIES: ReadonlyArray<{ id: number; name: string }>
   { id: 21, name: 'Weapons: Wands' },
 ];
 
+export function isSupplyItem(item: Item): boolean {
+  const potion = HEALTH_POTION_TIERS.some((tier) => tier.itemId === item.id)
+    || MANA_POTION_TIERS.some((tier) => tier.itemId === item.id);
+  // Bows also declare ammoType=arrow; only actual arrow ammunition belongs here.
+  const arrow = item.type?.toLowerCase() === 'ammunition'
+    && (item.ammoType === 'arrow' || /(?:^| )arrow$/.test(item.name.toLowerCase()));
+  return potion || arrow;
+}
+
 export function isConsumableItem(item: Item): boolean {
   const type = (item.type ?? '').toLowerCase();
   const name = item.name.toLowerCase();
