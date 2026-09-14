@@ -120,7 +120,7 @@ export function CombatScene({
   const activePartyIds = partyActivity.huntId === huntId ? partyActivity.activeIds : EMPTY_PARTY_IDS;
   const visibleAllies = cityLobby
     ? allies
-    : allies.filter((ally) => ally.id === undefined || activePartyIds.has(ally.id));
+    : allies.filter((ally) => ally.dead === true || ally.id === undefined || activePartyIds.has(ally.id));
 
   const latest = useRef({ active, player, allies: visibleAllies, huntId, decorations });
   latest.current = { active, player, allies: visibleAllies, huntId, decorations };
@@ -210,7 +210,10 @@ export function CombatScene({
       void api.character(characterId).then(({ character }) => {
         if (cancelled) return;
         const activeIds = new Set<number>();
-        if (character.session?.status === 'active' && character.session.huntId === huntId) {
+        const activityHuntId = character.session?.status === 'active'
+          ? character.session.huntId
+          : character.partyActivity?.huntId;
+        if (activityHuntId === huntId) {
           for (const member of character.caveParty ?? []) {
             if (expected.has(member.id) && member.active === true) activeIds.add(member.id);
           }
