@@ -4,7 +4,6 @@ import { App } from './App.js';
 import { LocaleProvider } from './i18n/Locale.js';
 import './render/vocationLookPatch.js';
 import './render/combatTextSizePatch.js';
-import './render/deathCorpsePatch.js';
 import './styles.css';
 import './landing.css';
 import './party.css';
