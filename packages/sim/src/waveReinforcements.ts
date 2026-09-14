@@ -25,7 +25,7 @@ import {
 /**
  * Total monsters in a wave still grows normally, but only this many may be
  * engaged at once. The rest enter as reinforcements whenever a slot opens.
- * Wave 10 remains the single skull creature.
+ * Wave 10 remains the single skull creature per active party member.
  */
 export const WAVE_ACTIVE_LIMIT = [3, 4, 5, 5, 6, 6, 6, 7, 7, 1] as const;
 
@@ -40,12 +40,32 @@ type ReinforcementSession = HuntSession & {
   reinforcementReadyTick?: number;
   /** Monsters hidden from the floor after upgrading an already-running hunt. */
   reinforcementQueue?: ActiveMonster[];
+  /** Active party size/index supplied by the server party settlement loop. */
+  reinforcementPartySize?: number;
+  reinforcementPartyIndex?: number;
   /** Internal timer used by combat.ts. We block it while this module owns spawning. */
   nextWaveAtTick?: number;
 };
 
 export function waveActiveLimit(waveIndex: number): number {
   return WAVE_ACTIVE_LIMIT[Math.max(0, Math.min(WAVE_ACTIVE_LIMIT.length - 1, waveIndex))] ?? 6;
+}
+
+/**
+ * A party shares the screen-wide cap instead of giving every member a full pack.
+ * Example: a 4-player party on a 7-enemy wave gets 2/2/2/1 active enemies.
+ * There is always at least one enemy per living party session so nobody becomes
+ * an idle spectator merely because the party is larger than an early-wave cap.
+ */
+function sessionActiveLimit(session: ReinforcementSession, waveIndex: number): number {
+  const globalLimit = waveActiveLimit(waveIndex);
+  const partySize = Math.max(1, Math.trunc(session.reinforcementPartySize ?? 1));
+  if (partySize <= 1 || isBossWave(waveIndex)) return globalLimit;
+  const index = Math.max(0, Math.min(partySize - 1, Math.trunc(session.reinforcementPartyIndex ?? 0)));
+  const sharedTotal = Math.max(globalLimit, partySize);
+  const base = Math.floor(sharedTotal / partySize);
+  const remainder = sharedTotal % partySize;
+  return Math.max(1, base + (index < remainder ? 1 : 0));
 }
 
 function delayTicks(waveIndex: number): number {
@@ -87,7 +107,7 @@ function pushEvent(events: SimEvent[], event: SimEvent, maxEvents: number): void
 function trimLegacyOverflow(session: ReinforcementSession): void {
   if (isBossHunt(session.huntId)) return;
   const progress = waveProgress(session.totals.kills);
-  const limit = waveActiveLimit(progress.waveIndex);
+  const limit = sessionActiveLimit(session, progress.waveIndex);
   if (session.active.length <= limit) return;
   const overflow = session.active.splice(limit);
   session.reinforcementQueue ??= [];
@@ -136,7 +156,7 @@ function fillOpenSlots(
 ): void {
   if (isBossHunt(session.huntId)) return;
   const progress = waveProgress(session.totals.kills);
-  const limit = waveActiveLimit(progress.waveIndex);
+  const limit = sessionActiveLimit(session, progress.waveIndex);
   if (session.active.length >= limit) return;
 
   let slots = limit - session.active.length;
@@ -242,10 +262,10 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
     prepareBeforeTick(managed, events, maxEvents);
 
     const before = waveProgress(managed.totals.kills);
-    const limit = waveActiveLimit(before.waveIndex);
+    const limit = sessionActiveLimit(managed, before.waveIndex);
     const policy = managed.character.policy;
     const originalTaunt = policy.taunt;
-    // Exeta res may fill an open slot, but it must never break the visual cap.
+    // Exeta res may fill an open slot, but it must never break the screen cap.
     if (managed.active.length >= limit && originalTaunt) policy.taunt = false;
 
     if (managed.reinforcementReadyTick !== undefined && managed.active.length === 0) {
