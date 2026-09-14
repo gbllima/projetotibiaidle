@@ -70,7 +70,9 @@ export function parsePartyHealSettings(policy: Pick<HuntPolicy, 'disabledSpells'
   const tokens = policy.disabledSpells ?? [];
   const configured = tokens.some((token) => token.startsWith(CONFIG_PREFIX));
   const settings: PartyHealSettings = {
-    enabled: configured ? tokens.includes(`${CONFIG_PREFIX}on`) : false,
+    // Reference/default Helper profile starts with ally healing enabled. Only
+    // Druid/Elder Druid can actually execute it, so other vocations are unaffected.
+    enabled: configured ? tokens.includes(`${CONFIG_PREFIX}on`) : true,
     selfFirst: configured ? tokens.includes(`${CONFIG_PREFIX}self`) : true,
     priority: { ...DEFAULT_PRIORITY },
     threshold: { ...DEFAULT_THRESHOLD },
