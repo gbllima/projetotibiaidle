@@ -73,19 +73,28 @@ export function PartyPanel({ character, busy, onConfig, onToggle, onUnlock, onBl
         const xp = xpProgress(member.level, member.experience ?? 0).percent;
         const rawHealth = member.health ?? 0, maxHealth = member.maxHealth ?? 1;
         const rawMana = member.mana ?? 0, maxMana = member.maxMana ?? 1;
+        // During a configured party hunt every member is started together. If a
+        // companion stops being active while the principal is still fighting,
+        // that member has left combat because they died. Keep the visual death
+        // state even though the server has already restored their city vitals.
+        const principalStillHunting = character.session?.status === 'active';
+        const isDead = rawHealth <= 0
+          || (principalStillHunting && member.id !== character.id && !member.active)
+          || (member.id === character.id && character.session?.status === 'died');
         // Party companions can retain a stale/predicted hunt snapshot for a short
         // time after the leader returns to the city. Their activity flag is the
         // authoritative UI signal: while inactive/out of hunt, show stable city
         // vitals instead of rendering those obsolete combat values as if they
-        // were still taking damage or spending mana.
+        // were still taking damage or spending mana. Dead members are the one
+        // exception: while the party keeps fighting, their combat HUD stays at 0.
         const inPartyCombat = Boolean(member.active);
-        const health = member.id === character.id || inPartyCombat ? rawHealth : maxHealth;
-        const mana = member.id === character.id || inPartyCombat ? rawMana : maxMana;
+        const health = isDead ? 0 : member.id === character.id || inPartyCombat ? rawHealth : maxHealth;
+        const mana = isDead ? 0 : member.id === character.id || inPartyCombat ? rawMana : maxMana;
         const vocation = vocationsById.get(member.vocationId);
         const role = [2,6].includes(member.vocationId) ? 'SUP' : [4,8].includes(member.vocationId) ? 'TANK' : 'DPS';
-        return <article className={'party-compact-member' + (member.id === character.id ? ' primary' : '')} key={member.id}>
+        return <article className={'party-compact-member' + (member.id === character.id ? ' primary' : '') + (isDead ? ' dead' : '')} key={member.id} aria-label={isDead ? member.name+' — morto' : undefined}>
           <div className="party-compact-top"><div className="party-compact-details">
-            <div className="party-compact-name"><span className={'party-role '+role.toLowerCase()}>{role}</span><strong title={member.name}>{member.name}</strong></div>
+            <div className="party-compact-name"><span className={'party-role '+role.toLowerCase()}>{role}</span><strong title={member.name}>{member.name}</strong>{isDead && <span className="party-dead-label">☠ MORTO</span>}</div>
             <div className="party-compact-vocation">{vocation?.name ?? 'Aventureiro'} · lvl {member.level}</div>
             <div className="party-compact-bars">{([{kind:'hp',icon:'♥',label:'Vida',value:health,max:maxHealth},{kind:'mana',icon:'♦',label:'Mana',value:mana,max:maxMana},{kind:'xp',icon:'XP',label:'Experiência',value:xp,max:100}] as const).map((bar)=><div className={'party-compact-bar '+bar.kind} key={bar.kind}><span aria-hidden>{bar.icon}</span><div role="progressbar" aria-label={bar.label+' de '+member.name} aria-valuemin={0} aria-valuemax={bar.max} aria-valuenow={Math.min(bar.max,Math.max(0,bar.value))}><i style={{width:Math.min(100,Math.max(0,bar.value/Math.max(1,bar.max)*100))+'%'}}/><b>{bar.kind==='xp'?Math.round(xp)+'%':Math.round(bar.value)+'/'+bar.max}</b></div></div>)}</div>
           </div><div className="party-mini-set" aria-label={'Equipamento de '+member.name}>{PAPERDOLL_SLOTS.map((slot)=><div className={'paper-slot '+slot.area} key={slot.id}><ItemSlot itemId={member.equipment?.[slot.id]?.id} compact emptyLabel={slot.id==='ring'?'Anel':slot.id==='necklace'?'Amuleto':slot.id==='ammo'?'Berloque':undefined} onClick={()=>void openMemberMenu(member.id,'items')}/></div>)}</div></div>
