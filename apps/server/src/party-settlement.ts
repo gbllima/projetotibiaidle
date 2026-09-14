@@ -1,4 +1,7 @@
-import { addExperience, TICK_MS, type HuntSession } from '@tibia-idle/sim';
+import {
+  addExperience, isBossHunt, layoutPackMonsters, PLAYER_TILE, TICK_MS,
+  type ActiveMonster, type HuntSession,
+} from '@tibia-idle/sim';
 import { offlineCapHours, OFFLINE_GAP_MS, OFFLINE_EFFICIENCY, settle } from './settle.js';
 
 export interface PartySession {
@@ -7,9 +10,129 @@ export interface PartySession {
   settledAt: number;
 }
 
+type PartyRuntimeEntry = PartySession & {
+  result: ReturnType<typeof settle>;
+  cursor: number;
+  until: number;
+  before: HuntSession['totals'];
+  level: number;
+};
+
+/**
+ * Visual party formation used by the hunt renderer: principal in the centre,
+ * then the first two companions to the lower-left / lower-right.
+ *
+ * The server simulation is intentionally map-light, but using the same seats
+ * gives us a deterministic definition of "nearest party member" when a hunter
+ * dies and the creatures that were surrounding them need a new target.
+ */
+const PARTY_SEATS = [
+  { x: PLAYER_TILE.x, y: PLAYER_TILE.y },
+  { x: PLAYER_TILE.x - 2, y: PLAYER_TILE.y + 1 },
+  { x: PLAYER_TILE.x + 2, y: PLAYER_TILE.y + 1 },
+] as const;
+
+function partySeat(index: number): { x: number; y: number } {
+  return PARTY_SEATS[index] ?? {
+    x: PLAYER_TILE.x + (index % 2 === 0 ? 2 : -2),
+    y: PLAYER_TILE.y + 1 + Math.floor(index / 2),
+  };
+}
+
+function chebyshev(ax: number, ay: number, bx: number, by: number): number {
+  return Math.max(Math.abs(ax - bx), Math.abs(ay - by));
+}
+
+function monsterWorldTile(monster: ActiveMonster, ownerIndex: number): { x: number; y: number } {
+  const owner = partySeat(ownerIndex);
+  return {
+    x: owner.x + (monster.tileX - PLAYER_TILE.x),
+    y: owner.y + (monster.tileY - PLAYER_TILE.y),
+  };
+}
+
+function nearestLivingRecipient(
+  entries: PartyRuntimeEntry[],
+  sourceIndex: number,
+  monster: ActiveMonster,
+): { entry: PartyRuntimeEntry; index: number } | null {
+  const source = entries[sourceIndex];
+  if (!source) return null;
+  const world = monsterWorldTile(monster, sourceIndex);
+
+  const candidates = entries
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry, index }) => index !== sourceIndex
+      && entry.session.huntId === source.session.huntId
+      && entry.session.status === 'active'
+      && entry.session.character.health > 0)
+    .sort((left, right) => {
+      const leftSeat = partySeat(left.index);
+      const rightSeat = partySeat(right.index);
+      const leftDistance = chebyshev(world.x, world.y, leftSeat.x, leftSeat.y);
+      const rightDistance = chebyshev(world.x, world.y, rightSeat.x, rightSeat.y);
+      if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+      // Equal distance: keep the pressure balanced instead of piling every
+      // transferred creature onto the same survivor.
+      if (left.entry.session.active.length !== right.entry.session.active.length) {
+        return left.entry.session.active.length - right.entry.session.active.length;
+      }
+      return left.index - right.index;
+    });
+
+  return candidates[0] ?? null;
+}
+
+/**
+ * A configured party represents one fight on screen even though each character
+ * keeps an independent persisted HuntSession. When one member actually dies,
+ * move their still-living creatures into the nearest surviving member's session
+ * so those monsters continue attacking instead of vanishing with the dead
+ * session.
+ *
+ * Dedicated boss instances remain isolated: moving a second boss into a session
+ * that completes on the first boss death would leave an unfinishable encounter.
+ */
+function retargetMonstersFromDeaths(
+  entries: PartyRuntimeEntry[],
+  statusesBeforeTick: Map<number, HuntSession['status']>,
+): void {
+  const relayout = new Set<HuntSession>();
+
+  entries.forEach((source, sourceIndex) => {
+    if (statusesBeforeTick.get(source.id) !== 'active' || source.session.status !== 'died') return;
+    if (source.session.active.length === 0 || isBossHunt(source.session.huntId)) return;
+
+    const remaining = [...source.session.active];
+    source.session.active = [];
+
+    for (const monster of remaining) {
+      const target = nearestLivingRecipient(entries, sourceIndex, monster);
+      if (!target) {
+        // Everybody else is also down: leave the creature with the dead session
+        // and let normal hunt finalisation remove it.
+        source.session.active.push(monster);
+        continue;
+      }
+
+      const moved: ActiveMonster = {
+        ...monster,
+        uid: target.entry.session.nextUid++,
+        attackCooldowns: [...monster.attackCooldowns],
+      };
+      target.entry.session.active.push(moved);
+      relayout.add(target.entry.session);
+    }
+  });
+
+  // Re-seat imported monsters around their new target. This also keeps the
+  // server snapshot aligned with the viewport's tile-based AoE calculations.
+  for (const session of relayout) layoutPackMonsters(session.active);
+}
+
 /** Advance on one clock and distribute only monster rewards at the instant of a kill. */
 export function settleParty(sessions: PartySession[], now: number, remainderCursor = 0) {
-  const entries = sessions.map((member) => {
+  const entries: PartyRuntimeEntry[] = sessions.map((member) => {
     const { session, settledAt } = member;
     session.partyMembers = [];
     const elapsed = Math.max(0, now - settledAt);
@@ -26,6 +149,8 @@ export function settleParty(sessions: PartySession[], now: number, remainderCurs
     const next = Math.min(...entries.filter((entry) => entry.session.status === 'active'
       && entry.cursor + TICK_MS <= entry.until).map((entry) => entry.cursor + TICK_MS));
     if (!Number.isFinite(next)) break;
+
+    const statusesBeforeTick = new Map(entries.map((entry) => [entry.id, entry.session.status]));
     for (const entry of entries) {
       if (entry.session.status !== 'active' || entry.cursor + TICK_MS !== next || next > entry.until) continue;
       const step = settle(entry.session, entry.cursor, next, {
@@ -58,6 +183,11 @@ export function settleParty(sessions: PartySession[], now: number, remainderCurs
       entry.cursor = next;
       entry.result.events = [...entry.result.events, ...step.events].slice(-24);
     }
+
+    // Death is resolved only after every member has processed this timestamp, so
+    // a creature never gets an extra same-tick attack merely because its new
+    // target happened to be later in the array.
+    retargetMonstersFromDeaths(entries, statusesBeforeTick);
   }
   for (const entry of entries) {
     const { session, result, before } = entry;
