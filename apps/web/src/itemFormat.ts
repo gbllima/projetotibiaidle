@@ -69,6 +69,33 @@ const TYPE_TO_MARKET: Record<string, number> = {
   rods: 21,
 };
 
+const PLAYABLE_CLASS_ORDER = ['Knight', 'Paladin', 'Sorcerer', 'Druid', 'Monk'] as const;
+
+type PlayableClassLabel = (typeof PLAYABLE_CLASS_ORDER)[number];
+
+function normalizeItemVocation(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (value.includes('knight')) return 'Knight';
+  if (value.includes('paladin')) return 'Paladin';
+  if (value.includes('sorcerer')) return 'Sorcerer';
+  if (value.includes('druid')) return 'Druid';
+  if (value.includes('monk')) return 'Monk';
+  return raw.trim().replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** Human-friendly class restriction shown on item cards. Empty item.vocations means unrestricted. */
+export function itemVocationLabel(item: Item): string {
+  if (item.vocations.length === 0) return 'Todas as classes';
+
+  const normalized = [...new Set(item.vocations.map(normalizeItemVocation).filter(Boolean))];
+  const known = PLAYABLE_CLASS_ORDER.filter((label) => normalized.includes(label));
+  const unknown = normalized.filter((label) => !PLAYABLE_CLASS_ORDER.includes(label as PlayableClassLabel));
+  const ordered = [...known, ...unknown];
+
+  if (known.length === PLAYABLE_CLASS_ORDER.length && unknown.length === 0) return 'Todas as classes';
+  return ordered.join(' · ') || 'Todas as classes';
+}
+
 export function itemMarketCategory(item: Item): number {
   if (item.marketCategory != null) return item.marketCategory;
   const type = (item.type ?? '').toLowerCase();
@@ -123,12 +150,14 @@ export function itemStatLine(item: Item): string | null {
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-/** Compact lines for hover tooltips and context-menu headers. */
+/** Compact lines for hover tooltips and context-menu headers. The first line is the class ribbon. */
 export function itemTooltipLines(itemId: number): string[] {
   const item = itemsById.get(itemId);
   if (!item) return ['Item desconhecido.'];
 
   const lines: string[] = [];
+  lines.push(itemVocationLabel(item));
+
   const category = itemCategoryName(item);
   lines.push(category);
   lines.push(`Peso: ${itemWeightOz(item)}`);
@@ -138,7 +167,6 @@ export function itemTooltipLines(itemId: number): string[] {
 
   const level = itemLevelRequired(item);
   if (level > 0) lines.push(`Level ${level}+`);
-  if (item.vocations.length > 0) lines.push(`Vocação: ${item.vocations.join(', ')}`);
   if (item.slot) lines.push(`Slot: ${item.slot}`);
   if (item.weaponType) lines.push(`Tipo: ${item.weaponType}`);
 
