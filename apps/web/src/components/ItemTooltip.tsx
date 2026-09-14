@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { itemsById } from '@tibia-idle/data';
 import { itemDisplayName, itemTooltipLines } from '../itemFormat.js';
+import './ItemVocationRibbon.css';
 
 export function ItemTooltip({
   itemId,
@@ -22,8 +23,8 @@ export function ItemTooltip({
     <div className="item-tooltip" style={{ left, top }} role="tooltip">
       <strong>{itemDisplayName(item)}</strong>
       {item.description && <p className="item-tooltip-desc">{item.description}</p>}
-      {lines.map((line) => (
-        <span key={line}>{line}</span>
+      {lines.map((line, index) => (
+        <span key={`${index}-${line}`} className={index === 0 ? 'item-vocation-ribbon' : undefined}>{line}</span>
       ))}
     </div>,
     document.body,
