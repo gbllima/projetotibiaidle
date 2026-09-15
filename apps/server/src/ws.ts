@@ -5,6 +5,7 @@ import type { Database } from './db.js';
 import { loadCharacter, takeAwaySummary } from './game.js';
 import { economyCharacterView, syncAccountEconomy } from './economy.js';
 import { markOffline, markOnline } from './presence.js';
+import { applyMultiplayerLiveHealing, decorateMultiplayerCharacter } from './social-live.js';
 
 /**
  * Live session updates.
@@ -30,6 +31,7 @@ type PartyMemberView = {
   id: number;
   self?: boolean;
   active?: boolean;
+  multiplayer?: boolean;
 };
 
 type PartyMonsterView = {
@@ -59,7 +61,7 @@ function parseActivePartySessions(
   for (const member of party) {
     if (member.self || member.id === principalId || member.active === false) continue;
     const row = db.findCharacter(member.id);
-    if (!row || row.accountId !== accountId || !row.session) continue;
+    if (!row || (!member.multiplayer && row.accountId !== accountId) || !row.session) continue;
     try {
       const session = JSON.parse(row.session) as HuntSession;
       if (session.status !== 'active' || session.huntId !== huntId) continue;
@@ -142,9 +144,11 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
     const push = (): void => {
       if (!subscription) return;
       try {
+        const supportEvents = applyMultiplayerLiveHealing(db, subscription.characterId);
         const { loaded, settlement } = loadCharacter(db, subscription.accountId, subscription.characterId);
         syncAccountEconomy(db, subscription.accountId, loaded);
-        const character = economyCharacterView(db, subscription.accountId, loaded);
+        const baseCharacter = economyCharacterView(db, subscription.accountId, loaded);
+        const character = decorateMultiplayerCharacter(db, subscription.characterId, baseCharacter);
         const party = (character.caveParty ?? []) as PartyMemberView[];
         const partySessions = parseActivePartySessions(
           db,
@@ -158,7 +162,10 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
           character: {
             ...character,
             partyMonsters: partyMonsterSnapshot(partySessions),
-            partyEvents: remapPartyEvents(loaded.partyEvents ?? [], subscription.characterId, partySessions),
+            partyEvents: [
+              ...remapPartyEvents(loaded.partyEvents ?? [], subscription.characterId, partySessions),
+              ...supportEvents,
+            ].slice(-32),
           },
           settlement: takeAwaySummary(db, subscription.characterId, settlement),
         });
