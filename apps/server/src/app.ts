@@ -6,7 +6,7 @@ import fastifyStatic from '@fastify/static';
 import websocket from '@fastify/websocket';
 import { meta } from '@tibia-idle/data';
 import { Database } from './db.js';
-import { loadWorldEvent } from './admin.js';
+import { loadWorldEvent, siteNewsSnapshot } from './admin.js';
 import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
 import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
@@ -114,6 +114,12 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
       generatedAt: meta.generatedAt,
     };
   });
+
+  // Public news feed for the Knock Hunt BR landing page. Drafts remain private
+  // and are visible only through the authenticated administration endpoint.
+  app.get('/api/news', async () => ({
+    news: siteNewsSnapshot(db, true).slice(0, 12),
+  }));
 
   registerWebSocket(app, db);
 
