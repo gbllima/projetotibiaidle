@@ -1,0 +1,108 @@
+.landing-server-status{
+  position:absolute;
+  top:4px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:8;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:max-content;
+  padding:8px 14px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(5,10,12,.56);
+  backdrop-filter:blur(5px);
+  box-shadow:0 8px 24px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04);
+  pointer-events:none;
+}
+
+.landing-server-status small{
+  font-family:'Pixelify Sans',monospace;
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:.2em;
+  color:#8e9893;
+}
+
+.landing-server-status strong{
+  font-family:'Cinzel',serif;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+
+.landing-server-status-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  flex:0 0 8px;
+}
+
+.landing-server-status--online{
+  border-color:rgba(44,255,113,.38);
+  box-shadow:0 0 24px rgba(42,255,111,.11),0 8px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.landing-server-status--online strong{
+  color:#25ff6f;
+  text-shadow:0 0 7px #25ff6f,0 0 18px rgba(37,255,111,.8);
+  animation:server-status-text-pulse 1.05s ease-in-out infinite;
+}
+
+.landing-server-status--online .landing-server-status-dot{
+  background:#25ff6f;
+  box-shadow:0 0 7px #25ff6f,0 0 18px #25ff6f;
+  animation:server-status-dot-pulse 1.05s ease-in-out infinite;
+}
+
+.landing-server-status--offline{
+  border-color:rgba(255,56,56,.38);
+  box-shadow:0 0 24px rgba(255,44,44,.11),0 8px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.landing-server-status--offline strong{
+  color:#ff3535;
+  text-shadow:0 0 7px #ff3535,0 0 18px rgba(255,53,53,.8);
+  animation:server-status-text-pulse .9s ease-in-out infinite;
+}
+
+.landing-server-status--offline .landing-server-status-dot{
+  background:#ff3535;
+  box-shadow:0 0 7px #ff3535,0 0 18px #ff3535;
+  animation:server-status-dot-pulse .9s ease-in-out infinite;
+}
+
+.landing-server-status--checking strong{
+  color:#b9c2be;
+}
+
+.landing-server-status--checking .landing-server-status-dot{
+  background:#9aa49f;
+  box-shadow:0 0 8px rgba(154,164,159,.55);
+  animation:server-status-checking 1.2s ease-in-out infinite;
+}
+
+@keyframes server-status-text-pulse{
+  0%,100%{opacity:1;filter:brightness(1)}
+  50%{opacity:.38;filter:brightness(1.35)}
+}
+
+@keyframes server-status-dot-pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.3;transform:scale(.72)}
+}
+
+@keyframes server-status-checking{
+  0%,100%{opacity:.35}
+  50%{opacity:1}
+}
+
+@media (max-width:900px){
+  .landing-server-status{top:0;padding:7px 11px;gap:7px}
+  .landing-server-status strong{font-size:13px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .landing-server-status strong,
+  .landing-server-status-dot{animation:none!important}
+}
