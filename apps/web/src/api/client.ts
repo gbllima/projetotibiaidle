@@ -55,7 +55,34 @@ export interface HealthView {
   beta: 'open' | 'closed';
 }
 
+export interface MultiplayerPartyStatus {
+  active: boolean;
+  leaderId?: number;
+  isLeader: boolean;
+  maxMembers: number;
+  members: Array<{
+    id: number;
+    name: string;
+    level: number;
+    vocationId: number;
+    appearance?: CharacterView['appearance'];
+  }>;
+  invite?: { fromId: number; fromName: string; createdAt: number };
+}
+
+async function multiplayerStatus(id: number): Promise<MultiplayerPartyStatus> {
+  return request<MultiplayerPartyStatus>('GET', `/api/multiplayer-party/${id}`);
+}
+
 async function startConfiguredPartyHunt(id: number, huntId: string, hours?: number): Promise<{ character: CharacterView }> {
+  const multiplayer = await multiplayerStatus(id);
+  if (multiplayer.active) {
+    if (!multiplayer.isLeader) throw new ApiError('Somente o líder pode iniciar a hunt multiplayer.', 403);
+    await request<{ ok: true; memberIds: number[] }>('POST', `/api/multiplayer-party/${id}/hunt`, { huntId, hours });
+    return request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`)
+      .then(({ character }) => ({ character }));
+  }
+
   const started = await request<{ character: CharacterView }>('POST', `/api/characters/${id}/hunt`, { huntId, hours });
   const ids = started.character.partyMemberIds ?? [id];
   if (ids[0] !== id || ids.length <= 1) return started;
@@ -79,6 +106,16 @@ async function startConfiguredPartyHunt(id: number, huntId: string, hours?: numb
     .then(({ character }) => ({ character }));
 }
 
+async function stopConfiguredPartyHunt(id: number): Promise<{ character: CharacterView; goldBanked: number; supplyRefund: number }> {
+  const multiplayer = await multiplayerStatus(id);
+  if (multiplayer.active && multiplayer.isLeader) {
+    await request<{ ok: true; memberIds: number[] }>('DELETE', `/api/multiplayer-party/${id}/hunt`);
+    const { character } = await request<{ character: CharacterView; settlement: Settlement }>('GET', `/api/characters/${id}`);
+    return { character, goldBanked: 0, supplyRefund: 0 };
+  }
+  return request<{ character: CharacterView; goldBanked: number; supplyRefund: number }>('DELETE', `/api/characters/${id}/hunt`);
+}
+
 export const api = {
   health: () => request<HealthView>('GET', '/api/health'),
   register: (username: string, password: string, invite?: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/register', { username, password, invite }),
@@ -94,6 +131,12 @@ export const api = {
   addPartyMember: (ownerId: number, characterId: number) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party/members`, { characterId }),
   configureParty: (ownerId: number, memberIds: number[], primaryId: number) => request<{ character: CharacterView }>('PUT', `/api/characters/${ownerId}/party`, { memberIds, primaryId }),
   removePartyMember: (ownerId: number, characterId: number) => request<{ character: CharacterView }>('DELETE', `/api/characters/${ownerId}/party/members/${characterId}`),
+  multiplayerParty: multiplayerStatus,
+  inviteMultiplayerParty: (id: number, name: string) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/invite`, { name }),
+  acceptMultiplayerParty: (id: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/accept`),
+  declineMultiplayerParty: (id: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/decline`),
+  leaveMultiplayerParty: (id: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/leave`),
+  removeMultiplayerPartyMember: (id: number, memberId: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('DELETE', `/api/multiplayer-party/${id}/members/${memberId}`),
   partyItemsView: (ownerId: number, targetId: number) => request<{ character: CharacterView }>('GET', `/api/characters/${ownerId}/party-items/${targetId}`),
   partyItemAct: (ownerId: number, targetId: number, body: Record<string, unknown>) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party-items/${targetId}`, body),
   lootPreferences: (id: number) => request<{ ignoredItemIds: number[] }>('GET', `/api/characters/${id}/loot-preferences`),
@@ -102,7 +145,7 @@ export const api = {
   hunts: (id: number) => request<{ hunts: HuntView[] }>('GET', `/api/characters/${id}/hunts`),
   bosses: (id: number) => request<{ bosses: BossView[] }>('GET', `/api/characters/${id}/bosses`),
   startHunt: startConfiguredPartyHunt,
-  stopHunt: (id: number) => request<{ character: CharacterView; goldBanked: number; supplyRefund: number }>('DELETE', `/api/characters/${id}/hunt`),
+  stopHunt: stopConfiguredPartyHunt,
   upgradeGear: (id: number) => request<{ character: CharacterView; spent: number }>('POST', `/api/characters/${id}/gear`),
   sellPouch: (id: number) => request<{ character: CharacterView; gold: number }>('POST', `/api/characters/${id}/sell`),
   stashPouch: (id: number) => request<{ character: CharacterView; items: number }>('POST', `/api/characters/${id}/stash`),
