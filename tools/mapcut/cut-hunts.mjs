@@ -504,4 +504,5 @@ function cut() {
   console.log(OUT_MAPS);
 }
 
-cut();
+export { Stream, parseMapDataAttrs, readItemNode, drainNode };
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) cut();

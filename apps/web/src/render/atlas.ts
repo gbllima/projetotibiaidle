@@ -10,7 +10,7 @@ import { Assets, Rectangle, Texture } from 'pixi.js';
  * frames exist, never how they are addressed.
  */
 
-export type AssetCategory = 'creatures' | 'items' | 'effects' | 'missiles' | 'outfits' | 'mounts' | 'tiles';
+export type AssetCategory = 'creatures' | 'items' | 'effects' | 'missiles' | 'outfits' | 'mounts' | 'tiles' | 'thais-depot';
 
 /** [page, x, y, width, height] */
 type Frame = [number, number, number, number, number];
@@ -66,16 +66,17 @@ export class Atlas {
   }
 
   static async load(category: AssetCategory): Promise<Atlas> {
+    const base = category === 'thais-depot' ? '/city-assets' : BASE;
     // Bust stale browser caches after atlas regenerations (old tiles.json left
     // OTBM rooms black because ground ids were missing from the cached meta).
-    const meta = (await fetch(`${BASE}/${category}.json`, { cache: 'no-store' }).then((r) =>
+    const meta = (await fetch(`${base}/${category}.json`, { cache: 'no-store' }).then((r) =>
       r.json(),
     )) as AtlasMeta;
     const bust = `${meta.atlas.pages.length}-${Object.keys(meta.entries).length}`;
     const pages = await Promise.all(
       meta.atlas.pages.map((page) =>
         Assets.load<Texture>({
-          src: `${BASE}/${page}?v=${bust}`,
+          src: `${base}/${page}?v=${bust}`,
           data: { scaleMode: 'nearest' },
         }).catch(() => null),
       ),

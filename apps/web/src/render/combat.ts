@@ -121,6 +121,7 @@ export class CombatScene {
   private outfits: Atlas | null = null;
   private mounts: Atlas | null = null;
   private tiles: Atlas | null = null;
+  private cityTiles: Atlas | null = null;
   private effects: Atlas | null = null;
   private missiles: Atlas | null = null;
   private world: Container | null = null;
@@ -258,13 +259,14 @@ export class CombatScene {
       if (cityWalkable(x, y)) { this.player.clickGoalX = x; this.player.clickGoalY = y; }
     });
 
-    const [creatures, outfits, mounts, tiles, effects, missiles] = await Promise.all([
+    const [creatures, outfits, mounts, tiles, effects, missiles, cityTiles] = await Promise.all([
       loadAtlas('creatures').catch(() => null),
       loadAtlas('outfits').catch(() => null),
       loadAtlas('mounts').catch(() => null),
       loadAtlas('tiles').catch(() => null),
       loadAtlas('effects').catch(() => null),
       loadAtlas('missiles').catch(() => null),
+      loadAtlas('thais-depot'),
     ]);
     if (this.dead) {
       this.disposeApp(app);
@@ -279,6 +281,7 @@ export class CombatScene {
     this.outfits = outfits ?? creatures;
     this.mounts = mounts;
     this.tiles = tiles;
+    this.cityTiles = cityTiles;
     this.effects = effects;
     this.missiles = missiles;
     void preloadAttackFrames().catch(() => { /* optional */ });
@@ -320,7 +323,7 @@ export class CombatScene {
     this.world.hitArea = new Rectangle(0, 0, CITY_WIDTH * TILE, CITY_HEIGHT * TILE);
     this.floor?.destroy({ children: true });
     const floor = new Container();
-    if (this.tiles) paintCityScene(floor, this.tiles);
+    if (this.cityTiles) paintCityScene(floor, this.cityTiles);
     this.world.addChildAt(floor, 0);
     this.floor = floor;
     if (this.player) {
@@ -1356,7 +1359,7 @@ export class CombatScene {
       }
       if (player && this.world) {
         const cameraX = Math.max(0, Math.min((CITY_WIDTH - COLS) * TILE, player.root.x - COLS * TILE / 2));
-        const cameraY = Math.max(0, Math.min((CITY_HEIGHT - ROWS) * TILE, player.root.y - ROWS * TILE / 2 - TILE * 2));
+        const cameraY = Math.max(0, Math.min((CITY_HEIGHT - ROWS) * TILE, player.root.y - TILE / 2 - ROWS * TILE / 2));
         this.world.position.set(-cameraX * SCALE, -cameraY * SCALE);
       }
       this.sortActors();

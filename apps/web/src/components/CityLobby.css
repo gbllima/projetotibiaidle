@@ -76,3 +76,11 @@
   .city-lobby--thais .city-lobby__map .scene-host { height:auto!important; min-height:0!important; max-height:none!important; display:block!important; line-height:0; }
   .city-lobby--thais .city-lobby__map canvas { display:block!important; width:100%!important; height:auto!important; min-height:0!important; max-height:none!important; margin:0!important; }
 }
+
+@media (min-width: 1180px) {
+  /* Keep the complete city viewport above the chat, so its center stays visible. */
+  .center:has(.city-lobby--thais) .viewport { padding-bottom: 144px; box-sizing: border-box; }
+  .center:has(.city-lobby--thais):has(.chat-console.is-minimized) .viewport { padding-bottom: 34px; }
+  .center .city-lobby--thais { min-height: 0; }
+  .center .city-lobby--thais .city-lobby__map { min-height: 0; }
+}

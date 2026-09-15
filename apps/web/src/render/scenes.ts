@@ -218,7 +218,6 @@ export function paintCityScene(parent: Container, tiles: Atlas): void {
   parent.addChild(ground, props);
   for (const tile of cityTiles) {
     placeGround(ground, tiles, tile.ground, tile.x, tile.y);
-    if (tile.ground === 870 && ground.children.length) ground.children[ground.children.length - 1]!.tint = 0xb49b77;
     for (const id of tile.props) placeProp(props, tiles, id, tile.x, tile.y);
   }
 }

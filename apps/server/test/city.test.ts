@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CITY_SPAWN, CITY_STEP_MS, cityPath, cityTiles, cityWalkable } from '@tibia-idle/data';
+import { CITY_WIDTH, CITY_HEIGHT, CITY_MERCHANT, CITY_SPAWN, CITY_STEP_MS, cityPath, cityTiles, cityWalkable } from '@tibia-idle/data';
 import { createApp } from '../src/app.js';
 
 let context: Awaited<ReturnType<typeof createApp>>;
@@ -15,8 +15,13 @@ async function visitor(username: string) {
 }
 
 describe('explorable city', () => {
-  it('routes from the depot to the plaza around walls and pools', () => {
-    for (const destination of [{ x: 8, y: 12 }, { x: 8, y: 24 }, { x: 8, y: 3 }, { x: 17, y: 9 }]) {
+  it('routes around the original Thais Depot walls and furniture', () => {
+    expect([CITY_WIDTH, CITY_HEIGHT]).toEqual([19, 21]);
+    expect(cityWalkable(CITY_SPAWN.x, CITY_SPAWN.y)).toBe(true);
+    expect(cityWalkable(CITY_MERCHANT.x, CITY_MERCHANT.y)).toBe(false);
+    expect(CITY_SPAWN).toEqual({ x: 9, y: 10 });
+    expect(cityPath(CITY_SPAWN, { x: 10, y: 6 })).toEqual([]); // Enclosed booth remains blocked off.
+    for (const destination of [{ x: 4, y: 8 }, { x: 8, y: 16 }, { x: 8, y: 4 }, { x: 14, y: 9 }, { x: 6, y: 8 }]) {
       const path = cityPath(CITY_SPAWN, destination);
       expect(path.at(-1)).toEqual(destination);
       let previous = CITY_SPAWN;
@@ -35,13 +40,16 @@ describe('explorable city', () => {
     const enter = await context.app.inject({ url: `/api/lobby?characterId=${first.id}`, headers: first.headers });
     expect(enter.json().position).toEqual(CITY_SPAWN);
     const move = (x: number, y: number) => context.app.inject({ method: 'POST', url: '/api/lobby/move', headers: first.headers, payload: { characterId: first.id, x, y } });
+    expect((await move(4, 5)).json().accepted).toBe(false); // Nonadjacent destination.
     expect((await move(8, 12)).json().accepted).toBe(false);
-    expect((await move(21, 10)).json().accepted).toBe(true);
-    expect((await move(22, 10)).json().accepted).toBe(false);
+    expect((await move(10, 10)).json().accepted).toBe(true);
+    expect((await move(11, 10)).json().accepted).toBe(false);
     vi.mocked(Date.now).mockReturnValue(now + CITY_STEP_MS);
-    expect((await move(22, 10)).json().accepted).toBe(true);
+    expect((await move(11, 10)).json().accepted).toBe(true);
+    vi.mocked(Date.now).mockReturnValue(now + 2 * CITY_STEP_MS);
+    expect((await move(12, 10)).json().accepted).toBe(false); // Adjacent original wall.
     const lobby = await context.app.inject({ url: `/api/lobby?characterId=${second.id}`, headers: second.headers });
-    expect(lobby.json().players.find((player: { id: number }) => player.id === first.id).cityPosition).toEqual({ x: 22, y: 10 });
+    expect(lobby.json().players.find((player: { id: number }) => player.id === first.id).cityPosition).toEqual({ x: 11, y: 10 });
     const forbidden = await context.app.inject({ method: 'POST', url: '/api/lobby/move', headers: second.headers, payload: { characterId: first.id, x: 23, y: 10 } });
     expect(forbidden.statusCode).toBe(404);
     const malformed = await move(24.5, 10);
