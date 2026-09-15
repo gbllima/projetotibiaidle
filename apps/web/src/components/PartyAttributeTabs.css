@@ -6,7 +6,7 @@
   overflow-x:auto;
   border:1px solid rgba(206,174,106,.2);
   border-radius:8px;
-  background:rgba(9,11,14,.78);
+  background:rgba(9,12,11,.84);
   scrollbar-width:thin;
 }
 
@@ -18,9 +18,9 @@
   min-width:185px;
   min-height:50px;
   padding:6px 9px;
-  border:1px solid rgba(255,255,255,.07);
+  border:1px solid rgba(215,164,63,.08);
   border-radius:7px;
-  background:rgba(255,255,255,.025);
+  background:rgba(215,164,63,.025);
   color:#aaa69c;
   text-align:left;
   cursor:pointer;
@@ -109,7 +109,7 @@
   padding:28px;
   border:1px solid rgba(206,174,106,.16);
   border-radius:8px;
-  background:rgba(18,20,24,.78);
+  background:rgba(21,25,22,.92);
   color:#9f9b91;
   text-align:center;
 }
