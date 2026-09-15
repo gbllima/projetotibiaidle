@@ -13,6 +13,7 @@ import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
 import { registerMultiplayerPartyRoutes } from './multiplayer-party.js';
 import { registerWebSocket } from './ws.js';
 import { installVocationAppearanceDefaults } from './vocation-appearance.js';
+import { onlineCharacterIds } from './presence.js';
 
 export interface AppOptions {
   databaseFile: string;
@@ -106,6 +107,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
       beta: db.getWorld('beta') !== 'closed' ? 'open' : 'closed',
       accounts: db.countAccounts(),
       characters: characters.length,
+      online: onlineCharacterIds().length,
       hunting,
       monsters: Number(meta.counts['monsters'] ?? 0),
       items: Number(meta.counts['items'] ?? 0),
