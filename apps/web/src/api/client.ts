@@ -84,6 +84,19 @@ export interface FriendView {
   activity: 'Hunt' | 'Treino' | 'Cidade' | 'Offline';
 }
 
+export interface SocialFriendRequest {
+  fromId: number;
+  fromName: string;
+  level: number;
+  vocationId: number;
+  appearance?: CharacterView['appearance'];
+  createdAt: number;
+}
+
+export interface SocialInbox {
+  friendRequests: SocialFriendRequest[];
+}
+
 async function multiplayerStatus(id: number): Promise<MultiplayerPartyStatus> {
   return request<MultiplayerPartyStatus>('GET', `/api/multiplayer-party/${id}`);
 }
@@ -180,8 +193,17 @@ export const api = {
   leaveMultiplayerParty: (id: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/leave`),
   removeMultiplayerPartyMember: (id: number, memberId: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('DELETE', `/api/multiplayer-party/${id}/members/${memberId}`),
   friends: (id: number) => request<{ friends: FriendView[] }>('GET', `/api/friends/${id}`),
-  addFriend: (id: number, name: string) => request<{ friends: FriendView[] }>('POST', `/api/friends/${id}`, { name }),
-  removeFriend: (id: number, friendId: number) => request<{ friends: FriendView[] }>('DELETE', `/api/friends/${id}/${friendId}`),
+  socialInbox: (id: number) => request<SocialInbox>('GET', `/api/social/${id}/inbox`),
+  addFriend: async (id: number, name: string) => {
+    await request<{ ok: true }>('POST', `/api/social/${id}/friend-request`, { name });
+    return request<{ friends: FriendView[] }>('GET', `/api/friends/${id}`);
+  },
+  acceptFriendRequest: (id: number, fromId: number) => request<{ ok: true; inbox: SocialInbox }>('POST', `/api/social/${id}/friend-request/accept`, { fromId }),
+  declineFriendRequest: (id: number, fromId: number) => request<{ ok: true; inbox: SocialInbox }>('POST', `/api/social/${id}/friend-request/decline`, { fromId }),
+  removeFriend: async (id: number, friendId: number) => {
+    await request<{ ok: true }>('DELETE', `/api/social/${id}/friends/${friendId}`);
+    return request<{ friends: FriendView[] }>('GET', `/api/friends/${id}`);
+  },
   partyItemsView: (ownerId: number, targetId: number) => request<{ character: CharacterView }>('GET', `/api/characters/${ownerId}/party-items/${targetId}`),
   partyItemAct: (ownerId: number, targetId: number, body: Record<string, unknown>) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party-items/${targetId}`, body),
   lootPreferences: (id: number) => request<{ ignoredItemIds: number[] }>('GET', `/api/characters/${id}/loot-preferences`),
