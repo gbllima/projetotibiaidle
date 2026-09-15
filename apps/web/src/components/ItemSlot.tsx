@@ -8,7 +8,6 @@ export function ItemSlot({
   count,
   locked,
   label,
-  emptyLabel,
   rarity,
   compact,
   showInfo = true,
@@ -98,7 +97,7 @@ export function ItemSlot({
           onContextMenu(event);
         } : undefined}
       >
-        {src ? <img src={src} alt={name ?? ''} /> : itemId ? <span className="slot-label">{(name ?? `#${itemId}`).slice(0, 8)}</span> : emptyLabel ? <span className="slot-label">{emptyLabel}</span> : null}
+        {src ? <img src={src} alt={name ?? ''} /> : itemId ? <span className="slot-label">{(name ?? `#${itemId}`).slice(0, 8)}</span> : null}
         {count && count > 0 ? <span className="qty">{count}</span> : null}
       </div>
       {tooltip && itemId && showInfo && (
