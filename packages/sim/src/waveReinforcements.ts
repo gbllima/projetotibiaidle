@@ -16,6 +16,7 @@ import {
   waveProgress,
 } from './waves.js';
 import {
+  DEFAULT_RATES,
   TICK_MS,
   type ActiveMonster,
   type CharacterState,
@@ -45,6 +46,8 @@ type ReinforcementSession = HuntSession & {
   /** Active party size/index supplied by the server party settlement loop. */
   reinforcementPartySize?: number;
   reinforcementPartyIndex?: number;
+  /** Fractional carried item rewards when visual kills run ahead of zone rewards. */
+  rewardLootCarry?: Record<number, number>;
   /** Internal timer used by combat.ts. We block it while this module owns spawning. */
   nextWaveAtTick?: number;
 };
@@ -121,7 +124,7 @@ function beginWaveWait(session: ReinforcementSession, waveIndex: number): void {
   session.reinforcementWaveIndex = waveIndex;
   session.reinforcementQueue = [];
   session.reinforcementReadyTick = session.tick + delayTicks(waveIndex);
-  // combat.ts still accrues the calibrated spawn budget, but this wrapper owns
+  // combat.ts still accrues the calibrated reward budget, but this wrapper owns
   // every actual spawn so the raw full-pack refill can never bypass the cap.
   session.nextWaveAtTick = RAW_REFILL_BLOCK;
 }
@@ -183,9 +186,9 @@ function tauntEligible(session: ReinforcementSession): boolean {
 }
 
 /**
- * Fill visible slots only from the hunt's calibrated spawn budget. The initial
- * room is still free, but every later creature consumes one whole spawn credit.
- * This keeps strong characters from turning low-level caves into unlimited XP.
+ * Visual combat must never stop in the middle of an already-open wave just
+ * because a low-level cave has a small XP/hour budget. The calibrated budget is
+ * now spent on rewards, not on whether a creature is allowed to exist on screen.
  */
 function fillOpenSlots(
   session: ReinforcementSession,
@@ -202,8 +205,7 @@ function fillOpenSlots(
   let released = 0;
 
   // Sessions that were already running before this update may have real active
-  // monsters parked in the hidden queue. Release those first without charging
-  // the spawn budget a second time.
+  // monsters parked in the hidden queue. Release those first without rerolling.
   while (slots > 0 && queue.length > 0) {
     const monster = queue.shift();
     if (!monster) break;
@@ -224,19 +226,12 @@ function fillOpenSlots(
     return released;
   }
 
-  const wholeCredits = Math.max(0, Math.floor(session.spawnCredits + CREDIT_EPSILON));
-  const canReserveTaunt = tauntEligible(session)
-    && wholeCredits >= (session.active.length > 0 ? 1 : 2)
-    && remaining >= (session.active.length > 0 ? 1 : 2);
-  const tauntReserve = canReserveTaunt ? 1 : 0;
-
-  // Leave one visible slot and one spawn credit for exeta res when the helper is
-  // ready. This makes taunt an intentional pull instead of letting automatic
-  // reinforcements steal its vacancy a few microseconds earlier.
-  const autoLimit = Math.max(session.active.length, limit - tauntReserve);
+  // Preserve a free slot for exeta res while a wave is already in progress.
+  // The pulled monster uses the same reward budget as every other visual kill.
+  const reserveTaunt = session.active.length > 0 && tauntEligible(session) && remaining > 0 ? 1 : 0;
+  const autoLimit = Math.max(session.active.length, limit - reserveTaunt);
   slots = Math.max(0, autoLimit - session.active.length);
-  const budget = Math.max(0, wholeCredits - tauntReserve);
-  const toSpawn = Math.min(slots, remaining, budget);
+  const toSpawn = Math.min(slots, remaining);
   if (toSpawn <= 0) {
     if (session.active.length > 0) layoutPackMonsters(session.active);
     return released;
@@ -263,10 +258,56 @@ function fillOpenSlots(
   }
 
   session.rngState = rng.getState();
-  session.spawnCredits = Math.max(0, session.spawnCredits - spawned);
-  session.initialPackCredit = 0;
   if (session.active.length > 0) layoutPackMonsters(session.active);
   return released + spawned;
+}
+
+/**
+ * Reward credits still accrue at the cave's calibrated kills/hour rate in
+ * combat.ts. Spread whatever is currently available over the creatures that can
+ * die this tick. This preserves the economy while allowing the map to stay busy.
+ */
+function rewardScaleForTick(session: ReinforcementSession): number {
+  if (session.active.length === 0) return 1;
+  const initial = Math.max(0, session.initialPackCredit ?? 0);
+  const earned = Math.max(0, session.spawnCredits);
+  const available = initial + earned;
+  return Math.max(0, Math.min(1, available / Math.max(1, session.active.length)));
+}
+
+function spendRewardBudget(session: ReinforcementSession, kills: number, scale: number): void {
+  if (kills <= 0 || scale <= 0) return;
+  let spend = kills * scale;
+  const initial = Math.max(0, session.initialPackCredit ?? 0);
+  const fromInitial = Math.min(initial, spend);
+  session.initialPackCredit = Math.max(0, initial - fromInitial);
+  spend -= fromInitial;
+  if (spend > 0) session.spawnCredits = Math.max(0, session.spawnCredits - spend);
+}
+
+/** Keep physical item stacks on the same reward budget as XP/gold values. */
+function scalePouchLoot(
+  session: ReinforcementSession,
+  before: Record<number, number>,
+  scale: number,
+): void {
+  if (scale >= 1 - CREDIT_EPSILON) return;
+  session.rewardLootCarry ??= {};
+  const ids = new Set<number>([
+    ...Object.keys(before).map(Number),
+    ...Object.keys(session.totals.lootByItem).map(Number),
+  ]);
+  for (const itemId of ids) {
+    const previous = before[itemId] ?? 0;
+    const current = session.totals.lootByItem[itemId] ?? 0;
+    const gained = Math.max(0, current - previous);
+    if (gained <= 0) continue;
+    const exact = gained * scale + (session.rewardLootCarry[itemId] ?? 0);
+    const kept = Math.max(0, Math.min(gained, Math.floor(exact + CREDIT_EPSILON)));
+    session.rewardLootCarry[itemId] = Math.max(0, exact - kept);
+    if (previous + kept > 0) session.totals.lootByItem[itemId] = previous + kept;
+    else delete session.totals.lootByItem[itemId];
+  }
 }
 
 function prepareBeforeTick(
@@ -284,32 +325,30 @@ function prepareBeforeTick(
       return;
     }
 
+    // The inter-wave timer is authoritative. Once it expires the first visible
+    // group opens immediately; reward credits may never extend the empty floor.
     fillOpenSlots(session, events, maxEvents);
     if (session.active.length > 0) {
       session.reinforcementReadyTick = undefined;
       session.nextWaveAtTick = undefined;
     } else {
-      // The 3s/5s transition is a minimum delay. If the cave has not earned a
-      // spawn credit yet, remain ready and retry next tick instead of restarting
-      // the delay or spawning for free.
       session.nextWaveAtTick = RAW_REFILL_BLOCK;
     }
     return;
   }
 
-  // During a wave, a dead creature immediately frees a slot for a reinforcement,
-  // but the replacement still needs one calibrated spawn credit.
+  // Inside a wave, a dead creature immediately frees a visible slot for the
+  // next reinforcement. Reward pacing is handled independently below.
   if (progress.killed > 0 || session.active.length > 0) {
     fillOpenSlots(session, events, maxEvents);
   }
 }
 
 /**
- * Same simulator as combat.ts, with two extra invariants:
+ * Same simulator as combat.ts, with three extra invariants:
  * - normal cave waves have a bounded number of simultaneous enemies;
- * - every post-entry creature consumes the calibrated hunt spawn budget.
- *
- * Total wave sizes, XP/loot rules and deterministic RNG stay unchanged.
+ * - normal wave transitions are 3s and the skull transition is 5s;
+ * - spawn/reward calibration never creates an empty-floor stall mid-wave.
  */
 export function advance(session: HuntSession, ticks: number, options: AdvanceOptions = {}): SimEvent[] {
   if (ticks <= 0 || isBossHunt(session.huntId)) return advanceRaw(session, ticks, options);
@@ -329,28 +368,41 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
     const allowTaunt = originalTaunt
       && managed.active.length > 0
       && managed.active.length < limit
-      && managed.spawnCredits + CREDIT_EPSILON >= 1
       && tauntEligible(managed);
 
-    // Raw combat knows how to cast exeta res but not about reinforcement caps or
-    // spawn budgets. Temporarily disable taunt unless the wrapper reserved both.
+    // Raw combat knows how to cast exeta res but not about reinforcement caps.
     if (originalTaunt && !allowTaunt) policy.taunt = false;
 
-    // combat.ts is still responsible for accruing spawnCredits every tick. Keep
-    // its legacy full-pack refill blocked so only this wrapper may spend them.
+    // combat.ts still accrues spawnCredits every tick. Here those credits are a
+    // reward budget only; raw full-pack spawning remains blocked permanently.
     managed.nextWaveAtTick = RAW_REFILL_BLOCK;
 
+    const rewardScale = rewardScaleForTick(managed);
+    const killsBefore = managed.totals.kills;
+    const rawExperienceBefore = managed.totals.rawExperience;
+    const lootBefore = { ...managed.totals.lootByItem };
+    const baseRates = options.rates ?? DEFAULT_RATES;
     const remainingEventBudget = Math.max(0, maxEvents - events.length);
     const produced = advanceRaw(managed, 1, {
       ...options,
+      rates: {
+        ...baseRates,
+        experience: baseRates.experience * rewardScale,
+        loot: baseRates.loot * rewardScale,
+      },
       maxEvents: remainingEventBudget,
     });
 
     policy.taunt = originalTaunt;
-    const exetaCast = produced.some((event) => event.type === 'buff' && event.words === 'exeta res');
-    if (exetaCast) {
-      managed.spawnCredits = Math.max(0, managed.spawnCredits - 1);
+
+    const kills = Math.max(0, managed.totals.kills - killsBefore);
+    if (kills > 0 && rewardScale < 1 - CREDIT_EPSILON) {
+      const rawGained = Math.max(0, managed.totals.rawExperience - rawExperienceBefore);
+      managed.totals.rawExperience = rawExperienceBefore + rawGained * rewardScale;
+      scalePouchLoot(managed, lootBefore, rewardScale);
     }
+    spendRewardBudget(managed, kills, rewardScale);
+
     for (const event of produced) pushEvent(events, event, maxEvents);
 
     const after = waveProgress(managed.totals.kills);
@@ -379,6 +431,7 @@ export function startSession(
     session.reinforcementWaveIndex = waveProgress(session.totals.kills).waveIndex;
     session.reinforcementQueue = [];
     session.reinforcementReadyTick = undefined;
+    session.rewardLootCarry = {};
     trimLegacyOverflow(session);
   }
   return session;
