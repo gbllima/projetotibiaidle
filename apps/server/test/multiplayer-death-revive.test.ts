@@ -15,6 +15,7 @@ type MultiplayerSession = HuntSession & {
   multiplayerDown?: boolean;
   multiplayerDownAtWave?: number;
   multiplayerLastSharedWave?: number;
+  reinforcementPartySize?: number;
 };
 
 type TestAccount = {
@@ -112,6 +113,11 @@ describe('multiplayer death between waves', () => {
 
     const memberRow = context.db.findCharacter(member.id)!;
     const doomed = JSON.parse(memberRow.session!) as MultiplayerSession;
+    expect(doomed.reinforcementPartySize).toBe(2);
+    // The shared wave layout, not the social XP marker, must keep a real party
+    // member in the cave. This reproduces live sessions where boostedMonsterId
+    // is absent/replaced but the multiplayer hunt itself is still active.
+    doomed.boostedMonsterId = undefined;
     // Zero HP reaches the simulator's real death branch without triggering the
     // negative-HP flee check first.
     doomed.character.health = 0;
