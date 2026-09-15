@@ -24,6 +24,7 @@ import './compact-action-helper.css';
 import './helper-ally-heal.css';
 import './warm-project-theme.css';
 import './party-mobile-close.css';
+import './mobile-hide-arena-city.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
