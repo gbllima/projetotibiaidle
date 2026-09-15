@@ -185,7 +185,7 @@ describe('wave 10', () => {
     expect(session.active.length).toBe(waveActiveLimit(2));
   });
 
-  it('spends spawn credits when opening a capped wave group', () => {
+  it('keeps reward credits intact when merely opening a capped wave group', () => {
     const character = createCharacter('Bowen', 4);
     character.policy.stopWhenOutOfSupplies = false;
     character.policy.fleeAt = 0;
@@ -199,8 +199,9 @@ describe('wave 10', () => {
     expect(describeSession(session)?.wave).toBe(2);
     expect(session.active.length).toBe(waveActiveLimit(1));
     expect(spawned).toBe(waveActiveLimit(1));
-    expect(session.spawnCredits).toBeLessThan(beforeCredits);
-    expect(session.spawnCredits).toBeGreaterThanOrEqual(0);
+    // Credits now pace XP/loot after kills; putting a creature on screen cannot
+    // consume them and therefore cannot cause an empty-floor respawn stall.
+    expect(session.spawnCredits).toBe(beforeCredits);
   });
 
   it('fills wave 10 with one boosted copy of the cave creature', () => {
