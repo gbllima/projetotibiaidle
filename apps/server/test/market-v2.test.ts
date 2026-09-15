@@ -60,7 +60,7 @@ describe('Market V2', () => {
   it('lists by unit price, buys partial quantity, charges 2% fee and keeps the remainder', async () => {
     const item = items.find((entry) => (entry.sellPrice ?? 0) > 0)!;
     const seller = await makeAccount('market-seller', 'Mercador');
-    const buyer = await makeAccount('market-buyer', 'Comprador V2');
+    const buyer = await makeAccount('market-buyer', 'Comprador Dois');
 
     patchState(seller.character.id, (state) => {
       state.level = 20;
