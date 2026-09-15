@@ -188,7 +188,7 @@ export function settleParty(sessions: PartySession[], now: number, remainderCurs
 
     const elapsed = Math.max(0, now - settledAt);
     const cap = offlineCapHours(session.character, now) * 3_600_000;
-    const result = settle(session, settledAt, settledAt);
+    const result = settle(session, settledAt, settledAt, { holdMultiplayerDeath: false });
     result.offline = elapsed > OFFLINE_GAP_MS;
     result.efficiency = result.offline ? OFFLINE_EFFICIENCY : 1;
     result.capHours = cap / 3_600_000;
@@ -216,6 +216,7 @@ export function settleParty(sessions: PartySession[], now: number, remainderCurs
       const step = settle(entry.session, entry.cursor, next, {
         offline: entry.result.offline,
         maxEvents: 24,
+        holdMultiplayerDeath: false,
         awardKillExperience: (source, amount, emit) => {
           const recipients = entries.filter((other) => other.session.huntId === source.huntId
             && (other.session === source || (other.session.status === 'active' && other.session.character.health > 0))
