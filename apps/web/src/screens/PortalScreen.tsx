@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import './PortalScreen.css';
 import './PortalMonsters.css';
 
@@ -7,6 +8,12 @@ type Props = {
 };
 
 export function PortalScreen({ onKnockHunt, onKnockMonsters }: Props) {
+  useEffect(() => {
+    const previous = document.title;
+    document.title = 'Knock Games';
+    return () => { document.title = previous; };
+  }, []);
+
   return (
     <main className="kock-portal">
       <div className="kock-portal__mist kock-portal__mist--one" aria-hidden />
