@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { SimEvent } from '@tibia-idle/sim';
 import type { ActiveMonsterView } from '../api/types.js';
-import { api } from '../api/client.js';
 import { acquireCombatScene, releaseCombatScene, type PlayerView } from '../render/combat.js';
 import '../render/partyCombatPatch.js';
 
@@ -9,8 +8,6 @@ const PENDING_CAP = 80;
 const RENDER_CAP = 40;
 const ATTACK_WINDOW_TICKS = 3;
 const CAST_WINDOW_TICKS = 8;
-const PARTY_ACTIVITY_REFRESH_MS = 3000;
-const EMPTY_PARTY_IDS = new Set<number>();
 
 /**
  * Compact only the renderer feed. Combat, XP, loot and the combat log still use
@@ -108,19 +105,12 @@ export function CombatScene({
   const ready = useRef(false);
   const booted = useRef(false);
   const pending = useRef<SimEvent[]>([]);
-  const [partyActivity, setPartyActivity] = useState<{ huntId: string; activeIds: Set<number> }>(() => ({
-    huntId: '',
-    activeIds: new Set<number>(),
-  }));
 
-  const partyAllyKey = allies
-    .flatMap((ally) => ally.id === undefined ? [] : [ally.id])
-    .sort((left, right) => left - right)
-    .join(',');
-  const activePartyIds = partyActivity.huntId === huntId ? partyActivity.activeIds : EMPTY_PARTY_IDS;
-  const visibleAllies = cityLobby
-    ? allies
-    : allies.filter((ally) => ally.dead === true || ally.id === undefined || activePartyIds.has(ally.id));
+  // GameScreen already builds this list from the authoritative caveParty snapshot
+  // and excludes inactive multiplayer members. Do not re-check it through the
+  // normal /api/characters/:id route: that route represents the account-local
+  // formation and used to hide a valid remote multiplayer ally from the cave.
+  const visibleAllies = allies;
 
   const latest = useRef({ active, player, allies: visibleAllies, huntId, decorations });
   latest.current = { active, player, allies: visibleAllies, huntId, decorations };
@@ -186,56 +176,6 @@ export function CombatScene({
   }, [characterId, cityLobby]);
 
   useEffect(() => {
-    if (cityLobby) return;
-    const ids = partyAllyKey
-      ? partyAllyKey.split(',').map((value) => Number(value)).filter((value) => Number.isInteger(value))
-      : [];
-
-    if (ids.length === 0) {
-      setPartyActivity((current) => (
-        current.huntId === huntId && current.activeIds.size === 0
-          ? current
-          : { huntId, activeIds: new Set<number>() }
-      ));
-      return;
-    }
-
-    let cancelled = false;
-    let inFlight = false;
-    const expected = new Set(ids);
-
-    const refresh = () => {
-      if (inFlight) return;
-      inFlight = true;
-      void api.character(characterId).then(({ character }) => {
-        if (cancelled) return;
-        const activeIds = new Set<number>();
-        const activityHuntId = character.session?.status === 'active'
-          ? character.session.huntId
-          : character.partyActivity?.huntId;
-        if (activityHuntId === huntId) {
-          for (const member of character.caveParty ?? []) {
-            if (expected.has(member.id) && member.active === true) activeIds.add(member.id);
-          }
-        }
-        setPartyActivity({ huntId, activeIds });
-      }).catch(() => undefined).finally(() => {
-        inFlight = false;
-      });
-    };
-
-    setPartyActivity((current) => (
-      current.huntId === huntId ? current : { huntId, activeIds: new Set<number>() }
-    ));
-    refresh();
-    const timer = window.setInterval(refresh, PARTY_ACTIVITY_REFRESH_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [characterId, huntId, cityLobby, partyAllyKey]);
-
-  useEffect(() => {
     if (ready.current && !cityLobby) {
       try {
         scene.current?.setHunt(huntId);
@@ -266,38 +206,17 @@ export function CombatScene({
           : event
       ));
 
-      if (!cityLobby && partyAllyKey) {
-        const partyIds = new Set(partyAllyKey.split(',').map((value) => Number(value)));
-        const confirmed = new Set<number>();
-        for (const event of targeted) {
-          if ((event.type === 'player_attack' || event.type === 'monster_attack')
-            && event.actorId !== undefined
-            && partyIds.has(event.actorId)) {
-            confirmed.add(event.actorId);
-          }
-        }
-        if (confirmed.size > 0) {
-          setPartyActivity((current) => {
-            const activeIds = current.huntId === huntId
-              ? new Set(current.activeIds)
-              : new Set<number>();
-            for (const id of confirmed) activeIds.add(id);
-            return { huntId, activeIds };
-          });
-        }
-      }
-
       pending.current.push(...targeted);
       if (pending.current.length > PENDING_CAP) {
         pending.current = pending.current.slice(-PENDING_CAP);
       }
     }
     present();
-  }, [events, characterId, cityLobby, partyAllyKey, huntId]);
+  }, [events, characterId, cityLobby]);
 
   useEffect(() => {
     present();
-  }, [active, player, allies, partyActivity, cityLobby]);
+  }, [active, player, allies, cityLobby]);
 
   return <div className="scene-host" ref={host} />;
 }
