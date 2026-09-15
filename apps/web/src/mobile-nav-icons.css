@@ -35,13 +35,15 @@
     animation: mobile-training-idle 2.45s ease-in-out infinite;
   }
 
-  /* Menu — grimório criado para o projeto. Usa o data-tutorial para evitar conflito de ordem/seletores. */
-  .mobile-main-nav button:nth-child(4)::before,
+  /* Menu — usa o grimório como conteúdo real do pseudo-elemento para evitar falhas de background. */
   .mobile-main-nav button[data-tutorial='mobile-menu']::before {
-    background-image: url('/assets/ui/mobile-nav/menu.png') !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    background-size: contain !important;
+    content: url('/assets/ui/mobile-nav/menu-book.png') !important;
+    width: 32px;
+    height: 32px;
+    display: block;
+    background-image: none !important;
+    background: none !important;
+    overflow: hidden;
     animation: mobile-menu-idle 2.7s ease-in-out infinite;
   }
 
