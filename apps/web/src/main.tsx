@@ -5,6 +5,7 @@ import { LocaleProvider } from './i18n/Locale.js';
 import './render/vocationLookPatch.js';
 import './render/combatTextSizePatch.js';
 import './multiplayer-party-leader-control.js';
+import './vip-name-visuals.js';
 import './styles.css';
 import './landing.css';
 import './party.css';
