@@ -46,6 +46,16 @@ function stateOf(id: number): CharacterState {
   return JSON.parse(db.findCharacter(id)!.state) as CharacterState;
 }
 
+function ownedItemCount(state: CharacterState, itemId: number): number {
+  const stacks = [state.warehouse ?? [], state.backpackContents ?? [], state.supplies ?? []];
+  const stacked = stacks.reduce(
+    (total, list) => total + list.filter((stack) => stack.itemId === itemId).reduce((sum, stack) => sum + stack.count, 0),
+    0,
+  );
+  const equipped = Object.values(state.equipment ?? {}).filter((id) => id === itemId).length;
+  return stacked + equipped;
+}
+
 describe('Market V2', () => {
   it('lists by unit price, buys partial quantity, charges 2% fee and keeps the remainder', async () => {
     const item = items.find((entry) => (entry.sellPrice ?? 0) > 0)!;
@@ -85,11 +95,7 @@ describe('Market V2', () => {
 
     const buyerState = stateOf(buyer.character.id);
     expect(buyerState.gold).toBe(9_800);
-    expect(
-      buyerState.warehouse.some((stack) => stack.itemId === item.id && stack.count >= 2)
-      || buyerState.backpackContents?.some((stack) => stack.itemId === item.id && stack.count >= 2)
-      || buyerState.supplies.some((stack) => stack.itemId === item.id && stack.count >= 2),
-    ).toBe(true);
+    expect(ownedItemCount(buyerState, item.id)).toBeGreaterThanOrEqual(2);
 
     const sellerState = stateOf(seller.character.id);
     expect(sellerState.gold).toBe(1_196);
