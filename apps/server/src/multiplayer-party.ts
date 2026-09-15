@@ -176,13 +176,15 @@ export function multiplayerPartyHuntGate(db: Database, characterId: number): { m
   if (rows.length !== ids.length) return null;
 
   const states = rows.map(stateFromRow);
+  const first = states[0];
+  if (!first) return null;
   const minLevel = Math.min(...states.map((state) => state.level));
-  let allowed: Set<string> | null = null;
-  for (const state of states) {
-    const unlocked = new Set(listHunts(state).filter((hunt) => hunt.unlocked).map((hunt) => hunt.id));
-    allowed = allowed === null ? unlocked : new Set([...allowed].filter((huntId) => unlocked.has(huntId)));
+  let allowed = new Set<string>(listHunts(first).filter((hunt) => hunt.unlocked).map((hunt) => hunt.id));
+  for (const state of states.slice(1)) {
+    const unlocked = new Set<string>(listHunts(state).filter((hunt) => hunt.unlocked).map((hunt) => hunt.id));
+    allowed = new Set<string>(Array.from(allowed).filter((huntId) => unlocked.has(huntId)));
   }
-  return { minLevel, allowedHuntIds: [...(allowed ?? new Set<string>())] };
+  return { minLevel, allowedHuntIds: Array.from(allowed) };
 }
 
 export function multiplayerPartyStatus(db: Database, characterId: number) {
