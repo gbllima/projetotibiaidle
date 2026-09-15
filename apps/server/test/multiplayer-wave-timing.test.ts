@@ -14,6 +14,14 @@ type Player = {
   name: string;
 };
 
+type MultiplayerSession = HuntSession & {
+  reinforcementWaveIndex?: number;
+  reinforcementReadyTick?: number;
+  nextWaveAtTick?: number;
+  reinforcementPartySize?: number;
+  reinforcementPartyIndex?: number;
+};
+
 let context: Awaited<ReturnType<typeof createApp>>;
 
 beforeEach(async () => {
@@ -92,16 +100,19 @@ async function formMultiplayerParty(leader: Player, member: Player): Promise<voi
   });
   expect(started.statusCode, started.body).toBe(200);
   expect(started.json().memberIds).toEqual([leader.id, member.id]);
+
+  const leaderSession = JSON.parse(context.db.findCharacter(leader.id)!.session!) as MultiplayerSession;
+  const memberSession = JSON.parse(context.db.findCharacter(member.id)!.session!) as MultiplayerSession;
+  expect(leaderSession.reinforcementPartySize).toBe(2);
+  expect(leaderSession.reinforcementPartyIndex).toBe(0);
+  expect(memberSession.reinforcementPartySize).toBe(2);
+  expect(memberSession.reinforcementPartyIndex).toBe(1);
 }
 
 function persistWaveTwoBoundary(id: number): void {
   const row = context.db.findCharacter(id)!;
   expect(row.session).not.toBeNull();
-  const session = JSON.parse(row.session!) as HuntSession & {
-    reinforcementWaveIndex?: number;
-    reinforcementReadyTick?: number;
-    nextWaveAtTick?: number;
-  };
+  const session = JSON.parse(row.session!) as MultiplayerSession;
   session.startedAt = START;
   session.tick = 0;
   session.totals.ticks = 0;
@@ -122,7 +133,7 @@ function persistWaveTwoBoundary(id: number): void {
 }
 
 describe('multiplayer wave timing', () => {
-  it('spawns the next Amazon Camp wave at 3s for both leader and member account', async () => {
+  it('spawns the next Amazon Camp wave at 3s for both accounts and shares the visible cap', async () => {
     expect(NORMAL_WAVE_DELAY_MS / TICK_MS).toBe(12);
     const leader = await player('waveleader', 'Wave Leader');
     const member = await player('wavemember', 'Wave Member');
@@ -144,17 +155,17 @@ describe('multiplayer wave timing', () => {
     expect(earlyLeader.active).toHaveLength(0);
     expect(earlyMember.active).toHaveLength(0);
 
-    // Tick 12 / 3.00s: the response returned to each connected account already
-    // contains the new monsters. Sub-second live reads are intentionally not
-    // always persisted, so assert the authoritative response rather than a
-    // second DB read of the previous cursor.
+    // Tick 12 / 3.00s: both accounts open wave 2. Wave 2 has a global visible
+    // cap of four, so a two-account party receives two enemies per session —
+    // four on the merged map, never four per account.
     const onTimeLeader = loadCharacter(
       context.db, leader.accountId, leader.id, START + NORMAL_WAVE_DELAY_MS,
     ).loaded.session!;
     const onTimeMember = loadCharacter(
       context.db, member.accountId, member.id, START + NORMAL_WAVE_DELAY_MS,
     ).loaded.session!;
-    expect(onTimeLeader.active.length).toBeGreaterThan(0);
-    expect(onTimeMember.active.length).toBeGreaterThan(0);
+    expect(onTimeLeader.active).toHaveLength(2);
+    expect(onTimeMember.active).toHaveLength(2);
+    expect(onTimeLeader.active.length + onTimeMember.active.length).toBe(4);
   });
 });
