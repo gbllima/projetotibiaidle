@@ -46,7 +46,7 @@ async function account(username: string, name: string, vocationId = 4): Promise<
     method: 'POST',
     url: '/api/characters',
     headers,
-    payload: { name, vocationId },
+    payload: { name, vocationId, weapon: 'sword' },
   });
   expect(created.statusCode, created.body).toBe(201);
   return { token, headers, id: created.json().character.id as number, name };
@@ -125,7 +125,7 @@ function waitForState(
 }
 
 describe('live multiplayer party', () => {
-  it('puts both accounts in the same hunt and relays the remote player attack over websocket', async () => {
+  it('puts both accounts in the same hunt and relays an animatable remote sword attack over websocket', async () => {
     const leader = await account('liveleader', 'Live Leader');
     const guest = await account('liveguest', 'Live Guest');
     prepareCharacter(leader.id);
@@ -163,6 +163,7 @@ describe('live multiplayer party', () => {
           event.type === 'player_attack'
           && event.actorId === guest.id
           && event.uid !== undefined
+          && event.attackEffect === 'sword'
         )),
         10_000,
       );
@@ -172,10 +173,14 @@ describe('live multiplayer party', () => {
       guestSocket.send(JSON.stringify({ type: 'subscribe', token: guest.token, characterId: guest.id }));
       const remoteFrame = await remoteAttackPromise;
       const remoteAttack = (remoteFrame.character.partyEvents ?? []).find((event) => (
-        event.type === 'player_attack' && event.actorId === guest.id && event.uid !== undefined
+        event.type === 'player_attack'
+        && event.actorId === guest.id
+        && event.uid !== undefined
+        && event.attackEffect === 'sword'
       ));
 
       expect(remoteAttack).toBeTruthy();
+      expect(remoteAttack!.attackEffect).toBe('sword');
       expect(Math.floor((remoteAttack!.uid ?? 0) / PARTY_UID_STRIDE)).toBe(guest.id);
       expect((remoteAttack!.amount ?? 0) > 0 || remoteAttack!.missed || remoteAttack!.blocked).toBe(true);
     } finally {
