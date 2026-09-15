@@ -94,9 +94,12 @@ export function synchronizeMultiplayerRevives(
   for (const entry of group) {
     const session = entry.session;
     if (session.multiplayerDown) {
-      const downAt = session.multiplayerDownAtWave
-        ?? session.multiplayerLastSharedWave
-        ?? sharedWave;
+      // A member can be knocked down between browser refreshes. Its last seen
+      // shared-wave value may therefore be stale (for example still Wave 1
+      // while the party is already fighting Wave 2). Anchor a brand-new corpse
+      // to the shared wave that is actually on screen now; otherwise it can be
+      // revived immediately in the same frame it fell.
+      const downAt = session.multiplayerDownAtWave ?? sharedWave;
       let changed = false;
       if (session.multiplayerDownAtWave === undefined) {
         session.multiplayerDownAtWave = downAt;
