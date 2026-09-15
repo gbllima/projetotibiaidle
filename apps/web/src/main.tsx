@@ -15,6 +15,7 @@ import './mobile-chat.css';
 import './mobile-nav-icons.css';
 import './mobile-bottom-theme.css';
 import './mobile-training.css';
+import './mobile-top-tutorial.css';
 import './game-site-theme.css';
 import './game-modal-theme.css';
 import './compact-action-helper.css';
@@ -54,6 +55,29 @@ function enhanceChatConsole() {
   });
 }
 
-const chatObserver = new MutationObserver(enhanceChatConsole);
+function enhanceMobileTutorial() {
+  const topnavs = document.querySelectorAll<HTMLElement>('.topnav');
+  topnavs.forEach((topnav) => {
+    if (topnav.querySelector('.mobile-wiki-link')) return;
+    const who = topnav.querySelector<HTMLElement>('.who');
+    if (!who) return;
+
+    const link = document.createElement('a');
+    link.className = 'mobile-wiki-link';
+    link.href = '#wiki';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Tutorial';
+    link.setAttribute('aria-label', 'Abrir Tutorial em nova aba');
+    who.insertAdjacentElement('afterend', link);
+  });
+}
+
+function enhanceUi() {
+  enhanceChatConsole();
+  enhanceMobileTutorial();
+}
+
+const chatObserver = new MutationObserver(enhanceUi);
 chatObserver.observe(root, { childList: true, subtree: true });
-enhanceChatConsole();
+enhanceUi();
