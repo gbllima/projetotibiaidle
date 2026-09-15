@@ -7,6 +7,7 @@ import './render/combatTextSizePatch.js';
 import './multiplayer-party-leader-control.js';
 import './vip-name-visuals.js';
 import './market-v2-ui.js';
+import './market-v2-layout-fix.css';
 import './styles.css';
 import './landing.css';
 import './party.css';
