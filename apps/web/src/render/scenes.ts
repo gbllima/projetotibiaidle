@@ -214,10 +214,9 @@ export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string):
   paintProceduralRoom(parent, tiles, huntId);
 }
 
-// These six appearances form the L-shaped wooden counter in Thais Depot.
-// Preserve the counter's baseline while respecting each appearance's native
-// displacement: the small connectors need an additional 8px shift up and left.
-const THAIS_COUNTER_PIECES = new Set([2322, 2323, 2324, 2327, 2328, 2332]);
+// These appearances form the wooden counters in Thais Depot. Keep every piece
+// on the same 8px baseline, then compensate each appearance's native displacement.
+const THAIS_COUNTER_PIECES = new Set([2322, 2323, 2324, 2326, 2327, 2328, 2331, 2332, 2333]);
 
 /** Render the real Thais Depot cut generated from the project's OTBM map. */
 export function paintCityScene(parent: Container, tiles: Atlas): void {
