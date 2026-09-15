@@ -1,0 +1,76 @@
+@media (max-width: 768px) {
+  /*
+   * The mobile menu unlocks systems gradually. Each category can therefore
+   * contain 1, 2, 3 or more actions. Use a wrapping flex layout instead of a
+   * fixed three-column grid so the available actions always remain balanced.
+   */
+  .mobile-menu-grid {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .mobile-menu-grid > button {
+    flex: 1 1 138px;
+    width: auto !important;
+    min-width: 118px;
+    max-width: 180px;
+    min-height: 86px !important;
+    padding: 10px 8px !important;
+    justify-content: center;
+  }
+
+  .mobile-menu-grid .ico,
+  .mobile-menu-grid .mobile-menu-symbol {
+    width: clamp(34px, 9vw, 42px) !important;
+    height: clamp(34px, 9vw, 42px) !important;
+    flex: 0 0 auto;
+  }
+
+  .mobile-menu-grid .ico img {
+    width: clamp(24px, 6.5vw, 30px) !important;
+    height: clamp(24px, 6.5vw, 30px) !important;
+  }
+
+  .mobile-menu-grid .ico svg {
+    width: clamp(22px, 6vw, 28px) !important;
+    height: clamp(22px, 6vw, 28px) !important;
+  }
+
+  .mobile-menu-grid > button strong {
+    width: 100%;
+    min-width: 0;
+    font-size: clamp(10px, 3vw, 12px) !important;
+    line-height: 1.15;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-menu-scroll {
+    padding-left: clamp(10px, 3.5vw, 16px) !important;
+    padding-right: clamp(10px, 3.5vw, 16px) !important;
+  }
+}
+
+/* Very narrow phones: keep two compact cards when possible and fall back to
+ * a centered single column only when the viewport is genuinely too small. */
+@media (max-width: 360px) {
+  .mobile-menu-grid > button {
+    flex-basis: 128px;
+    min-width: 112px;
+    max-width: 164px;
+    min-height: 82px !important;
+  }
+}
+
+/* Larger phones / small tablets can naturally fit three or four actions while
+ * preserving the same visual card size instead of stretching them edge to edge. */
+@media (min-width: 520px) and (max-width: 768px) {
+  .mobile-menu-grid > button {
+    flex-basis: 132px;
+    max-width: 168px;
+  }
+}
