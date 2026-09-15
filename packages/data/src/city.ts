@@ -6,7 +6,7 @@ export interface CityPosition { x: number; y: number }
 export const CITY_WIDTH = room.ground[0]!.length;
 export const CITY_HEIGHT = room.ground.length;
 export const CITY_SPAWN: CityPosition = { x: Math.floor(CITY_WIDTH / 2), y: Math.floor(CITY_HEIGHT / 2) };
-export const CITY_MERCHANT: CityPosition = { x: 6, y: 7 };
+export const CITY_MERCHANT: CityPosition = { x: 10, y: 6 };
 export const CITY_STEP_MS = 320;
 const blocked = new Set<number>(blockedIds);
 export const cityTiles = room.ground.flatMap((row, y) => row.map((ground, x) => {
