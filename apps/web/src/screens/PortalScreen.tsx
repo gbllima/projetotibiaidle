@@ -1,10 +1,11 @@
 import './PortalScreen.css';
 
 type Props = {
-  onKnockIdle: () => void;
+  onKnockHunt: () => void;
+  onKnockMonsters: () => void;
 };
 
-export function PortalScreen({ onKnockIdle }: Props) {
+export function PortalScreen({ onKnockHunt, onKnockMonsters }: Props) {
   return (
     <main className="kock-portal">
       <div className="kock-portal__mist kock-portal__mist--one" aria-hidden />
@@ -26,7 +27,7 @@ export function PortalScreen({ onKnockIdle }: Props) {
         </div>
 
         <div className="kock-game-grid">
-          <button type="button" className="kock-game-card kock-game-card--tibia" onClick={onKnockIdle}>
+          <button type="button" className="kock-game-card kock-game-card--tibia" onClick={onKnockHunt}>
             <span className="kock-game-card__glow" aria-hidden />
             <span className="kock-game-card__status kock-game-card__status--online">
               <i aria-hidden /> ONLINE
@@ -42,20 +43,22 @@ export function PortalScreen({ onKnockIdle }: Props) {
             <span className="kock-game-card__cta">ENTRAR NO JOGO <b aria-hidden>›</b></span>
           </button>
 
-          <article className="kock-game-card kock-game-card--poke" aria-label="Knock PokeIdle BR, futuro lançamento">
+          <button type="button" className="kock-game-card kock-game-card--monsters" onClick={onKnockMonsters}>
             <span className="kock-game-card__glow" aria-hidden />
-            <span className="kock-game-card__status kock-game-card__status--soon">EM BREVE</span>
-            <span className="kock-game-card__art kock-game-card__art--poke" aria-hidden>
-              <span className="poke-orb"><i /></span>
-              <div className="poke-wordmark"><small>KNOCK</small><strong>POKEIDLE</strong><em>BR</em></div>
+            <span className="kock-game-card__status kock-game-card__status--development">
+              <i aria-hidden /> EM DESENVOLVIMENTO
+            </span>
+            <span className="kock-game-card__art kock-game-card__art--monsters">
+              <img src="/home/Monster.png" alt="Knock Monsters BR" />
+              <span className="monster-blue-orb" aria-hidden><i /></span>
             </span>
             <span className="kock-game-card__body">
-              <span className="kock-game-card__genre">POKÉMON IDLE RPG • FUTURO LANÇAMENTO</span>
-              <strong>Knock PokeIdle BR</strong>
-              <span>Capture, evolua e monte seu time em uma nova aventura idle. O próximo universo da Kock Games está em desenvolvimento.</span>
+              <span className="kock-game-card__genre kock-game-card__genre--blue">MONSTER IDLE RPG • BRASIL</span>
+              <strong>Knock Monsters BR</strong>
+              <span>Capture criaturas, monte seu time, evolua seus monstros e avance em uma nova aventura idle da Kock Games.</span>
             </span>
-            <span className="kock-game-card__cta kock-game-card__cta--disabled">FUTURO LANÇAMENTO</span>
-          </article>
+            <span className="kock-game-card__cta kock-game-card__cta--blue">CONHECER O PROJETO <b aria-hidden>›</b></span>
+          </button>
         </div>
       </section>
 
