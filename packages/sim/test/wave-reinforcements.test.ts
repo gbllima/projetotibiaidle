@@ -43,6 +43,25 @@ describe('wave reinforcements', () => {
     expect(onTime.filter((event) => event.type === 'monster_spawn')).toHaveLength(waveActiveLimit(1));
   });
 
+  it('never leaves the last Amazon Camp wave 2 reinforcement waiting for reward credits', () => {
+    const session = startSession(passiveTank('AmazonMidWave'), 'amazon-camp', 79n);
+    // Wave 2 contains five enemies. Pretend four have already died and the
+    // visible floor is empty while the fifth still belongs to this wave.
+    session.totals.kills = WAVE_PACK[0]! + WAVE_PACK[1]! - 1;
+    session.active = [];
+    session.spawnCredits = 0;
+    Object.assign(session, {
+      reinforcementWaveIndex: 1,
+      reinforcementReadyTick: undefined,
+      nextWaveAtTick: undefined,
+    });
+
+    const events = advance(session, 1, { maxEvents: 80 });
+    expect(waveProgress(session.totals.kills)).toEqual({ waveIndex: 1, killed: 4, size: 5 });
+    expect(session.active).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'monster_spawn')).toHaveLength(1);
+  });
+
   it('opens the skull wave after exactly 5 seconds even with zero spawn credits', () => {
     const session = startSession(passiveTank('BossTimer'), 'amazon-camp', 78n);
     session.totals.kills = WAVE_CYCLE_KILLS - WAVE_PACK[9]!;
@@ -72,10 +91,8 @@ describe('wave reinforcements', () => {
     let furthestWave = 0;
 
     for (let tick = 0; tick < 4_000 && session.status === 'active'; tick += 1) {
-      // This test isolates release cadence and screen caps. Calibration tests
-      // separately verify that real hunts earn these credits at the correct rate.
-      session.spawnCredits = Math.max(session.spawnCredits, waveProgress(session.totals.kills).size);
-      // Make the test about release cadence, not equipment DPS.
+      // The visible release cadence is independent from reward credits. Make the
+      // test about screen caps and wave progress, not equipment DPS.
       for (const monster of session.active) monster.health = Math.min(monster.health, 1);
       advance(session, 1, { maxEvents: 0 });
       const progress = waveProgress(session.totals.kills);
