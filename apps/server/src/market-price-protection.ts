@@ -71,6 +71,17 @@ function fail(reply: FastifyReply, status: number, error: string) {
   return reply.status(status).send({ error });
 }
 
+function rejectUnderpriced(reply: FastifyReply, rule: MarketPriceRule) {
+  const reference = rule.medianRecentPrice > 0
+    ? ` A mediana recente é ${rule.medianRecentPrice.toLocaleString('pt-BR')} gold.`
+    : '';
+  return fail(
+    reply,
+    400,
+    `Preço muito baixo para ${rule.itemName}. O mínimo permitido é ${rule.minAllowedPrice.toLocaleString('pt-BR')} gold por unidade.${reference}`,
+  );
+}
+
 /**
  * Server-side source of truth for Market V2 price floors.
  * The UI also shows the rule, but direct API calls cannot bypass it.
@@ -84,21 +95,25 @@ export function registerMarketPriceProtection(app: FastifyInstance, db: Database
   });
 
   app.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (request.method !== 'POST' || !/^\/api\/market-v2\/\d+\/list(?:\?|$)/.test(request.url)) return;
+    if (request.method !== 'POST') return;
     const body = (request.body ?? {}) as Record<string, unknown>;
-    const itemId = Number(body['itemId']);
-    const unitPrice = Math.floor(Number(body['unitPrice']));
-    const rule = marketPriceRule(db, itemId);
-    if (!rule || !Number.isFinite(unitPrice)) return;
-    if (unitPrice >= rule.minAllowedPrice) return;
 
-    const reference = rule.medianRecentPrice > 0
-      ? ` A mediana recente é ${rule.medianRecentPrice.toLocaleString('pt-BR')} gold.`
-      : '';
-    return fail(
-      reply,
-      400,
-      `Preço muito baixo para ${rule.itemName}. O mínimo permitido é ${rule.minAllowedPrice.toLocaleString('pt-BR')} gold por unidade.${reference}`,
-    );
+    // Market V2 listing endpoint: enforce the per-unit floor server-side.
+    if (/^\/api\/market-v2\/\d+\/list(?:\?|$)/.test(request.url)) {
+      const itemId = Number(body['itemId']);
+      const unitPrice = Math.floor(Number(body['unitPrice']));
+      const rule = marketPriceRule(db, itemId);
+      if (!rule || !Number.isFinite(unitPrice) || unitPrice >= rule.minAllowedPrice) return;
+      return rejectUnderpriced(reply, rule);
+    }
+
+    // The old market actions remain in the generic action switch for save-game
+    // compatibility, but they must not be usable to bypass Market V2 rules.
+    if (/^\/api\/characters\/\d+\/act(?:\?|$)/.test(request.url)) {
+      const action = String(body['type'] ?? '');
+      if (action === 'market-list' || action === 'market-buy') {
+        return fail(reply, 409, 'Use o Mercado Global para comprar e vender itens. O mercado antigo foi desativado.');
+      }
+    }
   });
 }
