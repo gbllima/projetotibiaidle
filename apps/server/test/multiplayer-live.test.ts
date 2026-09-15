@@ -60,7 +60,27 @@ function prepareCharacter(id: number, level = 50): void {
   context.db.saveCharacter(id, JSON.stringify(state), null, row.settledAt);
 }
 
+async function becomeFriends(sender: TestAccount, receiver: TestAccount): Promise<void> {
+  const requested = await context.app.inject({
+    method: 'POST',
+    url: `/api/social/${sender.id}/friend-request`,
+    headers: sender.headers,
+    payload: { name: receiver.name },
+  });
+  expect(requested.statusCode, requested.body).toBe(200);
+
+  const accepted = await context.app.inject({
+    method: 'POST',
+    url: `/api/social/${receiver.id}/friend-request/accept`,
+    headers: receiver.headers,
+    payload: { fromId: sender.id },
+  });
+  expect(accepted.statusCode, accepted.body).toBe(200);
+}
+
 async function joinParty(leader: TestAccount, guest: TestAccount): Promise<void> {
+  await becomeFriends(leader, guest);
+
   const invited = await context.app.inject({
     method: 'POST',
     url: `/api/multiplayer-party/${leader.id}/invite`,
