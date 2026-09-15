@@ -22,6 +22,11 @@ interface PendingInvite {
   createdAt: number;
 }
 
+type MultiplayerHuntSession = HuntSession & {
+  reinforcementPartySize?: number;
+  reinforcementPartyIndex?: number;
+};
+
 function memberKey(characterId: number): string { return `mp-member:${characterId}`; }
 function partyKey(leaderId: number): string { return `mp-party:${leaderId}`; }
 function inviteKey(characterId: number): string { return `mp-invite:${characterId}`; }
@@ -260,6 +265,35 @@ function boostedMonsterWithoutMultiplayerBonus(value?: string): string | undefin
   return original || undefined;
 }
 
+function updateMultiplayerWaveLayout(db: Database, ids: number[]): void {
+  const partySize = Math.max(1, ids.length);
+  ids.forEach((id, index) => {
+    const row = db.findCharacter(id);
+    if (!row?.session) return;
+    try {
+      const session = JSON.parse(row.session) as MultiplayerHuntSession;
+      session.reinforcementPartySize = partySize;
+      session.reinforcementPartyIndex = index;
+      db.saveCharacter(row.id, row.state, JSON.stringify(session), row.settledAt);
+    } catch {
+      // The normal character loader repairs malformed legacy sessions.
+    }
+  });
+}
+
+function clearMultiplayerWaveLayout(db: Database, characterId: number): void {
+  const row = db.findCharacter(characterId);
+  if (!row?.session) return;
+  try {
+    const session = JSON.parse(row.session) as MultiplayerHuntSession;
+    delete session.reinforcementPartySize;
+    delete session.reinforcementPartyIndex;
+    db.saveCharacter(row.id, row.state, JSON.stringify(session), row.settledAt);
+  } catch {
+    // The normal character loader repairs malformed legacy sessions.
+  }
+}
+
 function setMultiplayerXpBonus(db: Database, characterId: number, enabled: boolean): void {
   const row = db.findCharacter(characterId);
   if (!row?.session) return;
@@ -280,6 +314,7 @@ function dissolve(db: Database, leaderId: number): void {
   const ids = parseIds(db.getWorld(partyKey(leaderId)));
   for (const id of ids) {
     setMultiplayerXpBonus(db, id, false);
+    clearMultiplayerWaveLayout(db, id);
     db.setWorld(memberKey(id), '');
     restorePersonalParty(db, id);
   }
@@ -296,6 +331,7 @@ function leave(db: Database, accountId: number, characterId: number): void {
   }
   const ids = parseIds(db.getWorld(partyKey(leaderId))).filter((id) => id !== characterId);
   setMultiplayerXpBonus(db, characterId, false);
+  clearMultiplayerWaveLayout(db, characterId);
   db.setWorld(memberKey(characterId), '');
   restorePersonalParty(db, characterId);
   if (ids.length <= 1) {
@@ -303,6 +339,7 @@ function leave(db: Database, accountId: number, characterId: number): void {
     return;
   }
   db.setWorld(partyKey(leaderId), JSON.stringify(ids));
+  updateMultiplayerWaveLayout(db, ids);
 }
 
 function kick(db: Database, accountId: number, leaderId: number, memberId: number): void {
@@ -312,11 +349,15 @@ function kick(db: Database, accountId: number, leaderId: number, memberId: numbe
   const ids = parseIds(db.getWorld(partyKey(leaderId)));
   if (!ids.includes(memberId)) throw new GameError('Esse personagem não está na sua party.', 404);
   setMultiplayerXpBonus(db, memberId, false);
+  clearMultiplayerWaveLayout(db, memberId);
   db.setWorld(memberKey(memberId), '');
   restorePersonalParty(db, memberId);
   const next = ids.filter((id) => id !== memberId);
   if (next.length <= 1) dissolve(db, leaderId);
-  else db.setWorld(partyKey(leaderId), JSON.stringify(next));
+  else {
+    db.setWorld(partyKey(leaderId), JSON.stringify(next));
+    updateMultiplayerWaveLayout(db, next);
+  }
 }
 
 function startSharedHunt(db: Database, accountId: number, characterId: number, huntId: string, hours?: number): number[] {
@@ -352,9 +393,16 @@ function startSharedHunt(db: Database, accountId: number, characterId: number, h
       setMultiplayerXpBonus(db, id, true);
       marked.push(id);
     }
+    // Every account owns its own deterministic HuntSession, but all of those
+    // sessions share one visible floor. Split the per-wave screen cap across
+    // them so the websocket merge cannot render a full pack per account.
+    updateMultiplayerWaveLayout(db, ids);
     return ids;
   } catch (error) {
-    for (const id of marked) setMultiplayerXpBonus(db, id, false);
+    for (const id of marked) {
+      setMultiplayerXpBonus(db, id, false);
+      clearMultiplayerWaveLayout(db, id);
+    }
     // Avoid leaving half the multiplayer party in a cave when one member cannot
     // enter (level, supplies, capacity, queue, etc.).
     for (const id of started) {
