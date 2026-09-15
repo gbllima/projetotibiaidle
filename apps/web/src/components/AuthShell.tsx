@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-const KNOCK_LOGO = '/home/knock-idle-br-logo.png';
+const KNOCK_LOGO = '/home/Hunt.png';
 
 const AUTH_THEME = `
 .auth-page-bg {
