@@ -15,6 +15,7 @@ import { registerMultiplayerFriendGate } from './multiplayer-friend-gate.js';
 import { registerSocialLiveRoutes } from './social-live.js';
 import { registerVipVisualRoutes } from './vip-visuals.js';
 import { registerMarketV2Routes } from './market-v2.js';
+import { registerMarketPriceProtection } from './market-price-protection.js';
 import { registerWebSocket } from './ws.js';
 import { installVocationAppearanceDefaults } from './vocation-appearance.js';
 import { onlineCharacterIds } from './presence.js';
@@ -103,6 +104,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   registerMultiplayerPartyRoutes(app, db);
   registerSocialLiveRoutes(app, db);
   registerVipVisualRoutes(app, db);
+  registerMarketPriceProtection(app, db);
   registerMarketV2Routes(app, db);
 
   // Public, read-only server information used by the landing page.
