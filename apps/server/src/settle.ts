@@ -123,8 +123,14 @@ export function settle(session: HuntSession | null, settledAtMs: number, nowMs: 
   const elapsedMs = Math.max(0, nowMs - settledAtMs);
   const empty = { session, events: [] as SimEvent[], elapsedSeconds: 0, discardedSeconds: 0, stoppedBecause: session && session.status !== 'active' ? session.status : null, offline: false, efficiency: 1, capHours: MAX_OFFLINE_HOURS, delta: emptyDelta(), deathPenalty: session?.lastDeathPenalty ?? null };
   if (!session || session.status !== 'active') return empty;
-  if (isMultiplayerHunt(session) && (session as MultiplayerDownSession).multiplayerDown) {
-    return { ...empty, stoppedBecause: null };
+  const down = session as MultiplayerDownSession;
+  if (down.multiplayerDown) {
+    if (isMultiplayerHunt(session)) return { ...empty, stoppedBecause: null };
+    // The player left/dissolved the multiplayer party while down. The original
+    // death penalty was already applied, so end the hunt without simulating a
+    // second lethal tick and charging the death twice.
+    session.status = 'died';
+    return { ...empty, stoppedBecause: 'died' };
   }
   const offline = options.offline ?? elapsedMs > OFFLINE_GAP_MS;
   const capHours = offlineCapHours(session.character, nowMs);
