@@ -3,8 +3,10 @@ import { CreatureIcon } from '../components/CreatureIcon.js';
 import { itemIconUrl } from '../render/itemIcon.js';
 import { storedToken } from '../api/client.js';
 import '../launch-notice.css';
+import './HomeNews.css';
 
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
+type NewsItem = { id: string; title: string; category: string; summary: string; body: string; publishedAt: number; updatedAt: number };
 type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
 
 const SWORD_HOME = '/home/swordhome.gif';
@@ -13,9 +15,14 @@ const KNOCK_LOGO = '/home/Hunt.png';
 
 export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [launchNoticeOpen, setLaunchNoticeOpen] = useState(true);
   useEffect(() => {
     void fetch('/api/public-stats').then((r) => r.ok ? r.json() : Promise.reject()).then(setStats).catch(() => setStats(null));
+    void fetch('/api/news')
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((payload: { news?: NewsItem[] }) => setNews(Array.isArray(payload.news) ? payload.news : []))
+      .catch(() => setNews([]));
   }, []);
   const actionLabel = storedToken() ? 'CONTINUAR JOGANDO' : 'JOGAR AGORA';
 
@@ -37,7 +44,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
       <div className="landing-glow landing-glow-a" aria-hidden /><div className="landing-glow landing-glow-b" aria-hidden />
       <header className="landing-nav">
         <div className="landing-brand"><img src={KNOCK_LOGO} alt="Knock Hunt BR" /><div><strong>KNOCK HUNT BR</strong><small>O RPG IDLE BRASILEIRO</small></div></div>
-        <nav><a href="#servidor">SERVIDOR</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a><button className="landing-nav-link" onClick={onWiki}>WIKI</button><button className="landing-nav-link" onClick={onAccount}>MINHA CONTA</button></nav>
+        <nav><a href="#servidor">SERVIDOR</a><a href="#noticias">NOTÍCIAS</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a><button className="landing-nav-link" onClick={onWiki}>WIKI</button><button className="landing-nav-link" onClick={onAccount}>MINHA CONTA</button></nav>
         <button className="landing-nav-play" onClick={onPlay}>{actionLabel}</button>
       </header>
 
@@ -62,13 +69,22 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
         <Stat label="STATUS" value={stats?.beta === 'open' ? 'ONLINE' : 'OFFLINE'} accent={stats?.beta === 'open'} /><Stat label="PERSONAGENS" value={stats ? stats.characters.toLocaleString('pt-BR') : '—'} /><Stat label="CONTAS" value={stats ? stats.accounts.toLocaleString('pt-BR') : '—'} /><Stat label="CAÇANDO AGORA" value={stats ? stats.hunting.toLocaleString('pt-BR') : '—'} />
       </section>
 
+      <section id="noticias" className="landing-news">
+        <div className="landing-section-heading"><div><span>01</span><h2>NOTÍCIAS DO SERVIDOR</h2></div><p>Atualizações, eventos e comunicados oficiais do Knock Hunt BR.</p></div>
+        {news.length > 0 ? <div className="landing-news-grid">{news.slice(0, 6).map((item, index) => <article className={`landing-news-card${index === 0 ? ' landing-news-card--featured' : ''}`} key={item.id}>
+          <div className="landing-news-meta"><span>{item.category || 'Novidade'}</span><time dateTime={new Date(item.publishedAt || item.updatedAt).toISOString()}>{formatNewsDate(item.publishedAt || item.updatedAt)}</time></div>
+          <h3>{item.title}</h3><p>{item.summary}</p>
+          <details className="landing-news-details"><summary>LER NOTÍCIA <b>→</b></summary><div>{item.body.split(/\n+/).filter(Boolean).map((paragraph, paragraphIndex) => <p key={paragraphIndex}>{paragraph}</p>)}</div></details>
+        </article>)}</div> : <div className="landing-news-empty"><span>✦</span><strong>EM BREVE</strong><p>As próximas novidades oficiais do Knock Hunt BR aparecerão aqui.</p></div>}
+      </section>
+
       <section id="ranking" className="landing-section">
-        <div className="landing-section-heading"><div><span>01</span><h2>O MUNDO ESTÁ VIVO</h2></div><p>Dados públicos do servidor atualizados diretamente pelo jogo.</p></div>
+        <div className="landing-section-heading"><div><span>02</span><h2>O MUNDO ESTÁ VIVO</h2></div><p>Dados públicos do servidor atualizados diretamente pelo jogo.</p></div>
         <div className="landing-data-grid"><DataCard sprite={<LandingItemSprite itemId={3351} size={48} />} value={stats?.characters} label="PERSONAGENS CRIADOS" text="Aventureiros que já começaram sua jornada no Knock Hunt BR." large /><DataCard sprite={<LandingItemSprite itemId={3350} size={48} />} value={stats?.hunting} label="EM CAÇADA" text="Personagens enfrentando criaturas neste momento." /><DataCard sprite={<CreatureIcon lookType={34} size={48} />} value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Criaturas espalhadas pelas áreas e hunts do servidor." /></div>
       </section>
 
       <section id="sistemas" className="landing-features">
-        <div className="landing-section-heading"><div><span>02</span><h2>CONSTRUA SUA LENDA</h2></div><p>Um RPG idle com alma de MMORPG clássico e progressão que continua com você offline.</p></div>
+        <div className="landing-section-heading"><div><span>03</span><h2>CONSTRUA SUA LENDA</h2></div><p>Um RPG idle com alma de MMORPG clássico e progressão que continua com você offline.</p></div>
         <div className="landing-feature-grid"><Feature sprite={<LandingSprite src={SWORD_HOME} />} title="VOCAÇÕES" text="Escolha seu estilo de combate e desenvolva seu personagem." /><Feature sprite={<LandingSprite src={HUNTS_HOME} />} title="HUNTS" text="Explore áreas, enfrente criaturas e evolua continuamente." /><Feature sprite={<LandingItemSprite itemId={3031} />} title="LOOT & GOLD" text="Colete recursos, negocie itens e fortaleça seu equipamento." /><Feature sprite={<LandingSprite src="/assets/item-icons/2979.webp" />} title="MUNDO ONLINE" text="Compartilhe o servidor com outros aventureiros brasileiros." /></div>
       </section>
 
@@ -79,6 +95,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   );
 }
 
+function formatNewsDate(timestamp: number): string { return new Date(timestamp || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase(); }
 function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) { return <div className="landing-stat"><span className={accent ? 'online-dot' : ''} /><small>{label}</small><strong>{value}</strong></div>; }
 function LandingSprite({ src, size = 32 }: { src: string; size?: number }) { return <img className="landing-title-sprite" src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />; }
 function LandingItemSprite({ itemId, size = 32 }: { itemId: number; size?: number }) { const [src, setSrc] = useState<string | null>(null); useEffect(() => { let live = true; void itemIconUrl(itemId).then((url) => { if (live) setSrc(url); }).catch(() => {}); return () => { live = false; }; }, [itemId]); return src ? <LandingSprite src={src} size={size} /> : <span className="landing-title-sprite" aria-hidden />; }
