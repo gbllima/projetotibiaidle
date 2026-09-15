@@ -82,10 +82,14 @@ const VOCATION_LABELS: ReadonlyArray<{
   { base: 9, promoted: 10, baseLabel: 'Monk', promotedLabel: 'Exalted Monk' },
 ];
 
+function hideUnrestrictedSupplyLabel(item: Item): boolean {
+  return /\b(?:arrow|potion)s?\b/i.test(item.name);
+}
+
 /** Human-friendly class restriction, using the same resolver as server equip rules. */
 export function itemVocationLabel(item: Item): string {
   const allowed = itemAllowedVocationIds(item);
-  if (allowed === null) return 'Todas as classes';
+  if (allowed === null) return hideUnrestrictedSupplyLabel(item) ? '' : 'Todas as classes';
 
   const labels: string[] = [];
   for (const row of VOCATION_LABELS) {
@@ -95,7 +99,7 @@ export function itemVocationLabel(item: Item): string {
     else if (promoted) labels.push(row.promotedLabel);
   }
 
-  return labels.join(' · ') || 'Todas as classes';
+  return labels.join(' · ') || (hideUnrestrictedSupplyLabel(item) ? '' : 'Todas as classes');
 }
 
 export function itemMarketCategory(item: Item): number {
@@ -152,13 +156,14 @@ export function itemStatLine(item: Item): string | null {
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-/** Compact lines for hover tooltips and context-menu headers. The first line is the class ribbon. */
+/** Compact lines for hover tooltips and context-menu headers. The first line is the class ribbon when applicable. */
 export function itemTooltipLines(itemId: number): string[] {
   const item = itemsById.get(itemId);
   if (!item) return ['Item desconhecido.'];
 
   const lines: string[] = [];
-  lines.push(itemVocationLabel(item));
+  const vocationLabel = itemVocationLabel(item);
+  if (vocationLabel) lines.push(vocationLabel);
 
   const category = itemCategoryName(item);
   lines.push(category);
