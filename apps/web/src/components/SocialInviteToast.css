@@ -1,0 +1,108 @@
+.social-invite-stack{
+  position:fixed;
+  top:92px;
+  right:18px;
+  z-index:120;
+  width:min(340px,calc(100vw - 28px));
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  pointer-events:none;
+}
+
+.social-invite-toast{
+  pointer-events:auto;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:11px;
+  align-items:center;
+  padding:12px 13px;
+  border:1px solid rgba(211,169,75,.34);
+  background:linear-gradient(180deg,rgba(20,24,21,.96),rgba(9,13,12,.96));
+  box-shadow:0 12px 34px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(8px);
+  animation:social-invite-in .2s ease-out both;
+}
+
+.social-invite-toast.party{border-color:rgba(54,202,112,.38)}
+.social-invite-toast.friend{border-color:rgba(211,169,75,.38)}
+
+.social-invite-mark{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.08);
+  background:#101713;
+  font-size:17px;
+}
+
+.social-invite-copy{min-width:0}
+.social-invite-copy small{
+  display:block;
+  color:#a49a82;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+.social-invite-copy strong{
+  display:block;
+  margin-top:3px;
+  color:#eee5d1;
+  font-size:12px;
+  line-height:1.2;
+}
+.social-invite-copy p{
+  margin:4px 0 0;
+  color:#90978f;
+  font-size:10px;
+  line-height:1.35;
+}
+
+.social-invite-actions{
+  grid-column:1 / -1;
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:1px;
+}
+.social-invite-actions button{
+  min-width:76px;
+  padding:7px 10px;
+  border:1px solid #4b4a3f;
+  background:#151915;
+  color:#c8c2b3;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.social-invite-actions button.accept{
+  border-color:#3c8e55;
+  background:linear-gradient(180deg,#1e5b33,#153d25);
+  color:#9cf0b6;
+}
+.social-invite-actions button:hover:not(:disabled){filter:brightness(1.12)}
+.social-invite-actions button:disabled{opacity:.5;cursor:wait}
+.social-invite-error{
+  grid-column:1 / -1;
+  margin:0;
+  color:#ff8a82;
+  font-size:9px;
+  text-align:right;
+}
+
+@keyframes social-invite-in{
+  from{opacity:0;transform:translateY(-6px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+@media(max-width:720px){
+  .social-invite-stack{top:68px;right:8px;width:min(320px,calc(100vw - 16px))}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .social-invite-toast{animation:none}
+}
