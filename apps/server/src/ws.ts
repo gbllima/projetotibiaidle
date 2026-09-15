@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
-import type { HuntSession, SimEvent } from '@tibia-idle/sim';
+import { advance, type HuntSession, type SimEvent } from '@tibia-idle/sim';
 import type { Database } from './db.js';
 import { loadCharacter, takeAwaySummary } from './game.js';
 import { economyCharacterView, syncAccountEconomy } from './economy.js';
@@ -17,24 +17,25 @@ import { applyMultiplayerLiveHealing, decorateMultiplayerCharacter } from './soc
  * the same seed there is normally nothing to correct.
  *
  * Multiplayer is the exception for presentation: one browser cannot predict the
- * other account's attacks. We therefore keep the most recent authoritative
- * combat batch produced by each connected member and relay it once to every
- * other party socket. The actual HP/MP/loot state still comes from the normal
- * server snapshots; these relayed events exist only so the shared viewport can
- * draw the other player's swings, missiles, spell effects and incoming hits.
+ * other account's attacks. A normal server settlement intentionally does not
+ * retain visual events, so relying on settlement.events makes a remote player
+ * look frozen while their monsters still lose HP. Instead, each subscriber keeps
+ * the previous authoritative party-session snapshot and deterministically replays
+ * only the ticks that happened since that snapshot. Those replayed events are
+ * presentation-only; HP/MP/loot remain authoritative server state.
  */
 
 const PUSH_INTERVAL_MS = 2000;
 const PARTY_UID_STRIDE = 10_000_000;
-const PARTY_EVENT_TTL_MS = PUSH_INTERVAL_MS * 4;
-const PARTY_EVENT_CAP = 48;
+const PARTY_EVENT_CAP = 64;
+const MAX_REPLAY_TICKS = 240;
 
 interface Subscription {
   socket: WebSocket;
   accountId: number;
   characterId: number;
   timer: NodeJS.Timeout;
-  seenPartyEventVersions: Map<number, number>;
+  partySessionSnapshots: Map<number, HuntSession>;
 }
 
 type PartyMemberView = {
@@ -52,13 +53,6 @@ type PartyMonsterView = {
   tileX?: number;
   tileY?: number;
   paralyzed?: boolean;
-};
-
-type PartyEventBatch = {
-  version: number;
-  huntId?: string;
-  updatedAt: number;
-  events: SimEvent[];
 };
 
 function namespacedPartyUid(memberId: number, uid: number): number {
@@ -129,7 +123,7 @@ function remapPartyEvents(
   sessions: Map<number, HuntSession>,
 ): SimEvent[] {
   return events
-    // The principal's events already arrive in the normal settlement stream.
+    // The principal's events already arrive in the normal prediction stream.
     // Keeping them here duplicates attack words, hit numbers and effects.
     .filter((event) => event.actorId !== principalId)
     .map((event) => {
@@ -143,64 +137,58 @@ function remapPartyEvents(
     });
 }
 
-function relayableOwnEvents(characterId: number, events: SimEvent[]): SimEvent[] {
-  return events
-    .filter((event) => event.type === 'player_attack' || event.type === 'monster_attack')
-    .map((event) => ({ ...event, actorId: event.actorId ?? characterId }))
-    .slice(-PARTY_EVENT_CAP);
-}
+function replayRemotePartyEvents(
+  subscription: Subscription,
+  huntId: string | undefined,
+  sessions: Map<number, HuntSession>,
+): SimEvent[] {
+  const output: SimEvent[] = [];
+  const activeMembers = new Set(sessions.keys());
 
-function namespacedRelayedEvent(memberId: number, event: SimEvent): SimEvent {
-  if ((event.type !== 'player_attack' && event.type !== 'monster_attack') || event.uid === undefined) return event;
-  return { ...event, uid: namespacedPartyUid(memberId, event.uid) };
+  for (const memberId of [...subscription.partySessionSnapshots.keys()]) {
+    if (!activeMembers.has(memberId)) subscription.partySessionSnapshots.delete(memberId);
+  }
+
+  if (!huntId) return output;
+
+  for (const [memberId, current] of sessions) {
+    const previous = subscription.partySessionSnapshots.get(memberId);
+    subscription.partySessionSnapshots.set(memberId, structuredClone(current));
+
+    if (!previous || previous.huntId !== huntId || current.huntId !== huntId) continue;
+    if (previous.status !== 'active' || current.status !== 'active') continue;
+
+    const previousTick = Number(previous.tick ?? 0);
+    const currentTick = Number(current.tick ?? 0);
+    const elapsedTicks = currentTick - previousTick;
+    if (elapsedTicks <= 0 || elapsedTicks > MAX_REPLAY_TICKS) continue;
+
+    try {
+      const replay = structuredClone(previous);
+      const produced = advance(replay, elapsedTicks, { maxEvents: PARTY_EVENT_CAP });
+      for (const event of produced) {
+        if (event.type !== 'player_attack' && event.type !== 'monster_attack') continue;
+        const actorEvent = { ...event, actorId: event.actorId ?? memberId };
+        if (actorEvent.uid === undefined) {
+          output.push(actorEvent);
+          continue;
+        }
+        output.push({ ...actorEvent, uid: namespacedPartyUid(memberId, actorEvent.uid) });
+      }
+    } catch (error) {
+      console.error('party event replay', memberId, error);
+    }
+  }
+
+  return output.slice(-PARTY_EVENT_CAP);
 }
 
 export function registerWebSocket(app: FastifyInstance, db: Database): void {
   const subscriptions = new Set<Subscription>();
-  const partyEventBatches = new Map<number, PartyEventBatch>();
-  let partyEventVersion = 0;
 
   const stop = (subscription: Subscription): void => {
     clearInterval(subscription.timer);
     subscriptions.delete(subscription);
-  };
-
-  const captureOwnCombatEvents = (
-    characterId: number,
-    huntId: string | undefined,
-    events: SimEvent[],
-  ): void => {
-    const relay = relayableOwnEvents(characterId, events);
-    if (relay.length === 0) return;
-    partyEventBatches.set(characterId, {
-      version: ++partyEventVersion,
-      huntId,
-      updatedAt: Date.now(),
-      events: relay,
-    });
-  };
-
-  const partyCombatEventsFor = (
-    subscription: Subscription,
-    huntId: string | undefined,
-    sessions: Map<number, HuntSession>,
-  ): SimEvent[] => {
-    if (!huntId) return [];
-    const now = Date.now();
-    const output: SimEvent[] = [];
-
-    for (const [memberId, session] of sessions) {
-      const batch = partyEventBatches.get(memberId);
-      if (!batch) continue;
-      if (now - batch.updatedAt > PARTY_EVENT_TTL_MS) continue;
-      if (batch.huntId !== huntId || session.huntId !== huntId) continue;
-      const seen = subscription.seenPartyEventVersions.get(memberId) ?? 0;
-      if (batch.version <= seen) continue;
-      subscription.seenPartyEventVersions.set(memberId, batch.version);
-      output.push(...batch.events.map((event) => namespacedRelayedEvent(memberId, event)));
-    }
-
-    return output.slice(-PARTY_EVENT_CAP);
   };
 
   app.get('/ws', { websocket: true }, (socket) => {
@@ -216,13 +204,11 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
         const supportEvents = applyMultiplayerLiveHealing(db, subscription.characterId);
         const { loaded, settlement } = loadCharacter(db, subscription.accountId, subscription.characterId);
         syncAccountEconomy(db, subscription.accountId, loaded);
-        const huntId = loaded.session?.huntId;
-        captureOwnCombatEvents(subscription.characterId, huntId, settlement.events ?? []);
 
         const baseCharacter = economyCharacterView(db, subscription.accountId, loaded);
         const character = decorateMultiplayerCharacter(db, subscription.characterId, baseCharacter);
         const party = (character.caveParty ?? []) as PartyMemberView[];
-        const sharedHuntId = huntId ?? character.partyActivity?.huntId;
+        const sharedHuntId = loaded.session?.huntId ?? character.partyActivity?.huntId;
         const partySessions = parseActivePartySessions(
           db,
           subscription.accountId,
@@ -230,7 +216,7 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
           sharedHuntId,
           party,
         );
-        const remoteCombatEvents = partyCombatEventsFor(subscription, sharedHuntId, partySessions);
+        const remoteCombatEvents = replayRemotePartyEvents(subscription, sharedHuntId, partySessions);
 
         send({
           type: 'state',
@@ -241,7 +227,7 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
               ...remapPartyEvents(loaded.partyEvents ?? [], subscription.characterId, partySessions),
               ...remoteCombatEvents,
               ...supportEvents,
-            ].slice(-32),
+            ].slice(-PARTY_EVENT_CAP),
           },
           settlement: takeAwaySummary(db, subscription.characterId, settlement),
         });
@@ -287,7 +273,7 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
         accountId,
         characterId,
         timer: setInterval(() => push(), PUSH_INTERVAL_MS),
-        seenPartyEventVersions: new Map<number, number>(),
+        partySessionSnapshots: new Map<number, HuntSession>(),
       };
       subscriptions.add(subscription);
       markOnline(characterId);
@@ -306,6 +292,5 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
   app.addHook('onClose', async () => {
     for (const subscription of subscriptions) clearInterval(subscription.timer);
     subscriptions.clear();
-    partyEventBatches.clear();
   });
 }
