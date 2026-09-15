@@ -72,9 +72,14 @@ function viewTiersToState(tiers: CharacterView['equipmentTiers']): CharacterStat
 }
 
 type PartyCombatView = CharacterView & { partyMonsters?: ActiveMonsterView[] };
+type MultiplayerPredictedSession = HuntSession & { multiplayerDown?: boolean };
 
 function partyMonsters(server: CharacterView): ActiveMonsterView[] {
   return ((server as PartyCombatView).partyMonsters ?? []).map((monster) => ({ ...monster }));
+}
+
+function multiplayerDown(session: HuntSession): boolean {
+  return Boolean((session as MultiplayerPredictedSession).multiplayerDown);
 }
 
 /**
@@ -116,6 +121,9 @@ export function usePredictedCharacter(server: CharacterView): { character: Chara
       && !combatDiverged
     ) {
       applyServerSnapshot(current, server);
+      // Runtime multiplayer flags live on the authoritative session. Preserve
+      // them even when the local predicted tick is slightly ahead.
+      (current as MultiplayerPredictedSession).multiplayerDown = (incoming as MultiplayerPredictedSession).multiplayerDown;
       lastServerSyncKey.current = inventorySyncKey(server);
       setPredicted(overlay(serverRef.current, current));
       return;
@@ -150,6 +158,14 @@ export function usePredictedCharacter(server: CharacterView): { character: Chara
         if (remoteKey !== lastServerSyncKey.current) {
           applyServerSnapshot(session, srv);
           lastServerSyncKey.current = remoteKey;
+        }
+        // A dead multiplayer member is intentionally frozen until the server's
+        // shared-wave coordinator revives it. Keep rendering the corpse and the
+        // other party member's monsters, but never locally heal/attack/re-die.
+        if (multiplayerDown(session)) {
+          setEvents([]);
+          setPredicted(overlay(srv, session));
+          return;
         }
         const produced = advance(session, 1, { maxEvents: 80 });
         setEvents(produced);
