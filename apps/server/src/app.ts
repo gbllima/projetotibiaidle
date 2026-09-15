@@ -98,13 +98,13 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
 
   await app.register(websocket);
 
+  registerMarketPriceProtection(app, db);
   registerMultiplayerFriendGate(app, db);
   registerRoutes(app, db);
   registerPartyItemRoutes(app, db);
   registerMultiplayerPartyRoutes(app, db);
   registerSocialLiveRoutes(app, db);
   registerVipVisualRoutes(app, db);
-  registerMarketPriceProtection(app, db);
   registerMarketV2Routes(app, db);
 
   // Public, read-only server information used by the landing page.
