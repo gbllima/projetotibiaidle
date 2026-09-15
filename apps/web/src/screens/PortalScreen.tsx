@@ -32,7 +32,7 @@ export function PortalScreen({ onKnockIdle }: Props) {
               <i aria-hidden /> ONLINE
             </span>
             <span className="kock-game-card__art">
-              <img src="/home/knock-idle-br-logo.png" alt="Knock Hunt BR" />
+              <img src="/home/Hunt.png" alt="Knock Hunt BR" />
             </span>
             <span className="kock-game-card__body">
               <span className="kock-game-card__genre">IDLE MMORPG • BRASIL</span>
