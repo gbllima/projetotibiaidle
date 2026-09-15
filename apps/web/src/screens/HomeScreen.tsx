@@ -9,7 +9,7 @@ type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
 
 const SWORD_HOME = '/home/swordhome.gif';
 const HUNTS_HOME = '/home/hunts.png';
-const KNOCK_LOGO = '/home/knock-idle-br-logo.png';
+const KNOCK_LOGO = '/home/Hunt.png';
 
 export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
