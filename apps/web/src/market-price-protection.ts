@@ -11,7 +11,10 @@ type PriceRule = {
   warningBelowPrice: number;
 };
 
-const cache = new Map<number, PriceRule>();
+type CachedRule = { rule: PriceRule; expiresAt: number };
+
+const RULE_CACHE_MS = 15_000;
+const cache = new Map<number, CachedRule>();
 const pending = new Map<number, Promise<PriceRule | null>>();
 let scanQueued = false;
 
@@ -19,8 +22,18 @@ function gold(value: number): string {
   return Math.max(0, Math.floor(value || 0)).toLocaleString('pt-BR') + 'g';
 }
 
+function cachedRule(itemId: number): PriceRule | null {
+  const entry = cache.get(itemId);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(itemId);
+    return null;
+  }
+  return entry.rule;
+}
+
 async function fetchRule(itemId: number): Promise<PriceRule | null> {
-  const cached = cache.get(itemId);
+  const cached = cachedRule(itemId);
   if (cached) return cached;
   const existing = pending.get(itemId);
   if (existing) return existing;
@@ -33,7 +46,7 @@ async function fetchRule(itemId: number): Promise<PriceRule | null> {
       });
       if (!response.ok) return null;
       const rule = await response.json() as PriceRule;
-      cache.set(itemId, rule);
+      cache.set(itemId, { rule, expiresAt: Date.now() + RULE_CACHE_MS });
       return rule;
     } catch {
       return null;
@@ -66,7 +79,7 @@ function renderRule(detail: HTMLElement, input: HTMLInputElement, button: HTMLBu
     <div><span>Preço mínimo permitido</span><strong>${gold(rule.minAllowedPrice)}</strong></div>
     <small>${historyText}</small>
     ${tooLow ? '<b>Este preço é baixo demais e não pode ser anunciado.</b>' : ''}
-    ${suspicious ? `<b>Preço muito abaixo do mercado. Será pedida uma confirmação antes de anunciar.</b>` : ''}
+    ${suspicious ? '<b>Preço muito abaixo do mercado. Será pedida uma confirmação antes de anunciar.</b>' : ''}
   `;
 
   button.insertAdjacentElement('beforebegin', box);
@@ -87,6 +100,9 @@ async function enhanceButton(button: HTMLButtonElement): Promise<void> {
 
   const rule = await fetchRule(itemId);
   if (!rule || !button.isConnected || !input.isConnected) return;
+  const key = `${itemId}:${input.value}:${rule.minAllowedPrice}:${rule.warningBelowPrice}:${rule.medianRecentPrice}`;
+  if (button.dataset['marketPriceRuleApplied'] === key) return;
+  button.dataset['marketPriceRuleApplied'] = key;
   renderRule(detail, input, button, rule);
 }
 
@@ -112,7 +128,7 @@ document.addEventListener('click', (event) => {
   if (!input) return;
 
   const itemId = Number(button.dataset['marketList']);
-  const rule = cache.get(itemId);
+  const rule = cachedRule(itemId);
   if (!rule) return;
   const price = Math.max(0, Math.floor(Number(input.value) || 0));
 
