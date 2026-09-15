@@ -1,12 +1,12 @@
-/* Warm project palette: removes the remaining blue-black surfaces.
-   Replaces the legacy tones #12161D and #1A1F28 with the warm theme. */
+/* Warm project palette: removes the remaining blue-black/brown surfaces.
+   The structural base now uses #0D100D on both desktop and mobile. */
 :root {
-  --head: #1b1711;
+  --head: #0d100d;
 }
 
-/* Legacy #1A1F28 surfaces -> #1B1711 */
+/* Main navigation/chrome. */
 .topnav {
-  background: linear-gradient(#1b1711, #13100b) !important;
+  background: linear-gradient(#151916, #0d100d) !important;
 }
 
 .iconbtn.mini,
@@ -20,61 +20,106 @@
 .store-filter-row select,
 .store-addon-row button,
 .store-addon-equip button {
-  background: #1b1711 !important;
+  background: #0d100d !important;
 }
 
 .chat-console__log::-webkit-scrollbar-thumb {
-  border-color: #1b1711 !important;
+  border-color: #0d100d !important;
 }
 
 .action-bar__portrait-tag,
 .action-bar__rank {
-  color: #1b1711 !important;
+  color: #0d100d !important;
 }
 
-/* Inventory / slot gradients that previously mixed #1A1F28 with blue-black. */
+/* Inventory / slot surfaces. */
 .cell {
-  background: linear-gradient(180deg, #1b1711 0%, #13100b 100%) !important;
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
 }
 
-/* Legacy #12161D surfaces -> #110E0A */
 .imbue-item-row,
 .imbue-type-card,
 .build-stat-card,
 .task-board-card,
 .wheel-node-row {
-  background: #110e0a !important;
+  background: #0d100d !important;
 }
 
 .prey-slot,
 .imbue-detail,
 .progressao-menu-card {
-  background: linear-gradient(180deg, #1b1711 0%, #110e0a 100%) !important;
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
 }
 
 .progressao-menu-card {
-  background: linear-gradient(135deg, #1b1711 0%, #110e0a 100%) !important;
+  background: linear-gradient(135deg, #151916 0%, #0d100d 100%) !important;
 }
 
 .progressao-menu-icon {
   background: linear-gradient(
     145deg,
     color-mix(in srgb, var(--prog-tone, #b8962e) 42%, #0d100d),
-    #110e0a
+    #0d100d
   ) !important;
 }
 
 .build-portrait-frame {
-  background: linear-gradient(180deg, #1b1711 0%, #110e0a 100%) !important;
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
 }
 
-/* Paired #141820 blue gradients/surfaces are warmed too, so no blue remains in the same components. */
 .outfit-list,
 .outfit-color-grid,
 .store-boosts span {
-  background: #13100b !important;
+  background: #0d100d !important;
 }
 
 .city-lobby__bar--minimal {
-  background: linear-gradient(180deg, #1b1711 0%, #13100b 100%) !important;
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+}
+
+/* Desktop/PC: use the same #0D100D base adopted on mobile. */
+@media (min-width: 769px) {
+  .shell {
+    --bg: #0d100d !important;
+    background: #0d100d !important;
+  }
+
+  .shell .center,
+  .shell .scene-host,
+  .shell .viewport,
+  .shell .city-lobby--thais,
+  .shell .city-lobby--thais .city-lobby__map {
+    background-color: #0d100d !important;
+  }
+
+  .shell .box,
+  .shell .modal-card,
+  .shell .party-manager,
+  .shell .card,
+  .shell .cy-detail,
+  .shell .party-formation-card {
+    background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+  }
+
+  .shell .modal-card-body,
+  .shell .box .body,
+  .shell .chat-console,
+  .shell .chat-console__body {
+    background-color: #0d100d !important;
+  }
+
+  .shell .arena-head {
+    background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+  }
+
+  .shell .action-bar__panel {
+    background: rgba(13, 16, 13, .96) !important;
+  }
+
+  .shell .action-bar__skill,
+  .shell .action-bar__skill--empty,
+  .shell .action-bar__portrait,
+  .shell .action-bar__party-portrait {
+    background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+  }
 }
