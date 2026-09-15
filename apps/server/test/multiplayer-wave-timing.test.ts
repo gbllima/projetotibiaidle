@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TICK_MS, WAVE_PACK, type CharacterState, type HuntSession } from '@tibia-idle/sim';
 import { createApp } from '../src/app.js';
-import { settle } from '../src/settle.js';
+import { loadCharacter } from '../src/game.js';
 
 const HUNT_ID = 'amazon-camp';
 const START = 1_700_000_000_000;
@@ -94,7 +94,7 @@ async function formMultiplayerParty(leader: Player, member: Player): Promise<voi
   expect(started.json().memberIds).toEqual([leader.id, member.id]);
 }
 
-function waveTwoBoundarySession(id: number): HuntSession {
+function persistWaveTwoBoundary(id: number): void {
   const row = context.db.findCharacter(id)!;
   expect(row.session).not.toBeNull();
   const session = JSON.parse(row.session!) as HuntSession & {
@@ -118,7 +118,7 @@ function waveTwoBoundarySession(id: number): HuntSession {
   session.character.policy.healthPotionAt = 0;
   session.character.policy.manaPotionAt = 0;
   session.character.policy.stopWhenOutOfSupplies = false;
-  return session;
+  context.db.saveCharacter(id, row.state, JSON.stringify(session), START);
 }
 
 describe('multiplayer wave timing', () => {
@@ -129,22 +129,32 @@ describe('multiplayer wave timing', () => {
     expect(leader.accountId).not.toBe(member.accountId);
     await formMultiplayerParty(leader, member);
 
-    // These are the real HuntSessions created by the Multiplayer Party endpoint,
-    // one owned by the leader account and one owned by the invited member account.
-    const leaderSession = waveTwoBoundarySession(leader.id);
-    const memberSession = waveTwoBoundarySession(member.id);
+    // Use the real HuntSessions created by the Multiplayer Party endpoint: one
+    // belongs to the leader account and one to the invited member account.
+    persistWaveTwoBoundary(leader.id);
+    persistWaveTwoBoundary(member.id);
 
-    // 11 ticks / 2.75s: neither side of the multiplayer party may spawn early.
-    settle(leaderSession, START, START + NORMAL_WAVE_DELAY_MS - TICK_MS);
-    settle(memberSession, START, START + NORMAL_WAVE_DELAY_MS - TICK_MS);
-    expect(leaderSession.active).toHaveLength(0);
-    expect(memberSession.active).toHaveLength(0);
+    // 11 ticks / 2.75s: the live character load must still show an empty floor.
+    const earlyLeader = loadCharacter(
+      context.db, leader.accountId, leader.id, START + NORMAL_WAVE_DELAY_MS - TICK_MS,
+    ).loaded.session!;
+    const earlyMember = loadCharacter(
+      context.db, member.accountId, member.id, START + NORMAL_WAVE_DELAY_MS - TICK_MS,
+    ).loaded.session!;
+    expect(earlyLeader.active).toHaveLength(0);
+    expect(earlyMember.active).toHaveLength(0);
 
-    // Tick 12 / 3.00s: leader and the separate member account both open wave 2.
-    // A shortage of calibrated spawn credits must not extend the empty screen.
-    settle(leaderSession, START + NORMAL_WAVE_DELAY_MS - TICK_MS, START + NORMAL_WAVE_DELAY_MS);
-    settle(memberSession, START + NORMAL_WAVE_DELAY_MS - TICK_MS, START + NORMAL_WAVE_DELAY_MS);
-    expect(leaderSession.active.length).toBeGreaterThan(0);
-    expect(memberSession.active.length).toBeGreaterThan(0);
+    // Tick 12 / 3.00s: the response returned to each connected account already
+    // contains the new monsters. Sub-second live reads are intentionally not
+    // always persisted, so assert the authoritative response rather than a
+    // second DB read of the previous cursor.
+    const onTimeLeader = loadCharacter(
+      context.db, leader.accountId, leader.id, START + NORMAL_WAVE_DELAY_MS,
+    ).loaded.session!;
+    const onTimeMember = loadCharacter(
+      context.db, member.accountId, member.id, START + NORMAL_WAVE_DELAY_MS,
+    ).loaded.session!;
+    expect(onTimeLeader.active.length).toBeGreaterThan(0);
+    expect(onTimeMember.active.length).toBeGreaterThan(0);
   });
 });
