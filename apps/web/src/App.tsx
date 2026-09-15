@@ -7,11 +7,12 @@ import { GameScreen } from './screens/GameScreen.js';
 import { CreateCharacterScreen } from './screens/CreateCharacterScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
 import { PortalScreen } from './screens/PortalScreen.js';
+import { MonstersHomeScreen } from './screens/MonstersHomeScreen.js';
 import { WikiScreen } from './screens/WikiScreen.js';
 import { AccountScreen } from './screens/AccountScreen.js';
 import { KnockRadio } from './components/KnockRadio.js';
 
-type Screen = 'portal' | 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'create' | 'game';
+type Screen = 'portal' | 'monsters' | 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'create' | 'game';
 
 export function App() {
   const { t } = useLocale();
@@ -70,7 +71,8 @@ export function App() {
     return () => { socket.close(); setSocketStatus('closed'); setHadSocket(false); };
   }, [screen, character?.id]);
 
-  if (screen === 'portal') return <PortalScreen onKnockIdle={() => setScreen('home')} />;
+  if (screen === 'portal') return <PortalScreen onKnockHunt={() => setScreen('home')} onKnockMonsters={() => setScreen('monsters')} />;
+  if (screen === 'monsters') return <MonstersHomeScreen onPortal={() => setScreen('portal')} />;
   if (screen === 'home') return <><KnockRadio /><HomeScreen onWiki={() => setScreen('wiki')}
     onAccount={() => { setAfterAuth('account'); setScreen(storedToken() ? 'account' : 'auth'); }}
     onPlay={() => { void enterGame(); }} /></>;
