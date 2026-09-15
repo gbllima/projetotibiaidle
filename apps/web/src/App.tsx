@@ -76,7 +76,7 @@ export function App() {
     onPlay={() => { void enterGame(); }} /></>;
   if (screen === 'wiki') return <WikiScreen onHome={() => setScreen('home')} onPlay={() => { void enterGame(); }} />;
   if (screen === 'account') return <AccountScreen onHome={() => setScreen('home')} onPlay={() => { void enterGame(); }} onLogout={logout} />;
-  if (screen === 'boot') return <div className="auth-page"><div className="auth-page-bg" aria-hidden /><div className="auth-page-vignette" aria-hidden /><div className="splash auth-card-enter"><h1>KNOCK <span>IDLE BR</span></h1>
+  if (screen === 'boot') return <div className="auth-page"><div className="auth-page-bg" aria-hidden /><div className="auth-page-vignette" aria-hidden /><div className="splash auth-card-enter"><h1>KNOCK <span>HUNT BR</span></h1>
     {entryError ? <><p role="alert">{entryError}</p><button className="btn gold" onClick={() => { void enterGame(); }}>Tentar novamente</button><button className="btn" onClick={() => setScreen('home')}>Voltar</button></> : <p>{t('boot')}</p>}
   </div></div>;
   if (screen === 'auth') return <AuthScreen onReady={() => { if (afterAuth === 'account') setScreen('account'); else void enterGame(); }} />;
