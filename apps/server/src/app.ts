@@ -13,6 +13,7 @@ import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
 import { registerMultiplayerPartyRoutes } from './multiplayer-party.js';
 import { registerMultiplayerFriendGate } from './multiplayer-friend-gate.js';
 import { registerSocialLiveRoutes } from './social-live.js';
+import { registerVipVisualRoutes } from './vip-visuals.js';
 import { registerWebSocket } from './ws.js';
 import { installVocationAppearanceDefaults } from './vocation-appearance.js';
 import { onlineCharacterIds } from './presence.js';
@@ -100,6 +101,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   registerPartyItemRoutes(app, db);
   registerMultiplayerPartyRoutes(app, db);
   registerSocialLiveRoutes(app, db);
+  registerVipVisualRoutes(app, db);
 
   // Public, read-only server information used by the landing page.
   // No account data, currency balances or private character state is exposed.
