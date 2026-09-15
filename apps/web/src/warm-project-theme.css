@@ -1,0 +1,80 @@
+/* Warm project palette: removes the remaining blue-black surfaces.
+   Replaces the legacy tones #12161D and #1A1F28 with the warm theme. */
+:root {
+  --head: #1b1711;
+}
+
+/* Legacy #1A1F28 surfaces -> #1B1711 */
+.topnav {
+  background: linear-gradient(#1b1711, #13100b) !important;
+}
+
+.iconbtn.mini,
+.flag,
+.hunt-pick,
+.loop,
+.outfit-search,
+.outfit-thumb,
+.helper-modes button,
+.helper-nav button.on,
+.store-filter-row select,
+.store-addon-row button,
+.store-addon-equip button {
+  background: #1b1711 !important;
+}
+
+.chat-console__log::-webkit-scrollbar-thumb {
+  border-color: #1b1711 !important;
+}
+
+.action-bar__portrait-tag,
+.action-bar__rank {
+  color: #1b1711 !important;
+}
+
+/* Inventory / slot gradients that previously mixed #1A1F28 with blue-black. */
+.cell {
+  background: linear-gradient(180deg, #1b1711 0%, #13100b 100%) !important;
+}
+
+/* Legacy #12161D surfaces -> #110E0A */
+.imbue-item-row,
+.imbue-type-card,
+.build-stat-card,
+.task-board-card,
+.wheel-node-row {
+  background: #110e0a !important;
+}
+
+.prey-slot,
+.imbue-detail,
+.progressao-menu-card {
+  background: linear-gradient(180deg, #1b1711 0%, #110e0a 100%) !important;
+}
+
+.progressao-menu-card {
+  background: linear-gradient(135deg, #1b1711 0%, #110e0a 100%) !important;
+}
+
+.progressao-menu-icon {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--prog-tone, #b8962e) 42%, #17130e),
+    #110e0a
+  ) !important;
+}
+
+.build-portrait-frame {
+  background: linear-gradient(180deg, #1b1711 0%, #110e0a 100%) !important;
+}
+
+/* Paired #141820 blue gradients/surfaces are warmed too, so no blue remains in the same components. */
+.outfit-list,
+.outfit-color-grid,
+.store-boosts span {
+  background: #13100b !important;
+}
+
+.city-lobby__bar--minimal {
+  background: linear-gradient(180deg, #1b1711 0%, #13100b 100%) !important;
+}
