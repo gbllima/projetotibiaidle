@@ -21,6 +21,30 @@ async function account(username: string, names: string[]) {
   return { headers, ids };
 }
 
+async function becomeFriends(
+  sender: { headers: Record<string, string>; ids: number[] },
+  receiver: { headers: Record<string, string>; ids: number[] },
+  receiverName: string,
+) {
+  const senderId = sender.ids[0]!;
+  const receiverId = receiver.ids[0]!;
+  const requested = await context.app.inject({
+    method: 'POST',
+    url: `/api/social/${senderId}/friend-request`,
+    headers: sender.headers,
+    payload: { name: receiverName },
+  });
+  expect(requested.statusCode, requested.body).toBe(200);
+
+  const accepted = await context.app.inject({
+    method: 'POST',
+    url: `/api/social/${receiverId}/friend-request/accept`,
+    headers: receiver.headers,
+    payload: { fromId: senderId },
+  });
+  expect(accepted.statusCode, accepted.body).toBe(200);
+}
+
 async function joinParty(
   leader: { headers: Record<string, string>; ids: number[] },
   guest: { headers: Record<string, string>; ids: number[] },
@@ -28,6 +52,7 @@ async function joinParty(
 ) {
   const leaderId = leader.ids[0]!;
   const guestId = guest.ids[0]!;
+  await becomeFriends(leader, guest, guestName);
   const invited = await context.app.inject({
     method: 'POST', url: `/api/multiplayer-party/${leaderId}/invite`, headers: leader.headers, payload: { name: guestName },
   });
@@ -38,6 +63,54 @@ async function joinParty(
 }
 
 describe('multiplayer party', () => {
+  it('requires an accepted friendship before a party invite can be sent', async () => {
+    const first = await account('friendgateone', ['Gate Leader']);
+    const second = await account('friendgatetwo', ['Gate Guest']);
+    const leaderId = first.ids[0]!;
+    const guestId = second.ids[0]!;
+
+    const beforeFriendship = await context.app.inject({
+      method: 'POST',
+      url: `/api/multiplayer-party/${leaderId}/invite`,
+      headers: first.headers,
+      payload: { name: 'Gate Guest' },
+    });
+    expect(beforeFriendship.statusCode).toBe(403);
+    expect(beforeFriendship.json().error).toContain('aceitaram sua amizade');
+
+    const requested = await context.app.inject({
+      method: 'POST',
+      url: `/api/social/${leaderId}/friend-request`,
+      headers: first.headers,
+      payload: { name: 'Gate Guest' },
+    });
+    expect(requested.statusCode, requested.body).toBe(200);
+
+    const whilePending = await context.app.inject({
+      method: 'POST',
+      url: `/api/multiplayer-party/${leaderId}/invite`,
+      headers: first.headers,
+      payload: { name: 'Gate Guest' },
+    });
+    expect(whilePending.statusCode).toBe(403);
+
+    const acceptedFriendship = await context.app.inject({
+      method: 'POST',
+      url: `/api/social/${guestId}/friend-request/accept`,
+      headers: second.headers,
+      payload: { fromId: leaderId },
+    });
+    expect(acceptedFriendship.statusCode, acceptedFriendship.body).toBe(200);
+
+    const afterAcceptance = await context.app.inject({
+      method: 'POST',
+      url: `/api/multiplayer-party/${leaderId}/invite`,
+      headers: first.headers,
+      payload: { name: 'Gate Guest' },
+    });
+    expect(afterAcceptance.statusCode, afterAcceptance.body).toBe(200);
+  });
+
   it('keeps exactly one active character per account and restores personal formations on leave', async () => {
     const first = await account('multione', ['Alpha Hero', 'Alpha Druid']);
     const second = await account('multitwo', ['Beta Hero', 'Beta Sorcerer']);
@@ -49,6 +122,7 @@ describe('multiplayer party', () => {
     context.db.setWorld(`party:${alpha}`, JSON.stringify([alpha, alphaCompanion]));
     context.db.setWorld(`party:${beta}`, JSON.stringify([beta, betaCompanion]));
 
+    await becomeFriends(first, second, 'Beta Hero');
     const invited = await context.app.inject({
       method: 'POST', url: `/api/multiplayer-party/${alpha}/invite`, headers: first.headers, payload: { name: 'Beta Hero' },
     });
@@ -127,9 +201,8 @@ describe('multiplayer party', () => {
     const ownerId = first.ids[0]!;
     const targetId = second.ids[0]!;
 
-    const added = await context.app.inject({
-      method: 'POST', url: `/api/friends/${ownerId}`, headers: first.headers, payload: { name: 'Friend Target' },
-    });
+    await becomeFriends(first, second, 'Friend Target');
+    const added = await context.app.inject({ url: `/api/friends/${ownerId}`, headers: first.headers });
     expect(added.statusCode, added.body).toBe(200);
     expect(added.json().friends).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: targetId, name: 'Friend Target', level: 8, online: false, activity: 'Offline' }),
@@ -155,9 +228,11 @@ describe('multiplayer party', () => {
     }
 
     const removed = await context.app.inject({
-      method: 'DELETE', url: `/api/friends/${ownerId}/${targetId}`, headers: first.headers,
+      method: 'DELETE', url: `/api/social/${ownerId}/friends/${targetId}`, headers: first.headers,
     });
     expect(removed.statusCode, removed.body).toBe(200);
-    expect(removed.json().friends).toEqual([]);
+
+    const afterRemoval = await context.app.inject({ url: `/api/friends/${ownerId}`, headers: first.headers });
+    expect(afterRemoval.json().friends).toEqual([]);
   });
 });
