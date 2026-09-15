@@ -1,0 +1,22 @@
+@media (max-width: 768px) {
+  .mobile-main-nav {
+    background: linear-gradient(180deg, #17130e 0%, #0b0907 100%) !important;
+    border-top: 1px solid #3b3020 !important;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .46), inset 0 1px 0 rgba(255, 238, 194, .035) !important;
+  }
+
+  .mobile-main-nav button {
+    background: transparent !important;
+    color: #f0eadf !important;
+  }
+
+  .mobile-main-nav button strong {
+    color: #ddd4c4 !important;
+    text-shadow: 0 1px 0 #000;
+  }
+
+  .mobile-main-nav button.on strong,
+  .mobile-main-nav button:active strong {
+    color: #e8c547 !important;
+  }
+}
