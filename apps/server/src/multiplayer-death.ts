@@ -12,6 +12,8 @@ export type MultiplayerCombatSession = HuntSession & {
   multiplayerDown?: boolean;
   /** Shared completed-wave counter observed when this player fell. */
   multiplayerDownAtWave?: number;
+  /** True after the corpse has been observed/anchored to an authoritative shared wave. */
+  multiplayerDownAnchored?: boolean;
   /** Last shared completed-wave counter seen while this member was alive. */
   multiplayerLastSharedWave?: number;
   reinforcementQueue?: unknown[];
@@ -94,22 +96,30 @@ export function synchronizeMultiplayerRevives(
   for (const entry of group) {
     const session = entry.session;
     if (session.multiplayerDown) {
-      // A member can be knocked down between browser refreshes. Its last seen
-      // shared-wave value may therefore be stale (for example still Wave 1
-      // while the party is already fighting Wave 2). Anchor a brand-new corpse
-      // to the shared wave that is actually on screen now; otherwise it can be
-      // revived immediately in the same frame it fell.
+      // A freshly defeated member must be visible as a corpse for the current
+      // authoritative shared wave before it can ever qualify for a revive.
+      // This also repairs stale multiplayerDownAtWave values from older/live
+      // sessions and prevents a low-HP auto-flee from falling and standing up
+      // again in the very same presentation frame.
+      if (!session.multiplayerDownAnchored) {
+        session.multiplayerDownAnchored = true;
+        session.multiplayerDownAtWave = sharedWave;
+        db.saveCharacter(entry.row.id, entry.row.state, JSON.stringify(session), entry.row.settledAt);
+        continue;
+      }
+
       const downAt = session.multiplayerDownAtWave ?? sharedWave;
-      let changed = false;
       if (session.multiplayerDownAtWave === undefined) {
         session.multiplayerDownAtWave = downAt;
-        changed = true;
+        db.saveCharacter(entry.row.id, entry.row.state, JSON.stringify(session), entry.row.settledAt);
+        continue;
       }
 
       if (living.length > 0 && sharedWave > downAt) {
         const stats = deriveStats(session.character);
         session.multiplayerDown = false;
         session.multiplayerDownAtWave = undefined;
+        session.multiplayerDownAnchored = undefined;
         session.multiplayerLastSharedWave = sharedWave;
         session.character.health = Math.max(1, Math.round(stats.maxHealth * 0.5));
         session.character.mana = Math.max(0, Math.round(stats.maxMana * 0.5));
@@ -125,11 +135,6 @@ export function synchronizeMultiplayerRevives(
         // this exact live moment at the beginning of the new wave.
         db.saveCharacter(entry.row.id, entry.row.state, JSON.stringify(session), now);
         living = [...living, entry];
-        continue;
-      }
-
-      if (changed) {
-        db.saveCharacter(entry.row.id, entry.row.state, JSON.stringify(session), entry.row.settledAt);
       }
       continue;
     }
