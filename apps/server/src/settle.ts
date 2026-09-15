@@ -31,6 +31,9 @@ export const BOSS_TRIP_HOURS = 0.25;
 
 type MultiplayerDownSession = HuntSession & {
   multiplayerDown?: boolean;
+  multiplayerDownAtWave?: number;
+  multiplayerDownAnchored?: boolean;
+  multiplayerLastSharedWave?: number;
   multiplayerReviveAtKills?: number;
   reinforcementPartySize?: number;
   reinforcementQueue?: unknown[];
@@ -63,6 +66,12 @@ function holdMultiplayerDefeat(session: HuntSession): 'died' | 'fled' | null {
   const reason = session.status;
   const down = session as MultiplayerDownSession;
   down.multiplayerDown = true;
+  // Every defeat is a brand-new corpse lifecycle. Never inherit an anchor from
+  // a previous defeat or an earlier live synchronization frame: the first
+  // authoritative party view after this defeat must anchor the corpse to the
+  // current shared wave before any later view is allowed to revive it.
+  down.multiplayerDownAtWave = undefined;
+  down.multiplayerDownAnchored = false;
   down.multiplayerReviveAtKills = undefined;
   session.character.health = 0;
   session.active = [];
