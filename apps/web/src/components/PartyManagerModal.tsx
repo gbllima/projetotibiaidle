@@ -16,7 +16,6 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
   const [vocationId, setVocationId] = useState(4);
   const [canCreate, setCanCreate] = useState(false);
   const [multiplayer, setMultiplayer] = useState<MultiplayerPartyStatus | null>(null);
-  const [inviteName, setInviteName] = useState('');
   const [friends, setFriends] = useState<FriendView[]>([]);
   const [friendName, setFriendName] = useState('');
   const dialog = useRef<HTMLDivElement>(null);
@@ -150,6 +149,22 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
     }
   };
 
+  const partyMemberIds = new Set(multiplayer?.members.map((member) => member.id) ?? []);
+  const partyFull = Boolean(multiplayer?.active && multiplayer.members.length >= multiplayer.maxMembers);
+  const followerCannotInvite = Boolean(multiplayer?.active && !multiplayer.isLeader);
+
+  const inviteFriendToParty = (friend: FriendView) => {
+    if (busy || partyFull || followerCannotInvite || partyMemberIds.has(friend.id)) return;
+    void multiplayerAction(async () => (await api.inviteMultiplayerParty(character.id, friend.name)).status);
+  };
+
+  const inviteLabel = (friend: FriendView) => {
+    if (partyMemberIds.has(friend.id)) return 'Na party';
+    if (followerCannotInvite) return 'Somente o líder convida';
+    if (partyFull) return 'Party cheia';
+    return 'Convidar para party';
+  };
+
   return <div className="modal party-manager-backdrop" onClick={() => { if (!busy) onClose(); }}>
     <div className="party-manager" role="dialog" aria-modal="true" aria-labelledby="party-manager-title" ref={dialog} tabIndex={-1} onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
@@ -230,41 +245,16 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
                 {multiplayer.isLeader && member.id !== character.id && <button type="button" className="party-card-primary" disabled={busy} onClick={() => void multiplayerAction(async () => (await api.removeMultiplayerPartyMember(character.id, member.id)).status, true)}>Remover</button>}
               </div>)}
             </div>
-            {multiplayer.isLeader && multiplayer.members.length < multiplayer.maxMembers && <form className="party-create" onSubmit={(event) => {
-              event.preventDefault();
-              const target = inviteName.trim();
-              if (!target) return;
-              void multiplayerAction(async () => {
-                const result = await api.inviteMultiplayerParty(character.id, target);
-                setInviteName('');
-                return result.status;
-              });
-            }}>
-              <label>Convidar outro jogador<input value={inviteName} onChange={(event) => setInviteName(event.target.value)} disabled={busy} placeholder="Nome do personagem" /></label>
-              <button type="submit" disabled={busy || !inviteName.trim()}>Enviar convite</button>
-            </form>}
+            <p className="party-manager-hint"><strong>Convites agora ficam na aba Amigos.</strong> Somente jogadores que já aceitaram sua amizade podem ser chamados para a Party Multiplayer.</p>
             <button type="button" disabled={busy} onClick={() => void multiplayerAction(async () => (await api.leaveMultiplayerParty(character.id)).status, true)}>{multiplayer.isLeader ? 'Encerrar party multiplayer' : 'Sair da party multiplayer'}</button>
             <p className="party-manager-hint">O líder inicia a hunt e o servidor coloca todos na mesma cave. Se algum membro não tiver level, acesso ou vaga, a entrada do grupo é cancelada para não separar a party.</p>
           </> : <>
-            <form className="party-create" onSubmit={(event) => {
-              event.preventDefault();
-              const target = inviteName.trim();
-              if (!target) return;
-              void multiplayerAction(async () => {
-                const result = await api.inviteMultiplayerParty(character.id, target);
-                setInviteName('');
-                return result.status;
-              });
-            }}>
-              <label>Nome do amigo<input value={inviteName} onChange={(event) => setInviteName(event.target.value)} disabled={busy} placeholder="Nome do personagem dele" /></label>
-              <button type="submit" disabled={busy || !inviteName.trim()}>Convidar para party</button>
-            </form>
-            <p className="party-manager-hint">Seu amigo deve abrir Gerenciar party → Multiplayer para aceitar. O convite expira em 15 minutos.</p>
+            <p className="party-manager-hint"><strong>Para criar uma party, abra a aba Amigos e use “Convidar para party”.</strong> O botão só aparece para amizades já aceitas. O convite expira em 15 minutos.</p>
           </>}
           <button type="button" disabled={busy} onClick={() => void refreshMultiplayer().catch((reason: Error) => setError(reason.message))}>Atualizar</button>
         </div> : <div className="party-multiplayer-info">
           <h3>Amigos</h3>
-          <p>Adicione jogadores de outras contas pelo nome do personagem. O status é atualizado enquanto esta janela estiver aberta.</p>
+          <p>Envie um pedido de amizade pelo nome do personagem. Depois que o outro jogador aceitar, ele aparece aqui e pode ser convidado para a Party Multiplayer.</p>
           <form className="party-create" onSubmit={(event) => {
             event.preventDefault();
             const target = friendName.trim();
@@ -276,7 +266,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
             });
           }}>
             <label>Adicionar amigo<input value={friendName} onChange={(event) => setFriendName(event.target.value)} disabled={busy} placeholder="Nome do personagem" /></label>
-            <button type="submit" disabled={busy || !friendName.trim()}>Adicionar</button>
+            <button type="submit" disabled={busy || !friendName.trim()}>Enviar pedido</button>
           </form>
           <div className="party-available">
             {friends.map((friend) => <div className="party-formation-card" key={friend.id}>
@@ -285,12 +275,15 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
               <small>Level {friend.level}</small>
               <span className="party-manager-hint" style={{ color: friend.online ? '#6fcf76' : '#9a9a9a', fontWeight: 700 }}>{friend.online ? 'Online' : 'Offline'}</span>
               <span className="party-manager-hint">{friend.online ? friend.activity : 'Offline'}</span>
-              <button type="button" className="party-card-primary" disabled={busy} onClick={() => void friendAction(() => api.removeFriend(character.id, friend.id))}>Remover</button>
+              <button type="button" className="party-card-primary"
+                disabled={busy || partyMemberIds.has(friend.id) || partyFull || followerCannotInvite}
+                onClick={() => inviteFriendToParty(friend)}>{inviteLabel(friend)}</button>
+              <button type="button" className="party-card-primary" disabled={busy} onClick={() => void friendAction(() => api.removeFriend(character.id, friend.id))}>Remover amigo</button>
             </div>)}
-            {!friends.length && <p>Nenhum amigo adicionado.</p>}
+            {!friends.length && <p>Nenhum amigo aceito ainda.</p>}
           </div>
-          <p className="party-manager-hint">Atividades: <strong>Hunt</strong>, <strong>Treino</strong> ou <strong>Cidade</strong>. Jogadores desconectados aparecem como Offline.</p>
-          <button type="button" disabled={busy} onClick={() => void refreshFriends().catch((reason: Error) => setError(reason.message))}>Atualizar</button>
+          <p className="party-manager-hint">Somente amizades aceitas podem receber convite de Party Multiplayer. Atividades: <strong>Hunt</strong>, <strong>Treino</strong> ou <strong>Cidade</strong>.</p>
+          <button type="button" disabled={busy} onClick={() => void Promise.all([refreshFriends(), refreshMultiplayer()]).catch((reason: Error) => setError(reason.message))}>Atualizar</button>
         </div>}
       </div>
       {error && <p className="party-manager-error" role="alert">{error}</p>}
