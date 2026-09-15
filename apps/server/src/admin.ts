@@ -9,6 +9,54 @@ import { GameError } from './settle.js';
 
 export { isAdminUsername };
 
+const SITE_NEWS_KEY = 'site-news';
+
+export interface SiteNewsItem {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  body: string;
+  published: boolean;
+  createdAt: number;
+  updatedAt: number;
+  publishedAt: number;
+}
+
+function readSiteNews(db: Database): SiteNewsItem[] {
+  const raw = db.getWorld(SITE_NEWS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((entry): entry is SiteNewsItem => Boolean(entry && typeof entry === 'object' && typeof (entry as SiteNewsItem).id === 'string'))
+      .map((entry) => ({
+        id: String(entry.id),
+        title: String(entry.title ?? '').slice(0, 120),
+        category: String(entry.category ?? 'Novidade').slice(0, 40),
+        summary: String(entry.summary ?? '').slice(0, 280),
+        body: String(entry.body ?? '').slice(0, 8000),
+        published: Boolean(entry.published),
+        createdAt: Number(entry.createdAt) || 0,
+        updatedAt: Number(entry.updatedAt) || Number(entry.createdAt) || 0,
+        publishedAt: Number(entry.publishedAt) || Number(entry.createdAt) || 0,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function saveSiteNews(db: Database, news: SiteNewsItem[]): void {
+  db.setWorld(SITE_NEWS_KEY, JSON.stringify(news));
+}
+
+export function siteNewsSnapshot(db: Database, publicOnly = false): SiteNewsItem[] {
+  return readSiteNews(db)
+    .filter((entry) => !publicOnly || entry.published)
+    .sort((a, b) => (b.publishedAt || b.updatedAt) - (a.publishedAt || a.updatedAt));
+}
+
 export function requireAdmin(db: Database, accountId: number): void {
   const account = db.findAccountById(accountId);
   if (!account || !isAdminUsername(account.username)) {
@@ -63,6 +111,7 @@ export function adminSnapshot(db: Database) {
       code: String(row['code']),
       usedBy: row['used_by'] ? Number(row['used_by']) : null,
     })),
+    news: siteNewsSnapshot(db),
   };
 }
 
@@ -87,12 +136,68 @@ export function adminAct(
     try {
       stopHunt(db, targetAccountId, characterId, now);
     } catch (error) {
-      // loadCharacter can settle an already-finished stored session before
-      // stopHunt checks it. In that case the desired administrative result is
-      // already achieved, so only ignore the "not hunting" conflict.
       if (!(error instanceof GameError) || error.status !== 409) throw error;
     }
   };
+
+  if (type === 'news-create' || type === 'news-update') {
+    const title = String(body.title ?? '').trim();
+    const category = String(body.category ?? 'Novidade').trim() || 'Novidade';
+    const summary = String(body.summary ?? '').trim();
+    const content = String(body.body ?? '').trim();
+    const published = body.published === undefined ? true : Boolean(body.published);
+    if (title.length < 3 || title.length > 120) throw new GameError('O título deve ter entre 3 e 120 caracteres.', 422);
+    if (category.length > 40) throw new GameError('A categoria pode ter no máximo 40 caracteres.', 422);
+    if (summary.length < 5 || summary.length > 280) throw new GameError('O resumo deve ter entre 5 e 280 caracteres.', 422);
+    if (content.length < 5 || content.length > 8000) throw new GameError('O texto da notícia deve ter entre 5 e 8000 caracteres.', 422);
+
+    const news = readSiteNews(db);
+    if (type === 'news-create') {
+      const item: SiteNewsItem = {
+        id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+        title,
+        category,
+        summary,
+        body: content,
+        published,
+        createdAt: now,
+        updatedAt: now,
+        publishedAt: now,
+      };
+      news.unshift(item);
+      saveSiteNews(db, news.slice(0, 100));
+      db.setWorld('admin-audit:' + now + ':news:' + item.id, JSON.stringify({ type, by: accountId, id: item.id }));
+      return { news: item };
+    }
+
+    const id = String(body.id ?? '');
+    const index = news.findIndex((entry) => entry.id === id);
+    if (index < 0) throw new GameError('Notícia não encontrada.', 404);
+    const previous = news[index]!;
+    const item: SiteNewsItem = {
+      ...previous,
+      title,
+      category,
+      summary,
+      body: content,
+      published,
+      updatedAt: now,
+      publishedAt: published && !previous.published ? now : previous.publishedAt,
+    };
+    news[index] = item;
+    saveSiteNews(db, news);
+    db.setWorld('admin-audit:' + now + ':news:' + item.id, JSON.stringify({ type, by: accountId, id: item.id }));
+    return { news: item };
+  }
+
+  if (type === 'news-delete') {
+    const id = String(body.id ?? '');
+    const news = readSiteNews(db);
+    if (!news.some((entry) => entry.id === id)) throw new GameError('Notícia não encontrada.', 404);
+    saveSiteNews(db, news.filter((entry) => entry.id !== id));
+    db.setWorld('admin-audit:' + now + ':news:' + id, JSON.stringify({ type, by: accountId, id }));
+    return { ok: true };
+  }
 
   if (type === 'ban' || type === 'unban') {
     const targetId = integer(body.accountId);
