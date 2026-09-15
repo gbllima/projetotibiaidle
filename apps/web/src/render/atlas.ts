@@ -28,6 +28,7 @@ export interface SpriteGroup {
 
 export interface AppearanceEntry {
   name?: string;
+  displacement?: { x: number; y: number };
   groups: Record<string, SpriteGroup>;
 }
 

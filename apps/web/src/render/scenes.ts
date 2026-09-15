@@ -127,12 +127,12 @@ function groundTexture(atlas: Atlas, id: number, x: number, y: number) {
   return atlas.texture(group.sprites[index] ?? -1) ?? atlas.icon(id);
 }
 
-function sitOnTile(sprite: Sprite, tx: number, ty: number, offsetY = 0): void {
+function sitOnTile(sprite: Sprite, tx: number, ty: number, offsetY = 0, offsetX = 0): void {
   const width = sprite.texture.width; const height = sprite.texture.height;
   // Tibia appearances wider than one tile are anchored to the destination tile's
   // bottom-right corner. Centering a 64px table on a 32px cell leaves a 16px gap
   // between adjoining furniture pieces, which is especially visible in Thais Depot.
-  sprite.x = Math.round(tx * SCENE_TILE - Math.max(0, width - SCENE_TILE));
+  sprite.x = Math.round(tx * SCENE_TILE - Math.max(0, width - SCENE_TILE) + offsetX);
   sprite.y = Math.round(ty * SCENE_TILE - Math.max(0, height - SCENE_TILE) + offsetY);
   sprite.roundPixels = true;
 }
@@ -157,14 +157,14 @@ function placeGround(layer: Container, atlas: Atlas, id: number, x: number, y: n
   const sprite = new Sprite(texture); snapGroundSprite(sprite, x, y); layer.addChild(sprite); return true;
 }
 
-function placeProp(layer: Container, atlas: Atlas, id: number, x: number, y: number, offsetY = 0): void {
+function placeProp(layer: Container, atlas: Atlas, id: number, x: number, y: number, offsetY = 0, offsetX = 0): void {
   if (!id || !canPaint(atlas, id)) return;
   if (isAnimated(atlas, id)) {
     const frames = atlas.frames(id, { group: GROUP_GROUND }); if (!frames.textures.length) return;
-    const sprite = new AnimatedSprite(frames.textures); sprite.animationSpeed = 0.1; sprite.play(); sitOnTile(sprite, x, y, offsetY); layer.addChild(sprite); return;
+    const sprite = new AnimatedSprite(frames.textures); sprite.animationSpeed = 0.1; sprite.play(); sitOnTile(sprite, x, y, offsetY, offsetX); layer.addChild(sprite); return;
   }
   const texture = atlas.icon(id) ?? groundTexture(atlas, id, x, y); if (!texture) return;
-  const sprite = new Sprite(texture); sitOnTile(sprite, x, y, offsetY); layer.addChild(sprite);
+  const sprite = new Sprite(texture); sitOnTile(sprite, x, y, offsetY, offsetX); layer.addChild(sprite);
 }
 
 function themeFloorId(atlas: Atlas, huntId: string, x: number, y: number, random: () => number): number {
@@ -215,8 +215,8 @@ export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string):
 }
 
 // These six appearances form the L-shaped wooden counter in Thais Depot.
-// They mix 32px and 64px sprites, so all pieces need the same baseline nudge
-// or the small connector sprites appear detached from the larger sections.
+// Preserve the counter's baseline while respecting each appearance's native
+// displacement: the small connectors need an additional 8px shift up and left.
 const THAIS_COUNTER_PIECES = new Set([2322, 2323, 2324, 2327, 2328, 2332]);
 
 /** Render the real Thais Depot cut generated from the project's OTBM map. */
@@ -227,8 +227,10 @@ export function paintCityScene(parent: Container, tiles: Atlas): void {
   for (const tile of cityTiles) {
     placeGround(ground, tiles, tile.ground, tile.x, tile.y);
     for (const id of tile.props) {
-      const offsetY = THAIS_COUNTER_PIECES.has(id) ? 8 : 0;
-      placeProp(props, tiles, id, tile.x, tile.y, offsetY);
+      const counter = THAIS_COUNTER_PIECES.has(id);
+      const shift = counter ? tiles.entry(id)?.displacement : undefined;
+      const offsetY = counter ? 8 - (shift?.y ?? 0) : 0;
+      placeProp(props, tiles, id, tile.x, tile.y, offsetY, -(shift?.x ?? 0));
     }
   }
 }

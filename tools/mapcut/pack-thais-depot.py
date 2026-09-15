@@ -22,5 +22,12 @@ blocked = [i for i in ids if flags.get(i, {}).get(13)]
 missing = [i for i in ids if i not in appearances.objects]
 if missing:
     raise RuntimeError(f'Missing appearances: {missing}')
-build('thais-depot', {i: appearances.objects[i] for i in ids}, catalog,
+document = build('thais-depot', {i: appearances.objects[i] for i in ids}, catalog,
       ROOT / 'apps/web/public/city-assets', directions=None, page_size=2048, fmt='webp')
+for item_id, entry in document['entries'].items():
+    shift = flags.get(int(item_id), {}).get(26)
+    if shift:
+        values = {k: v for k, _, v in read_fields(shift)}
+        entry['displacement'] = {'x': values.get(1, 0), 'y': values.get(2, 0)}
+(ROOT / 'apps/web/public/city-assets/thais-depot.json').write_text(
+    json.dumps(document, separators=(',', ':')), encoding='utf-8')
