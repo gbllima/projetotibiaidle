@@ -11,6 +11,7 @@ import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
 import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
 import { registerMultiplayerPartyRoutes } from './multiplayer-party.js';
+import { registerMultiplayerFriendGate } from './multiplayer-friend-gate.js';
 import { registerSocialLiveRoutes } from './social-live.js';
 import { registerWebSocket } from './ws.js';
 import { installVocationAppearanceDefaults } from './vocation-appearance.js';
@@ -94,6 +95,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
 
   await app.register(websocket);
 
+  registerMultiplayerFriendGate(app, db);
   registerRoutes(app, db);
   registerPartyItemRoutes(app, db);
   registerMultiplayerPartyRoutes(app, db);
