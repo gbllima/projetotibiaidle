@@ -69,10 +69,10 @@ export function ItemSlot({
 
   const handleClick = (event: MouseEvent) => {
     if (!itemId) return;
+    clearHover();
     if (event.detail >= 2 && onInspect) {
       event.preventDefault();
       event.stopPropagation();
-      clearHover();
       onInspect(itemId);
       return;
     }
@@ -93,7 +93,10 @@ export function ItemSlot({
           if (tooltip) setTooltip({ x: event.clientX, y: event.clientY });
         }}
         onClick={itemId && (onClick || onInspect) ? handleClick : undefined}
-        onContextMenu={itemId && onContextMenu ? (event) => onContextMenu(event) : undefined}
+        onContextMenu={itemId && onContextMenu ? (event) => {
+          clearHover();
+          onContextMenu(event);
+        } : undefined}
       >
         {src ? <img src={src} alt={name ?? ''} /> : itemId ? <span className="slot-label">{(name ?? `#${itemId}`).slice(0, 8)}</span> : emptyLabel ? <span className="slot-label">{emptyLabel}</span> : null}
         {count && count > 0 ? <span className="qty">{count}</span> : null}
