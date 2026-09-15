@@ -1,0 +1,72 @@
+/* Mobile Party Manager usability fixes.
+   Keep the close action inside the visible browser viewport and give it a
+   finger-friendly target instead of leaving it near the Android gesture area. */
+
+@media (max-width: 520px) {
+  .shell .party-manager-backdrop {
+    box-sizing: border-box;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      6px
+      max(8px, env(safe-area-inset-bottom));
+  }
+
+  .shell .party-manager {
+    width: 100%;
+    height: min(88dvh, 720px);
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)));
+  }
+
+  /* Reserve the title edges so the centered heading never sits under the X. */
+  .shell .party-manager > h2 {
+    padding-left: 54px;
+    padding-right: 54px;
+  }
+
+  /* The existing footer 'Fechar' button becomes an always-accessible top X on mobile.
+     It stays the same semantic button, so keyboard/accessibility behavior is preserved. */
+  .shell .party-manager-footer > button:last-child {
+    position: absolute;
+    top: 44px;
+    right: 10px;
+    z-index: 20;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid #5b4828;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #24271f 0%, #151812 100%) !important;
+    color: #ece9df !important;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    font-size: 0;
+    line-height: 1;
+    touch-action: manipulation;
+  }
+
+  .shell .party-manager-footer > button:last-child::before {
+    content: '×';
+    display: block;
+    font: 700 30px/1 Arial, sans-serif;
+    transform: translateY(-1px);
+  }
+
+  .shell .party-manager-footer > button:last-child:active {
+    transform: scale(0.94);
+  }
+
+  /* Once the close button floats at the top, let the remaining footer action use
+     the whole row. On Multiplayer/Friends this simply leaves a small safe footer. */
+  .shell .party-manager-footer {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .shell .party-manager-footer > button:not(:last-child) {
+    grid-column: 1 / -1;
+  }
+}
