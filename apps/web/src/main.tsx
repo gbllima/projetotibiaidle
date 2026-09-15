@@ -13,6 +13,7 @@ import './mobile-hunt.css';
 import './mobile-topmenus.css';
 import './mobile-chat.css';
 import './mobile-nav-icons.css';
+import './mobile-menu-responsive.css';
 import './mobile-bottom-theme.css';
 import './mobile-training.css';
 import './mobile-top-tutorial.css';
