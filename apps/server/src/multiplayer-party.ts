@@ -1,11 +1,16 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type { CharacterState, HuntSession } from '@tibia-idle/sim';
+import {
+  MULTIPLAYER_PARTY_BOOST_PREFIX, MULTIPLAYER_PARTY_XP_BONUS,
+  type CharacterState, type HuntSession,
+} from '@tibia-idle/sim';
 import type { CharacterRow, Database } from './db.js';
-import { startHunt, stopHunt } from './game.js';
+import { listHunts, startHunt, stopHunt } from './game.js';
+import { onlineCharacterIds } from './presence.js';
 import { GameError } from './settle.js';
 
 const PARTY_CAP = 5;
 const INVITE_TTL_MS = 15 * 60_000;
+const TRAINING_ACTIVITY_TTL_MS = 15_000;
 
 interface SavedPersonalParty {
   ownerId: number;
@@ -22,6 +27,8 @@ function partyKey(leaderId: number): string { return `mp-party:${leaderId}`; }
 function inviteKey(characterId: number): string { return `mp-invite:${characterId}`; }
 function savedPartyKey(characterId: number): string { return `mp-saved-party:${characterId}`; }
 function personalPartyKey(characterId: number): string { return `party:${characterId}`; }
+function friendsKey(accountId: number): string { return `friends:${accountId}`; }
+function activityKey(characterId: number): string { return `friend-activity:${characterId}`; }
 
 function parseIds(raw: string | null): number[] {
   if (!raw) return [];
@@ -159,9 +166,32 @@ function pendingInvite(db: Database, characterId: number): PendingInvite | null 
   }
 }
 
+export function multiplayerPartyHuntGate(db: Database, characterId: number): { minLevel: number; allowedHuntIds: string[] } | null {
+  const ids = multiplayerPartyIds(db, characterId);
+  if (ids.length < 2) return null;
+  const rows = ids.flatMap((id) => {
+    const row = db.findCharacter(id);
+    return row ? [row] : [];
+  });
+  if (rows.length !== ids.length) return null;
+
+  const states = rows.map(stateFromRow);
+  const minLevel = Math.min(...states.map((state) => state.level));
+  let allowed: Set<string> | null = null;
+  for (const state of states) {
+    const unlocked = new Set(listHunts(state).filter((hunt) => hunt.unlocked).map((hunt) => hunt.id));
+    allowed = allowed === null ? unlocked : new Set([...allowed].filter((huntId) => unlocked.has(huntId)));
+  }
+  return { minLevel, allowedHuntIds: [...(allowed ?? new Set<string>())] };
+}
+
 export function multiplayerPartyStatus(db: Database, characterId: number) {
   const leaderId = leaderFor(db, characterId);
   const ids = leaderId ? parseIds(db.getWorld(partyKey(leaderId))) : [];
+  const members = ids.flatMap((id) => {
+    const row = db.findCharacter(id);
+    return row ? [characterSummary(row)] : [];
+  });
   const invite = pendingInvite(db, characterId);
   const inviter = invite ? db.findCharacter(invite.leaderId) : null;
   return {
@@ -169,10 +199,9 @@ export function multiplayerPartyStatus(db: Database, characterId: number) {
     leaderId: leaderId ?? undefined,
     isLeader: Boolean(leaderId && leaderId === characterId),
     maxMembers: PARTY_CAP,
-    members: ids.flatMap((id) => {
-      const row = db.findCharacter(id);
-      return row ? [characterSummary(row)] : [];
-    }),
+    minLevel: members.length ? Math.min(...members.map((member) => member.level)) : undefined,
+    xpBonusPercent: Math.round(MULTIPLAYER_PARTY_XP_BONUS * 100),
+    members,
     invite: inviter ? { fromId: inviter.id, fromName: stateFromRow(inviter).name, createdAt: invite!.createdAt } : undefined,
   };
 }
@@ -218,9 +247,37 @@ function accept(db: Database, accountId: number, characterId: number): void {
   db.setWorld(inviteKey(target.id), '');
 }
 
+function boostedMonsterWithMultiplayerBonus(value?: string): string {
+  if (value?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX)) return value;
+  return `${MULTIPLAYER_PARTY_BOOST_PREFIX}${value ?? ''}`;
+}
+
+function boostedMonsterWithoutMultiplayerBonus(value?: string): string | undefined {
+  if (!value?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX)) return value;
+  const original = value.slice(MULTIPLAYER_PARTY_BOOST_PREFIX.length);
+  return original || undefined;
+}
+
+function setMultiplayerXpBonus(db: Database, characterId: number, enabled: boolean): void {
+  const row = db.findCharacter(characterId);
+  if (!row?.session) return;
+  try {
+    const session = JSON.parse(row.session) as HuntSession;
+    const next = enabled
+      ? boostedMonsterWithMultiplayerBonus(session.boostedMonsterId)
+      : boostedMonsterWithoutMultiplayerBonus(session.boostedMonsterId);
+    if (next === session.boostedMonsterId) return;
+    session.boostedMonsterId = next;
+    db.saveCharacter(row.id, row.state, JSON.stringify(session), row.settledAt);
+  } catch {
+    // A malformed session is handled by the normal character loader.
+  }
+}
+
 function dissolve(db: Database, leaderId: number): void {
   const ids = parseIds(db.getWorld(partyKey(leaderId)));
   for (const id of ids) {
+    setMultiplayerXpBonus(db, id, false);
     db.setWorld(memberKey(id), '');
     restorePersonalParty(db, id);
   }
@@ -236,6 +293,7 @@ function leave(db: Database, accountId: number, characterId: number): void {
     return;
   }
   const ids = parseIds(db.getWorld(partyKey(leaderId))).filter((id) => id !== characterId);
+  setMultiplayerXpBonus(db, characterId, false);
   db.setWorld(memberKey(characterId), '');
   restorePersonalParty(db, characterId);
   if (ids.length <= 1) {
@@ -251,6 +309,7 @@ function kick(db: Database, accountId: number, leaderId: number, memberId: numbe
   if (memberId === leaderId) throw new GameError('Use sair para encerrar a party.', 409);
   const ids = parseIds(db.getWorld(partyKey(leaderId)));
   if (!ids.includes(memberId)) throw new GameError('Esse personagem não está na sua party.', 404);
+  setMultiplayerXpBonus(db, memberId, false);
   db.setWorld(memberKey(memberId), '');
   restorePersonalParty(db, memberId);
   const next = ids.filter((id) => id !== memberId);
@@ -263,7 +322,13 @@ function startSharedHunt(db: Database, accountId: number, characterId: number, h
   const leaderId = leaderFor(db, characterId);
   if (!leaderId || leaderId !== characterId) throw new GameError('Somente o líder pode iniciar a hunt multiplayer.', 403);
   const ids = parseIds(db.getWorld(partyKey(leaderId)));
+  const gate = multiplayerPartyHuntGate(db, characterId);
+  if (!gate || !gate.allowedHuntIds.includes(huntId)) {
+    throw new GameError(`A party só pode acessar hunts liberadas para todos. Menor level da party: ${gate?.minLevel ?? '?'}.`, 422);
+  }
+
   const started: number[] = [];
+  const marked: number[] = [];
   try {
     for (const id of ids) {
       const row = db.findCharacter(id);
@@ -275,12 +340,19 @@ function startSharedHunt(db: Database, accountId: number, characterId: number, h
           alreadyThere = session.status === 'active' && session.huntId === huntId;
         } catch { /* startHunt will repair/switch */ }
       }
-      if (alreadyThere) continue;
-      startHunt(db, row.accountId, id, huntId, Date.now(), hours);
-      started.push(id);
+      if (!alreadyThere) {
+        const loaded = startHunt(db, row.accountId, id, huntId, Date.now(), hours);
+        started.push(id);
+        if (!loaded.session || loaded.session.status !== 'active' || loaded.session.huntId !== huntId) {
+          throw new GameError('Não há vagas suficientes para colocar toda a party na mesma hunt.', 409);
+        }
+      }
+      setMultiplayerXpBonus(db, id, true);
+      marked.push(id);
     }
     return ids;
   } catch (error) {
+    for (const id of marked) setMultiplayerXpBonus(db, id, false);
     // Avoid leaving half the multiplayer party in a cave when one member cannot
     // enter (level, supplies, capacity, queue, etc.).
     for (const id of started) {
@@ -305,6 +377,54 @@ function stopSharedHunt(db: Database, accountId: number, characterId: number): n
     }
   }
   return ids;
+}
+
+function friendIds(db: Database, accountId: number): number[] {
+  return parseIds(db.getWorld(friendsKey(accountId)));
+}
+
+function friendActivity(db: Database, row: CharacterRow, online: boolean, now: number): 'Hunt' | 'Treino' | 'Cidade' | 'Offline' {
+  if (!online) return 'Offline';
+  if (row.session || db.queuedHunt(row.id)) return 'Hunt';
+  const lastTraining = Number(db.getWorld(activityKey(row.id)) ?? 0);
+  if (Number.isFinite(lastTraining) && lastTraining > 0 && now - lastTraining <= TRAINING_ACTIVITY_TTL_MS) return 'Treino';
+  return 'Cidade';
+}
+
+function friendsStatus(db: Database, accountId: number) {
+  const online = new Set(onlineCharacterIds());
+  const now = Date.now();
+  return friendIds(db, accountId).flatMap((id) => {
+    const row = db.findCharacter(id);
+    if (!row) return [];
+    const state = stateFromRow(row);
+    const isOnline = online.has(id);
+    return [{
+      id,
+      name: state.name,
+      level: state.level,
+      vocationId: state.vocationId,
+      appearance: state.appearance,
+      online: isOnline,
+      activity: friendActivity(db, row, isOnline, now),
+    }];
+  });
+}
+
+function addFriend(db: Database, accountId: number, characterId: number, targetName: string): void {
+  const owner = requireOwnedCharacter(db, accountId, characterId);
+  const target = db.findCharacterByName(targetName.trim());
+  if (!target) throw new GameError('Personagem não encontrado.', 404);
+  if (target.id === owner.id || target.accountId === owner.accountId) {
+    throw new GameError('Adicione como amigo um jogador de outra conta.', 409);
+  }
+  const ids = friendIds(db, accountId);
+  if (!ids.includes(target.id)) db.setWorld(friendsKey(accountId), JSON.stringify([...ids, target.id]));
+}
+
+function removeFriend(db: Database, accountId: number, characterId: number, friendId: number): void {
+  requireOwnedCharacter(db, accountId, characterId);
+  db.setWorld(friendsKey(accountId), JSON.stringify(friendIds(db, accountId).filter((id) => id !== friendId)));
 }
 
 export function registerMultiplayerPartyRoutes(app: FastifyInstance, db: Database): void {
@@ -387,6 +507,48 @@ export function registerMultiplayerPartyRoutes(app: FastifyInstance, db: Databas
       const id = Number((request.params as { id: string }).id);
       const memberIds = stopSharedHunt(db, accountId, id);
       return reply.send({ ok: true, memberIds });
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.get('/api/friends/:id', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      requireOwnedCharacter(db, accountId, id);
+      return reply.send({ friends: friendsStatus(db, accountId) });
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.post('/api/friends/:id', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      const body = (request.body ?? {}) as { name?: unknown };
+      const name = String(body.name ?? '').trim();
+      if (!name) throw new GameError('Informe o nome do personagem.', 422);
+      addFriend(db, accountId, id, name);
+      return reply.send({ friends: friendsStatus(db, accountId) });
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.delete('/api/friends/:id/:friendId', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const params = request.params as { id: string; friendId: string };
+      removeFriend(db, accountId, Number(params.id), Number(params.friendId));
+      return reply.send({ friends: friendsStatus(db, accountId) });
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.post('/api/friends/:id/activity', async (request, reply) => {
+    try {
+      const accountId = requireAccount(db, request);
+      const id = Number((request.params as { id: string }).id);
+      requireOwnedCharacter(db, accountId, id);
+      const body = (request.body ?? {}) as { activity?: unknown };
+      if (body.activity !== 'training') throw new GameError('Atividade inválida.', 422);
+      db.setWorld(activityKey(id), String(Date.now()));
+      return reply.send({ ok: true });
     } catch (error) { return fail(reply, error); }
   });
 }
