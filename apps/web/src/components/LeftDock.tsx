@@ -263,7 +263,7 @@ export function LeftDock({ character, busy, onTaskRoll }: { character: Character
 
       <DockBox id="task" title="Task">
         {character.task ? <div className="kv"><span>Alvo</span><strong>{monstersById.get(character.task.monsterId)?.name ?? character.task.monsterId}</strong><span>Progresso</span><strong className={character.task.claimed?'profit':''}>{character.task.progress}/{character.task.required}{character.task.claimed?' ✓':''}</strong><span>Recompensa</span><strong className="goldish">{formatNumber(character.task.gold)}g · {formatNumber(character.task.experience)} XP</strong></div> : <p className="soon" style={{margin:0}}>Entre numa hunt para receber uma task.</p>}
-        {onTaskRoll && <button className="btn" style={{width:'100%',marginTop:8,fontSize:11}} disabled={busy} onClick={onTaskRoll}>{character.task&&!character.task.claimed?'Trocar · 500g':'Nova task'}</button>}
+        {onTaskRoll && <button className="btn" style={{width:'100%',marginTop:8,fontSize:11}} disabled={busy} onClick={onTaskRoll}>{character.task&&!character.task.claimed?'Abandonar · 500g':'Nova task'}</button>}
       </DockBox>
 
       <DockBox id="boosts" title="Boosts" bodyClass="body kv">

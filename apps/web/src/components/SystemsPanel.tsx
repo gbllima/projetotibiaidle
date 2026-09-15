@@ -509,7 +509,7 @@ function Merchant({ character, world, busy, onAct }: { character: CharacterView;
         </div>
         );
       })}
-      <h3 style={{ marginTop: 14 }}>Vender do armazém</h3>
+      <h3 style={{ marginTop: 14 }}>Vender do Depot</h3>
       {character.warehouse.map((stack) => (
         <div className="hunt-row" key={stack.itemId}>
           <div>{stack.name} ×{stack.count}</div>
@@ -626,7 +626,7 @@ function Market({
   const listings = (world?.market ?? []).filter((row) => row.currency === currency);
   return (
     <div>
-      <h3>Anunciar do armazém</h3>
+      <h3>Anunciar do Depot</h3>
       <select value={itemId} onChange={(event) => setItemId(Number(event.target.value))}>
         {character.warehouse.map((stack) => <option key={stack.itemId} value={stack.itemId}>{stack.name} ×{stack.count}</option>)}
       </select>

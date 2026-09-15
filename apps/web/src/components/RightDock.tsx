@@ -400,7 +400,7 @@ export function RightDock({
       {menu.from !== 'backpack' && <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onMoveItem(menu.itemId, menu.from === 'supply' ? 'supply' : 'pouch', menu.count))}>Mover pra backpack</button>}
       {menu.from === 'backpack' && <>
         <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onBackpackWithdraw(menu.itemId, menu.count, 'supply'))}>Mover pra supply</button>
-        <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onBackpackWithdraw(menu.itemId, menu.count, 'warehouse'))}>Mover pro armazém</button>
+        <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onBackpackWithdraw(menu.itemId, menu.count, 'warehouse'))}>Mover pro Depot</button>
       </>}
       {sellable && <button type="button" disabled={busy || lootActionBusy} onClick={() => run(() => onSellItem(menu.itemId, menu.from, menu.count))}>Vender ({formatNumber(unit * menu.count)}g)</button>}
       <button type="button" className="danger" disabled={busy || lootActionBusy} onClick={() => run(() => onDestroyItem(menu.itemId, menu.from, menu.count))}>Destruir</button>

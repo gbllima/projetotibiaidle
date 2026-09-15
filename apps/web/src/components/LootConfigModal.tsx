@@ -310,7 +310,7 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
           <div className="loot-container-add">
             <input value={containerInput} onChange={(event) => setContainerInput(event.target.value)} placeholder="nome ou id do item" />
             <select value={containerTarget} onChange={(event) => setContainerTarget(event.target.value as ContainerTarget)}>
-              <option value="backpack">Backpack</option><option value="supply">Supply Pouch</option><option value="warehouse">Armazém</option><option value="pouch">Loot Pouch</option>
+              <option value="backpack">Backpack</option><option value="supply">Supply Pouch</option><option value="warehouse">Depot</option><option value="pouch">Loot Pouch</option>
             </select>
             <button disabled={busy} onClick={addContainer}>Adicionar</button>
           </div>
@@ -320,7 +320,7 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
             {containerEntries.map(({ itemId, target }) => <div className="loot-container-item" key={`container-${itemId}`}>
               <span>{itemName(itemId)}</span>
               <select value={target} disabled={busy} onChange={(event) => void save({ itemId, container: event.target.value })}>
-                <option value="pouch">Loot Pouch</option><option value="backpack">Backpack</option><option value="supply">Supply Pouch</option><option value="warehouse">Armazém</option>
+                <option value="pouch">Loot Pouch</option><option value="backpack">Backpack</option><option value="supply">Supply Pouch</option><option value="warehouse">Depot</option>
               </select>
               <button disabled={busy} onClick={() => void save({ itemId, container: 'pouch' })}>×</button>
             </div>)}
@@ -338,7 +338,7 @@ export function LootConfigModal({ character, lootItems, onClose, onChanged }: Pr
             {[...prefs.history].reverse().map((entry, index) => <div className="loot-history-item" key={`${entry.at}-${entry.itemId}-${index}`}>
               <span>{new Date(entry.at).toLocaleString('pt-BR')}</span>
               <strong>{itemName(entry.itemId)} ×{entry.count}</strong>
-              <span>{entry.kind === 'auto-sell' ? `Auto-venda: +${formatNumber(entry.gold ?? 0)}g` : `Movido para ${entry.target === 'warehouse' ? 'Armazém' : entry.target === 'supply' ? 'Supply Pouch' : entry.target === 'backpack' ? 'Backpack' : 'Loot Pouch'}`}</span>
+              <span>{entry.kind === 'auto-sell' ? `Auto-venda: +${formatNumber(entry.gold ?? 0)}g` : `Movido para ${entry.target === 'warehouse' ? 'Depot' : entry.target === 'supply' ? 'Supply Pouch' : entry.target === 'backpack' ? 'Backpack' : 'Loot Pouch'}`}</span>
             </div>)}
             {prefs.history.length === 0 && <span className="loot-empty">Ainda não há movimentações registradas.</span>}
           </div>

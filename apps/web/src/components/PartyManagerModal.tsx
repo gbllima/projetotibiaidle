@@ -219,7 +219,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
           <p className="party-manager-hint">A formação pessoal é preservada. Ao entrar no multiplayer, ela fica suspensa e retorna quando a party multiplayer terminar.</p>
         </> : tab === 'multi' ? <div className="party-multiplayer-info">
           <h3>Party Multiplayer</h3>
-          <p>Cada conta pode levar somente <strong>um personagem</strong>. Seus companions da própria conta e os companions do seu amigo ficam fora enquanto a party multiplayer estiver ativa.</p>
+          <p>A party aceita no máximo <strong>{multiplayer?.maxMembers ?? 3} jogadores, incluindo o líder</strong>. Cada conta pode levar somente <strong>um personagem</strong>. Seus companions da própria conta e os companions do seu amigo ficam fora enquanto a party multiplayer estiver ativa.</p>
           <p className="party-manager-hint"><strong>Bônus social: +{multiplayer?.xpBonusPercent ?? 10}% XP.</strong> VIP, stamina, Prey e boosts continuam individuais: um jogador Free não recebe o bônus VIP de outro membro.</p>
 
           {multiplayer?.invite && !multiplayer.active && <div className="party-primary-drop">

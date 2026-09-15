@@ -803,7 +803,7 @@ export function GameScreen({
           }))}
           onBackpackWithdraw={(itemId, count, target) => void act(() => api.act(character.id, { type: 'backpack-withdraw', itemId, count, target }).then((r) => {
             onCharacter(r.character);
-            pushLog(target === 'warehouse' ? 'Item movido pro armazém.' : 'Item movido pra supply pouch.');
+            pushLog(target === 'warehouse' ? 'Item movido pro Depot.' : 'Item movido pra supply pouch.');
           }))}
           onUseItem={(itemId, source) => void act(() => api.act(character.id, { type: 'use-item', itemId, source }).then((r) => {
             onCharacter(r.character);

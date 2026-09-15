@@ -17,8 +17,8 @@ export function TaskBoardPanel({
   return (
     <div className="task-board-panel">
       <p className="task-board-lede">
-        Hunting Task Board — mate criaturas da task para ganhar gold e experiência bônus.
-        Trocar task custa <strong>500 gold</strong>.
+        Hunting Task Board — a recompensa cai automaticamente quando você completa as kills.
+        Abandonar uma task em andamento e trocar por outra custa <strong>500 gold</strong>.
       </p>
       {task ? (
         <div className="task-board-card">
@@ -54,7 +54,7 @@ export function TaskBoardPanel({
         disabled={busy}
         onClick={() => void onAct({ type: 'task-roll' })}
       >
-        {task && !task.claimed ? 'Trocar task · 500g' : 'Nova task'}
+        {task && !task.claimed ? 'Abandonar e trocar · 500g' : 'Nova task'}
       </button>
     </div>
   );

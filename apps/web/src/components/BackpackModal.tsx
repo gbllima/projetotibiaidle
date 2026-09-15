@@ -163,7 +163,7 @@ export function BackpackModal({
             Mover pra supply
           </button>
           <button type="button" disabled={busy} onClick={() => run(() => onWithdraw(menu.itemId, menu.count, 'warehouse'))}>
-            Mover pro armazém
+            Mover pro Depot
           </button>
           {sellable && (
             <button type="button" disabled={busy} onClick={() => run(() => onSellItem(menu.itemId, menu.count))}>

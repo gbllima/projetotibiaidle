@@ -8,7 +8,7 @@ import { listHunts, startHunt, stopHunt } from './game.js';
 import { onlineCharacterIds } from './presence.js';
 import { GameError } from './settle.js';
 
-const PARTY_CAP = 5;
+const PARTY_CAP = 3;
 const INVITE_TTL_MS = 15 * 60_000;
 const TRAINING_ACTIVITY_TTL_MS = 15_000;
 

@@ -320,7 +320,7 @@ export function ImbuementPanel({
                 ))}
               </div>
 
-              <h4>Materiais (armazém)</h4>
+              <h4>Materiais (Depot)</h4>
               <div className="imbue-reagents">
                 {reagents.map((reagent) => {
                   const have = warehouseCount(reagent.name);

@@ -63,6 +63,35 @@ async function joinParty(
 }
 
 describe('multiplayer party', () => {
+  it('allows three players including the leader and rejects a fourth even with a pending invite', async () => {
+    const leader = await account('capleader', ['Cap Leader']);
+    const second = await account('capsecond', ['Cap Second']);
+    const third = await account('capthird', ['Cap Third']);
+    const fourth = await account('capfourth', ['Cap Fourth']);
+    await joinParty(leader, second, 'Cap Second');
+    await becomeFriends(leader, fourth, 'Cap Fourth');
+    const inviteFourth = () => context.app.inject({
+      method: 'POST', url: `/api/multiplayer-party/${leader.ids[0]}/invite`,
+      headers: leader.headers, payload: { name: 'Cap Fourth' },
+    });
+    expect((await inviteFourth()).statusCode).toBe(200);
+    const joined = await joinParty(leader, third, 'Cap Third');
+    expect(joined.json().status.maxMembers).toBe(3);
+    expect(joined.json().status.members).toHaveLength(3);
+    const blockedInvite = await inviteFourth();
+    expect(blockedInvite.statusCode).toBe(409);
+    expect(blockedInvite.json().error).toContain('cheia');
+    const blockedAccept = await context.app.inject({
+      method: 'POST', url: `/api/multiplayer-party/${fourth.ids[0]}/accept`, headers: fourth.headers,
+    });
+    expect(blockedAccept.statusCode).toBe(409);
+    expect(blockedAccept.json().error).toContain('cheia');
+    const status = await context.app.inject({ url: `/api/multiplayer-party/${leader.ids[0]}`, headers: leader.headers });
+    expect(status.json().members.map((member: { id: number }) => member.id)).toEqual([
+      leader.ids[0], second.ids[0], third.ids[0],
+    ]);
+  });
+
   it('requires an accepted friendship before a party invite can be sent', async () => {
     const first = await account('friendgateone', ['Gate Leader']);
     const second = await account('friendgatetwo', ['Gate Guest']);
