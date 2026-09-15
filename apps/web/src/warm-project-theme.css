@@ -59,7 +59,7 @@
 .progressao-menu-icon {
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--prog-tone, #b8962e) 42%, #17130e),
+    color-mix(in srgb, var(--prog-tone, #b8962e) 42%, #0d100d),
     #110e0a
   ) !important;
 }
