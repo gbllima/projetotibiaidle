@@ -79,7 +79,7 @@ export function PartyItemsModal({ character, controllerCharacterId, busy = false
               {PAPERDOLL_SLOTS.map((slot) => {
                 const equipped = view.equipment?.[slot.id];
                 return <div className={`paper-slot ${slot.area}`} key={slot.id} title={equipped?.name ?? slot.id}>
-                  <ItemSlot itemId={equipped?.id} label={equipped?.name} compact
+                  <ItemSlot itemId={equipped?.id} label={equipped?.name} compact showInfo={false}
                     emptyLabel={slot.id === 'necklace' ? 'Amuleto' : slot.id === 'ring' ? 'Anel' : slot.id === 'ammo' ? 'Berloque' : undefined}
                     onInspect={equipped ? inspect : undefined}
                     onClick={equipped ? (event) => openMenu(event,{itemId:equipped.id,name:equipped.name,count:1,from:'worn',slot:slot.id}) : undefined}
@@ -98,7 +98,7 @@ export function PartyItemsModal({ character, controllerCharacterId, busy = false
                 const stack = backpack[index];
                 const name = stack?.name ?? (stack ? itemsById.get(stack.itemId)?.name : undefined);
                 return <ItemSlot key={stack ? `party-bp-${stack.itemId}-${index}` : `party-bp-empty-${index}`}
-                  itemId={stack?.itemId} count={stack?.count ?? 0} label={name} compact onInspect={stack ? inspect : undefined}
+                  itemId={stack?.itemId} count={stack?.count ?? 0} label={name} compact showInfo={false} onInspect={stack ? inspect : undefined}
                   onClick={stack ? (event) => openMenu(event,{itemId:stack.itemId,name:name ?? 'Item',count:stack.count,from:'backpack'}) : undefined}
                   onContextMenu={stack ? (event) => openMenu(event,{itemId:stack.itemId,name:name ?? 'Item',count:stack.count,from:'backpack'}) : undefined}/>;
               })}
