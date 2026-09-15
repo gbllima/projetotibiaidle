@@ -6,7 +6,7 @@ import '../launch-notice.css';
 import './HomeNews.css';
 import './HomeServerStatus.css';
 
-type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
+type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; online: number; hunting: number; monsters: number };
 type NewsItem = { id: string; title: string; category: string; summary: string; body: string; publishedAt: number; updatedAt: number };
 type ServerStatus = 'checking' | 'online' | 'offline';
 type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
@@ -20,16 +20,42 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [serverStatus, setServerStatus] = useState<ServerStatus>('checking');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [launchNoticeOpen, setLaunchNoticeOpen] = useState(true);
+
   useEffect(() => {
-    void fetch('/api/public-stats')
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((payload: PublicStats) => { setStats(payload); setServerStatus('online'); })
-      .catch(() => { setStats(null); setServerStatus('offline'); });
+    let mounted = true;
+    const loadStats = () => {
+      void fetch('/api/public-stats')
+        .then((r) => r.ok ? r.json() : Promise.reject())
+        .then((payload: PublicStats) => {
+          if (!mounted) return;
+          setStats(payload);
+          setServerStatus('online');
+        })
+        .catch(() => {
+          if (!mounted) return;
+          setStats(null);
+          setServerStatus('offline');
+        });
+    };
+
+    loadStats();
+    const statsTimer = window.setInterval(loadStats, 10_000);
+
     void fetch('/api/news')
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((payload: { news?: NewsItem[] }) => setNews(Array.isArray(payload.news) ? payload.news : []))
-      .catch(() => setNews([]));
+      .then((payload: { news?: NewsItem[] }) => {
+        if (mounted) setNews(Array.isArray(payload.news) ? payload.news : []);
+      })
+      .catch(() => {
+        if (mounted) setNews([]);
+      });
+
+    return () => {
+      mounted = false;
+      window.clearInterval(statsTimer);
+    };
   }, []);
+
   const actionLabel = storedToken() ? 'CONTINUAR JOGANDO' : 'JOGAR AGORA';
 
   return (
@@ -63,10 +89,19 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
           <div className="landing-br-badge"><span>BR</span><div><strong>FEITO PARA QUEM GOSTA DE RPG</strong><small>Progressão idle, hunts, loot e evolução constante.</small></div></div>
         </div>
         <div className="landing-hero-art" id="servidor">
-          <div className={`landing-server-status landing-server-status--${serverStatus}`} role="status" aria-live="polite">
-            <span className="landing-server-status-dot" aria-hidden />
-            <small>SERVIDOR</small>
-            <strong>{serverStatus === 'checking' ? 'VERIFICANDO' : serverStatus === 'online' ? 'ONLINE' : 'OFFLINE'}</strong>
+          <div className={`landing-server-overview landing-server-overview--${serverStatus}`} role="status" aria-live="polite">
+            <div className="landing-server-overview-status">
+              <span className="landing-server-status-dot" aria-hidden />
+              <strong>{serverStatus === 'checking' ? 'VERIFICANDO' : serverStatus === 'online' ? 'ONLINE' : 'OFFLINE'}</strong>
+            </div>
+            <div className="landing-server-overview-metric">
+              <strong>{serverStatus === 'offline' ? '0' : stats ? stats.online.toLocaleString('pt-BR') : '—'}</strong>
+              <small>PESSOAS ONLINE</small>
+            </div>
+            <div className="landing-server-overview-metric">
+              <strong>{stats ? stats.accounts.toLocaleString('pt-BR') : '—'}</strong>
+              <small>CONTAS CRIADAS</small>
+            </div>
           </div>
           <div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Hunt BR — O RPG Idle Brasileiro" /></div>
         </div>
