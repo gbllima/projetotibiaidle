@@ -107,12 +107,30 @@ export function registerMarketPriceProtection(app: FastifyInstance, db: Database
       return rejectUnderpriced(reply, rule);
     }
 
-    // The old market actions remain in the generic action switch for save-game
-    // compatibility, but they must not be usable to bypass Market V2 rules.
+    // The old generic market action is kept for backwards compatibility, but
+    // it receives the same Gold-only and underpricing protection so it cannot
+    // be used as a direct-API bypass.
     if (/^\/api\/characters\/\d+\/act(?:\?|$)/.test(request.url)) {
       const action = String(body['type'] ?? '');
-      if (action === 'market-list' || action === 'market-buy') {
-        return fail(reply, 409, 'Use o Mercado Global para comprar e vender itens. O mercado antigo foi desativado.');
+      if (action === 'market-list') {
+        if (body['currency'] === 'coins') {
+          return fail(reply, 409, 'O Mercado Global aceita apenas Gold.');
+        }
+        const itemId = Number(body['itemId']);
+        const count = Math.max(1, Math.floor(Number(body['count']) || 1));
+        const totalPrice = Math.floor(Number(body['price']));
+        const unitPrice = Math.floor(totalPrice / count);
+        const rule = marketPriceRule(db, itemId);
+        if (!rule || !Number.isFinite(unitPrice) || unitPrice >= rule.minAllowedPrice) return;
+        return rejectUnderpriced(reply, rule);
+      }
+
+      if (action === 'market-buy') {
+        const listingId = Number(body['listingId']);
+        const listing = db.findMarket(listingId);
+        if (listing && String(listing['currency']) === 'coins') {
+          return fail(reply, 409, 'O Mercado Global aceita apenas Gold.');
+        }
       }
     }
   });
