@@ -15,7 +15,7 @@ type Screen = 'portal' | 'wiki' | 'account' | 'home' | 'boot' | 'auth' | 'create
 
 export function App() {
   const { t } = useLocale();
-  const [screen, setScreen] = useState<Screen>('portal');
+  const [screen, setScreen] = useState<Screen>(() => typeof window !== 'undefined' && window.location.hash === '#wiki' ? 'wiki' : 'portal');
   const [afterAuth, setAfterAuth] = useState<'account' | 'game'>('game');
   const [entryError, setEntryError] = useState('');
   const [account, setAccount] = useState<AccountView | null>(null);
