@@ -1,4 +1,4 @@
-import { itemsById } from '@tibia-idle/data';
+import { itemsById, type Item } from '@tibia-idle/data';
 import { canEquip, isTwoHanded, slotFor } from './gear.js';
 import {
   FORGE_CONVERGENCE_FUSION_DUST_COST,
@@ -18,11 +18,69 @@ import type { CharacterState, EquipSlot } from './types.js';
 
 export const EXALT_TIER_CAP = 10;
 
+const FORGE_ELIGIBLE_SLOTS = new Set<EquipSlot>(['head', 'armor', 'legs', 'feet', 'left', 'right']);
+
+type ForgeStoredCharacter = CharacterState & {
+  /** Persisted tiers carried by unequipped copies, keyed by item id. */
+  storedForgeTiers?: Record<string, number[]>;
+};
+
+/** Only real combat equipment participates in the Exaltation Forge. */
+export function isForgeEligibleItem(item: Item | undefined): boolean {
+  if (!item) return false;
+  const slot = slotFor(item);
+  if (!slot || !FORGE_ELIGIBLE_SLOTS.has(slot)) return false;
+
+  // Head/armor/legs/feet are forge equipment by slot. Hand slots must actually
+  // be combat gear, which excludes odd utility items that happen to be wearable.
+  if (slot === 'left' || slot === 'right') {
+    const weaponType = (item.weaponType ?? '').toLowerCase();
+    return ['sword', 'axe', 'club', 'distance', 'wand', 'shield', 'spellbook', 'fist'].includes(weaponType)
+      || item.attack > 0
+      || item.defense > 0;
+  }
+  return true;
+}
+
+export function isForgeEligibleSlot(character: CharacterState, slot: EquipSlot): boolean {
+  const itemId = character.equipment[slot];
+  return itemId !== undefined && isForgeEligibleItem(itemsById.get(itemId));
+}
+
+function storedForgeTiers(character: CharacterState): Record<string, number[]> {
+  const state = character as ForgeStoredCharacter;
+  state.storedForgeTiers ??= {};
+  return state.storedForgeTiers;
+}
+
+function storeForgeTier(character: CharacterState, itemId: number, tier: number): void {
+  const normalized = Math.min(EXALT_TIER_CAP, Math.max(0, Math.floor(tier)));
+  if (normalized <= 0) return;
+  const tiers = storedForgeTiers(character);
+  const key = String(itemId);
+  const list = tiers[key] ?? [];
+  list.push(normalized);
+  list.sort((a, b) => b - a);
+  tiers[key] = list;
+}
+
+function takeStoredForgeTier(character: CharacterState, itemId: number): number {
+  const tiers = storedForgeTiers(character);
+  const key = String(itemId);
+  const list = tiers[key];
+  if (!list?.length) return 0;
+  list.sort((a, b) => b - a);
+  const tier = list.shift() ?? 0;
+  if (list.length === 0) delete tiers[key];
+  return Math.min(EXALT_TIER_CAP, Math.max(0, Math.floor(tier)));
+}
+
 /**
  * Classification shown/spent by the forge UI.
  * Missing stored tier counts as 0 (paperdoll starts unexalted).
  */
 export function forgeSlotTier(character: CharacterState, slot: EquipSlot): number {
+  if (!isForgeEligibleSlot(character, slot)) return 0;
   const stored = character.equipmentTiers?.[slot];
   if (stored === undefined) return 0;
   return Math.min(EXALT_TIER_CAP, Math.max(0, Math.floor(stored)));
@@ -97,6 +155,7 @@ function storeDisplacedGear(character: CharacterState, itemId: number): void {
   const moved = moveStackToBackpack(character, itemId, 1);
   if (!moved.ok) addItemStack(character.warehouse, itemId, 1);
 }
+
 export function wearItem(character: CharacterState, itemId: number): EquipOk | EquipFail {
   const item = itemsById.get(itemId);
   if (!item) return { ok: false, reason: 'Unknown item.' };
@@ -106,31 +165,43 @@ export function wearItem(character: CharacterState, itemId: number): EquipOk | E
     return { ok: false, reason: 'Your vocation or level cannot wear that.' };
   }
 
+  const incomingTier = isForgeEligibleItem(item) ? takeStoredForgeTier(character, itemId) : 0;
   const displaced: number[] = [];
   const current = character.equipment[slot];
   if (current && current !== itemId) {
+    const currentTier = forgeSlotTier(character, slot);
+    storeForgeTier(character, current, currentTier);
     unbindJewelry(character, slot);
     displaced.push(current);
     if (character.equipmentTiers) delete character.equipmentTiers[slot];
   }
 
   if (slot === 'left' && isTwoHanded(item) && character.equipment.right) {
+    const displacedId = character.equipment.right;
+    const displacedTier = forgeSlotTier(character, 'right');
+    storeForgeTier(character, displacedId, displacedTier);
     unbindJewelry(character, 'right');
-    displaced.push(character.equipment.right);
+    displaced.push(displacedId);
     delete character.equipment.right;
     if (character.equipmentTiers) delete character.equipmentTiers.right;
   }
   if (slot === 'right' && character.equipment.left) {
     const weapon = itemsById.get(character.equipment.left);
     if (weapon && isTwoHanded(weapon)) {
+      const displacedId = character.equipment.left;
+      const displacedTier = forgeSlotTier(character, 'left');
+      storeForgeTier(character, displacedId, displacedTier);
       unbindJewelry(character, 'left');
-      displaced.push(character.equipment.left);
+      displaced.push(displacedId);
       delete character.equipment.left;
       if (character.equipmentTiers) delete character.equipmentTiers.left;
     }
   }
 
   character.equipment[slot] = itemId;
+  character.equipmentTiers ??= {};
+  if (isForgeEligibleItem(item)) character.equipmentTiers[slot] = incomingTier;
+  else delete character.equipmentTiers[slot];
   bindJewelry(character, slot, itemId);
   for (const id of displaced) storeDisplacedGear(character, id);
   return { ok: true, slot, displaced };
@@ -142,6 +213,8 @@ export function removeWorn(character: CharacterState, slot: EquipSlot): { ok: tr
   if (slot === 'backpack' && (character.backpackContents ?? []).some((stack) => stack.count > 0)) {
     return { ok: false, reason: 'Esvazie a backpack antes de desequipar.' };
   }
+  const tier = forgeSlotTier(character, slot);
+  if (tier > 0) storeForgeTier(character, itemId, tier);
   unbindJewelry(character, slot);
   delete character.equipment[slot];
   if (character.equipmentTiers) delete character.equipmentTiers[slot];
@@ -163,6 +236,9 @@ export function exaltSlot(
   rng?: Rng,
 ): ExaltOk | EquipFail {
   if (!character.equipment[slot]) return { ok: false, reason: 'Equip something in that slot first.' };
+  if (!isForgeEligibleSlot(character, slot)) {
+    return { ok: false, reason: 'That item is not eligible for the Exaltation Forge.' };
+  }
   const current = gearTier(character, slot);
   if (current >= EXALT_TIER_CAP) return { ok: false, reason: 'That piece is already classification 10.' };
 
@@ -233,6 +309,9 @@ export function convergenceFuseSlot(
   slot: EquipSlot,
 ): ConvergenceFuseOk | EquipFail {
   if (!character.equipment[slot]) return { ok: false, reason: 'Equip something in that slot first.' };
+  if (!isForgeEligibleSlot(character, slot)) {
+    return { ok: false, reason: 'That item is not eligible for the Exaltation Forge.' };
+  }
   const current = forgeSlotTier(character, slot);
   if (current >= EXALT_TIER_CAP) return { ok: false, reason: 'That piece is already classification 10.' };
   const target = current + 1;
@@ -268,6 +347,9 @@ export function transferSlotTier(
   if (donorSlot === receiveSlot) return { ok: false, reason: 'Pick two different slots.' };
   if (!character.equipment[donorSlot]) return { ok: false, reason: 'Donor slot is empty.' };
   if (!character.equipment[receiveSlot]) return { ok: false, reason: 'Receiver slot is empty.' };
+  if (!isForgeEligibleSlot(character, donorSlot) || !isForgeEligibleSlot(character, receiveSlot)) {
+    return { ok: false, reason: 'Both items must be eligible for the Exaltation Forge.' };
+  }
 
   const donorTier = forgeSlotTier(character, donorSlot);
   const receiveTier = forgeSlotTier(character, receiveSlot);

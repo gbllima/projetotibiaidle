@@ -67,14 +67,15 @@ describe('combat procs in a hunt', () => {
     expect(combatProcs(character).transcendenceChance).toBe(0);
   });
 
-  it('gives high-level gear inferred ruse and onslaught', () => {
+  it('does not grant forge procs just for being high level', () => {
     const character = createCharacter('Veteran', 4);
     character.level = 800;
     character.equipment.left = 1;
     character.equipment.armor = 1;
+    character.equipmentTiers = {};
     const procs = combatProcs(character);
-    expect(procs.dodgeChance).toBeGreaterThan(1);
-    expect(procs.onslaughtChance).toBeGreaterThan(1);
+    expect(procs.dodgeChance).toBe(0);
+    expect(procs.onslaughtChance).toBe(0);
     expect(FATAL_DAMAGE).toBe(0.6);
   });
 

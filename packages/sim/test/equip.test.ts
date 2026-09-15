@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canEquip, convergenceFuseSlot, createCharacter, exaltCost, exaltSlot, equipLevelRequired, forgeFusionSuccessChance,
   forgeTierPrice, FORGE_CONVERGENCE_FUSION_DUST_COST, FORGE_CONVERGENCE_TRANSFER_DUST_COST,
-  FORGE_TRANSFER_DUST_COST, slotFor, transferSlotTier, wearItem, removeWorn, Rng,
+  FORGE_TRANSFER_DUST_COST, isForgeEligibleItem, slotFor, transferSlotTier, wearItem, removeWorn, Rng,
 } from '../src/index.js';
 
 describe('manual gear', () => {
@@ -76,9 +76,56 @@ describe('manual gear', () => {
     expect(character.equipment.armor).toBeUndefined();
     expect(character.backpackContents.some((stack) => stack.itemId === plate!.id)).toBe(true);
   });
+
+  it('keeps an exaltation tier on the item after unequip and re-equip', () => {
+    const character = createCharacter('Kina', 4);
+    character.level = 100;
+    const plate = [...itemsById.values()].find((item) => slotFor(item) === 'armor' && canEquip(item, character));
+    expect(plate).toBeDefined();
+    expect(wearItem(character, plate!.id).ok).toBe(true);
+    character.equipmentTiers.armor = 4;
+
+    const removed = removeWorn(character, 'armor');
+    expect(removed.ok).toBe(true);
+    expect(character.equipmentTiers.armor).toBeUndefined();
+
+    const reworn = wearItem(character, plate!.id);
+    expect(reworn.ok).toBe(true);
+    expect(character.equipmentTiers.armor).toBe(4);
+  });
 });
 
 describe('exaltation', () => {
+  it('only accepts combat equipment and rejects backpack, ring and ammo', () => {
+    const character = createCharacter('Kina', 4);
+    character.level = 200;
+    character.gold = 1_000_000;
+    character.forgeDust = 500;
+    character.forgeDustLevel = 225;
+
+    const backpack = itemsById.get(character.equipment.backpack!);
+    const ring = [...itemsById.values()].find((item) => slotFor(item) === 'ring');
+    const ammo = [...itemsById.values()].find((item) => slotFor(item) === 'ammo');
+    const armor = [...itemsById.values()].find((item) => slotFor(item) === 'armor' && canEquip(item, character));
+
+    expect(isForgeEligibleItem(backpack)).toBe(false);
+    expect(isForgeEligibleItem(ring)).toBe(false);
+    expect(isForgeEligibleItem(ammo)).toBe(false);
+    expect(isForgeEligibleItem(armor)).toBe(true);
+
+    expect(exaltSlot(character, 'backpack', {}, new Rng(1n)).ok).toBe(false);
+    if (ring) {
+      character.equipment.ring = ring.id;
+      character.equipmentTiers.ring = 0;
+      expect(exaltSlot(character, 'ring', {}, new Rng(1n)).ok).toBe(false);
+    }
+    if (ammo) {
+      character.equipment.ammo = ammo.id;
+      character.equipmentTiers.ammo = 0;
+      expect(exaltSlot(character, 'ammo', {}, new Rng(1n)).ok).toBe(false);
+    }
+  });
+
   it('charges forge dust and gold, then raises classification on success', () => {
     const slot = 'armor' as const;
     let raised = false;

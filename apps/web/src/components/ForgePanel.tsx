@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { monstersById } from '@tibia-idle/data';
+import { itemsById, monstersById } from '@tibia-idle/data';
 import {
   EXALT_TIER_CAP,
   FORGE_BASE_SUCCESS_RATE,
@@ -17,6 +17,7 @@ import {
   forgeDustCapCost,
   forgeFusionSuccessChance,
   forgeTierPrice,
+  isForgeEligibleItem,
 } from '@tibia-idle/sim';
 import type { CharacterView } from '../api/types.js';
 import { formatNumber } from '../format.js';
@@ -37,7 +38,7 @@ export function ForgePanel({
   const [donorSlot, setDonorSlot] = useState('');
   const [receiveSlot, setReceiveSlot] = useState('');
   const influence = character.forge[monsterId] ?? 0;
-  const worn = Object.entries(character.equipment);
+  const worn = Object.entries(character.equipment).filter(([, item]) => isForgeEligibleItem(itemsById.get(item.id)));
   const dust = character.forgeDust ?? 0;
   const dustCap = character.forgeDustLevel ?? 100;
   const slivers = character.forgeSlivers ?? 0;
@@ -129,7 +130,7 @@ export function ForgePanel({
               Core anti-perda (50% manter tier)
             </label>
           </div>
-          {worn.length === 0 && <p className="soon">Vista um item no paperdoll para exaltar.</p>}
+          {worn.length === 0 && <p className="soon">Vista um equipamento elegível no paperdoll para exaltar.</p>}
           {worn.map(([slot, item]) => {
             const tier = tierOf(slot);
             const cost = exaltCost(tier);
@@ -165,7 +166,7 @@ export function ForgePanel({
             donor zera. Custo Crystal class-4: {FORGE_TRANSFER_DUST_COST} poeira + gold + cores.
           </p>
           {worn.length < 2 ? (
-            <p className="soon">Vista ao menos dois itens para transferir.</p>
+            <p className="soon">Vista ao menos dois equipamentos elegíveis para transferir.</p>
           ) : (
             <>
               <label>Doador</label>
@@ -240,7 +241,7 @@ export function ForgePanel({
           })}
           <h4 style={{ marginTop: 12 }}>Transfer completo</h4>
           {worn.length < 2 ? (
-            <p className="soon">Vista ao menos dois itens.</p>
+            <p className="soon">Vista ao menos dois equipamentos elegíveis.</p>
           ) : (
             <>
               <label>Doador</label>

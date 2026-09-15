@@ -39,11 +39,11 @@ export function quadraticPoly(a: number, b: number, c: number, x: number): numbe
   return a * x * x + b * x + c;
 }
 
+/** Forge bonuses only come from explicitly persisted Exaltation tiers. */
 export function gearTier(character: CharacterState, slot: EquipSlot): number {
   const stored = character.equipmentTiers?.[slot];
-  if (stored !== undefined) return Math.min(10, Math.max(0, Math.floor(stored)));
-  if (!character.equipment[slot]) return 0;
-  return Math.min(10, Math.max(0, Math.floor((character.level - 80) / 70)));
+  if (stored === undefined || !character.equipment[slot]) return 0;
+  return Math.min(10, Math.max(0, Math.floor(stored)));
 }
 
 export interface CombatProcs {
