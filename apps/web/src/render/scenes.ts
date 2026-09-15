@@ -129,7 +129,10 @@ function groundTexture(atlas: Atlas, id: number, x: number, y: number) {
 
 function sitOnTile(sprite: Sprite, tx: number, ty: number): void {
   const width = sprite.texture.width; const height = sprite.texture.height;
-  sprite.x = Math.round(tx * SCENE_TILE - Math.max(0, (width - SCENE_TILE) / 2));
+  // Tibia appearances wider than one tile are anchored to the destination tile's
+  // bottom-right corner. Centering a 64px table on a 32px cell leaves a 16px gap
+  // between adjoining furniture pieces, which is especially visible in Thais Depot.
+  sprite.x = Math.round(tx * SCENE_TILE - Math.max(0, width - SCENE_TILE));
   sprite.y = Math.round(ty * SCENE_TILE - Math.max(0, height - SCENE_TILE));
   sprite.roundPixels = true;
 }
