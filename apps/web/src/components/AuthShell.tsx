@@ -109,11 +109,11 @@ export function AuthLogo({ subtitle }: { subtitle?: string }) {
     <header className="auth-logo">
       <img
         src={KNOCK_LOGO}
-        alt="Knock Idle BR"
+        alt="Knock Hunt BR"
         style={{ width: 132, maxWidth: '52%', height: 'auto', marginBottom: 12 }}
       />
       <h1>
-        KNOCK <span>IDLE BR</span>
+        KNOCK <span>HUNT BR</span>
       </h1>
       <p style={{ marginTop: 6, color: '#d0ae4f', fontSize: 11, letterSpacing: '0.14em', fontWeight: 700 }}>
         O RPG IDLE BRASILEIRO
