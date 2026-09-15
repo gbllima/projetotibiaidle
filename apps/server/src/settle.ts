@@ -43,8 +43,8 @@ function isMultiplayerHunt(session: HuntSession): boolean {
   const multiplayer = session as MultiplayerDownSession;
   // `boostedMonsterId` carries the social XP marker, but it is not a safe
   // lifecycle flag: older/live sessions can lose or replace that value while
-  // still being in a real multiplayer hunt. The wave layout is written for
-  // every shared-hunt member and remains authoritative for combat.
+  // still being in a real multiplayer hunt. The shared wave layout remains as
+  // a second signal for independently-settled multiplayer accounts.
   return (multiplayer.reinforcementPartySize ?? 0) > 1
     || Boolean(session.boostedMonsterId?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX));
 }
@@ -126,7 +126,17 @@ export function regenStamina(character: CharacterState, idleMs: number): number 
 }
 
 const emptyDelta = (): SettlementDelta => ({ experience: 0, kills: 0, lootValue: 0, supplyValue: 0, levels: 0 });
-export function settle(session: HuntSession | null, settledAtMs: number, nowMs: number, options: { maxEvents?: number; offline?: boolean; awardKillExperience?: AdvanceOptions['awardKillExperience'] } = {}): SettlementResult {
+export function settle(
+  session: HuntSession | null,
+  settledAtMs: number,
+  nowMs: number,
+  options: {
+    maxEvents?: number;
+    offline?: boolean;
+    awardKillExperience?: AdvanceOptions['awardKillExperience'];
+    holdMultiplayerDeath?: boolean;
+  } = {},
+): SettlementResult {
   const elapsedMs = Math.max(0, nowMs - settledAtMs);
   const empty = { session, events: [] as SimEvent[], elapsedSeconds: 0, discardedSeconds: 0, stoppedBecause: session && session.status !== 'active' ? session.status : null, offline: false, efficiency: 1, capHours: MAX_OFFLINE_HOURS, delta: emptyDelta(), deathPenalty: session?.lastDeathPenalty ?? null };
   if (!session || session.status !== 'active') return empty;
@@ -148,7 +158,7 @@ export function settle(session: HuntSession | null, settledAtMs: number, nowMs: 
   const before = { experience: session.totals.experience, kills: session.totals.kills, lootValue: session.totals.lootValue, supplyValue: session.totals.supplyValue, level: session.character.level };
   const efficiency = offline ? OFFLINE_EFFICIENCY : 1;
   const events = advance(session, ticks, { maxEvents: options.maxEvents ?? 0, awardKillExperience: options.awardKillExperience, rates: { ...DEFAULT_RATES, experience: DEFAULT_RATES.experience * efficiency, loot: DEFAULT_RATES.loot * efficiency } });
-  holdMultiplayerDeath(session);
+  if (options.holdMultiplayerDeath !== false) holdMultiplayerDeath(session);
   return { session, events, elapsedSeconds: Math.round((ticks * TICK_MS) / 1000), discardedSeconds: Math.round((elapsedMs - appliedMs) / 1000), stoppedBecause: session.status === 'active' ? null : session.status, offline, efficiency, capHours, delta: { experience: session.totals.experience - before.experience, kills: session.totals.kills - before.kills, lootValue: session.totals.lootValue - before.lootValue, supplyValue: session.totals.supplyValue - before.supplyValue, levels: session.character.level - before.level }, deathPenalty: session.lastDeathPenalty ?? null };
 }
 
