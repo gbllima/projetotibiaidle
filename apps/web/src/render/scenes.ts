@@ -157,14 +157,14 @@ function placeGround(layer: Container, atlas: Atlas, id: number, x: number, y: n
   const sprite = new Sprite(texture); snapGroundSprite(sprite, x, y); layer.addChild(sprite); return true;
 }
 
-function placeProp(layer: Container, atlas: Atlas, id: number, x: number, y: number, offsetY = 0, offsetX = 0): void {
-  if (!id || !canPaint(atlas, id)) return;
+function placeProp(layer: Container, atlas: Atlas, id: number, x: number, y: number, offsetY = 0, offsetX = 0): Sprite | AnimatedSprite | null {
+  if (!id || !canPaint(atlas, id)) return null;
   if (isAnimated(atlas, id)) {
-    const frames = atlas.frames(id, { group: GROUP_GROUND }); if (!frames.textures.length) return;
-    const sprite = new AnimatedSprite(frames.textures); sprite.animationSpeed = 0.1; sprite.play(); sitOnTile(sprite, x, y, offsetY, offsetX); layer.addChild(sprite); return;
+    const frames = atlas.frames(id, { group: GROUP_GROUND }); if (!frames.textures.length) return null;
+    const sprite = new AnimatedSprite(frames.textures); sprite.animationSpeed = 0.1; sprite.play(); sitOnTile(sprite, x, y, offsetY, offsetX); layer.addChild(sprite); return sprite;
   }
-  const texture = atlas.icon(id) ?? groundTexture(atlas, id, x, y); if (!texture) return;
-  const sprite = new Sprite(texture); sitOnTile(sprite, x, y, offsetY, offsetX); layer.addChild(sprite);
+  const texture = atlas.icon(id) ?? groundTexture(atlas, id, x, y); if (!texture) return null;
+  const sprite = new Sprite(texture); sitOnTile(sprite, x, y, offsetY, offsetX); layer.addChild(sprite); return sprite;
 }
 
 function themeFloorId(atlas: Atlas, huntId: string, x: number, y: number, random: () => number): number {
@@ -208,7 +208,22 @@ function paintProceduralRoom(parent: Container, tiles: Atlas, huntId: string): v
   for (const spot of spots.slice(0, count)) placeProp(props, tiles, pick(kit.props, random), spot.x, spot.y);
 }
 
+const LAYERED_CITY_COUNTERS = new Set<Sprite | AnimatedSprite>();
+
+function clearLayeredCityCounters(): void {
+  for (const sprite of LAYERED_CITY_COUNTERS) {
+    try {
+      if (sprite.parent) sprite.parent.removeChild(sprite);
+      if (!sprite.destroyed) sprite.destroy();
+    } catch {
+      // Already removed with the scene.
+    }
+  }
+  LAYERED_CITY_COUNTERS.clear();
+}
+
 export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string): void {
+  clearLayeredCityCounters();
   const room = huntMaps[huntId];
   if (room && room.filled >= 40) { paintOtbmRoom(parent, tiles, room, huntId); return; }
   paintProceduralRoom(parent, tiles, huntId);
@@ -220,8 +235,10 @@ const THAIS_COUNTER_PIECES = new Set([2322, 2323, 2324, 2326, 2327, 2328, 2331, 
 
 /** Render the real Thais Depot cut generated from the project's OTBM map. */
 export function paintCityScene(parent: Container, tiles: Atlas): void {
+  clearLayeredCityCounters();
   const ground = new Container();
   const props = new Container();
+  const counters: Array<{ sprite: Sprite | AnimatedSprite; tileY: number }> = [];
   parent.addChild(ground, props);
   for (const tile of cityTiles) {
     placeGround(ground, tiles, tile.ground, tile.x, tile.y);
@@ -229,9 +246,30 @@ export function paintCityScene(parent: Container, tiles: Atlas): void {
       const counter = THAIS_COUNTER_PIECES.has(id);
       const shift = counter ? tiles.entry(id)?.displacement : undefined;
       const offsetY = counter ? 8 - (shift?.y ?? 0) : 0;
-      placeProp(props, tiles, id, tile.x, tile.y, offsetY, -(shift?.x ?? 0));
+      const sprite = placeProp(props, tiles, id, tile.x, tile.y, offsetY, -(shift?.x ?? 0));
+      if (counter && sprite) counters.push({ sprite, tileY: tile.y });
     }
   }
+
+  // The city floor is inserted below the actor layer after this function returns.
+  // Move only the wooden counter pieces into that sortable actor layer so their
+  // baseline can naturally occlude a character standing north of the counter,
+  // while a character standing south of it is still rendered in front.
+  queueMicrotask(() => {
+    if (parent.destroyed || !parent.parent) return;
+    const world = parent.parent;
+    const floorIndex = world.children.indexOf(parent);
+    const actorLayer = floorIndex >= 0 ? world.children[floorIndex + 1] : undefined;
+    if (!(actorLayer instanceof Container) || !actorLayer.sortableChildren) return;
+
+    for (const { sprite, tileY } of counters) {
+      if (sprite.destroyed || sprite.parent !== props) continue;
+      props.removeChild(sprite);
+      sprite.zIndex = Math.round((tileY * SCENE_TILE + SCENE_TILE) * 10 + 8);
+      actorLayer.addChild(sprite);
+      LAYERED_CITY_COUNTERS.add(sprite);
+    }
+  });
 }
 
 const HOUSE_DECO: Record<string, Array<{ id: number; x: number; y: number; ground?: boolean }>> = {
@@ -251,6 +289,7 @@ export function placeItem(layer: Container, items: Atlas, id: number, x: number,
 }
 
 export function paintTrainingScene(parent: Container, tiles: Atlas, items: Atlas, roomId: string): TrainingRoom | null {
+  clearLayeredCityCounters();
   const room = trainingRoom(roomId); if (!room) return null;
   paintSolidBase(parent, 'training-dojo'); const kit = KITS.city;
   const stone = canPaint(tiles, 405) ? 405 : kit.floor;
