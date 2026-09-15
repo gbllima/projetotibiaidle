@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TICK_MS, WAVE_PACK, type CharacterState, type HuntSession } from '@tibia-idle/sim';
 import { createApp } from '../src/app.js';
-import { loadCharacter } from '../src/game.js';
+import { settle } from '../src/settle.js';
 
 const HUNT_ID = 'amazon-camp';
 const START = 1_700_000_000_000;
@@ -9,7 +9,6 @@ const NORMAL_WAVE_DELAY_MS = 3_000;
 
 type Player = {
   accountId: number;
-  token: string;
   headers: Record<string, string>;
   id: number;
   name: string;
@@ -50,7 +49,7 @@ async function player(username: string, name: string): Promise<Player> {
   state.level = 50;
   state.gold = 1_000_000;
   context.db.saveCharacter(id, JSON.stringify(state), null, row.settledAt);
-  return { accountId, token, headers, id, name };
+  return { accountId, headers, id, name };
 }
 
 async function formMultiplayerParty(leader: Player, member: Player): Promise<void> {
@@ -95,7 +94,7 @@ async function formMultiplayerParty(leader: Player, member: Player): Promise<voi
   expect(started.json().memberIds).toEqual([leader.id, member.id]);
 }
 
-function putAtWaveTwoBoundary(id: number): void {
+function waveTwoBoundarySession(id: number): HuntSession {
   const row = context.db.findCharacter(id)!;
   expect(row.session).not.toBeNull();
   const session = JSON.parse(row.session!) as HuntSession & {
@@ -119,13 +118,7 @@ function putAtWaveTwoBoundary(id: number): void {
   session.character.policy.healthPotionAt = 0;
   session.character.policy.manaPotionAt = 0;
   session.character.policy.stopWhenOutOfSupplies = false;
-  context.db.saveCharacter(id, row.state, JSON.stringify(session), START);
-}
-
-function activeCount(id: number): number {
-  const row = context.db.findCharacter(id)!;
-  const session = JSON.parse(row.session!) as HuntSession;
-  return session.active.length;
+  return session;
 }
 
 describe('multiplayer wave timing', () => {
@@ -133,22 +126,25 @@ describe('multiplayer wave timing', () => {
     expect(NORMAL_WAVE_DELAY_MS / TICK_MS).toBe(12);
     const leader = await player('waveleader', 'Wave Leader');
     const member = await player('wavemember', 'Wave Member');
+    expect(leader.accountId).not.toBe(member.accountId);
     await formMultiplayerParty(leader, member);
 
-    putAtWaveTwoBoundary(leader.id);
-    putAtWaveTwoBoundary(member.id);
+    // These are the real HuntSessions created by the Multiplayer Party endpoint,
+    // one owned by the leader account and one owned by the invited member account.
+    const leaderSession = waveTwoBoundarySession(leader.id);
+    const memberSession = waveTwoBoundarySession(member.id);
 
-    // 11 ticks / 2.75s: neither account may see the next wave yet.
-    loadCharacter(context.db, leader.accountId, leader.id, START + NORMAL_WAVE_DELAY_MS - TICK_MS);
-    loadCharacter(context.db, member.accountId, member.id, START + NORMAL_WAVE_DELAY_MS - TICK_MS);
-    expect(activeCount(leader.id)).toBe(0);
-    expect(activeCount(member.id)).toBe(0);
+    // 11 ticks / 2.75s: neither side of the multiplayer party may spawn early.
+    settle(leaderSession, START, START + NORMAL_WAVE_DELAY_MS - TICK_MS);
+    settle(memberSession, START, START + NORMAL_WAVE_DELAY_MS - TICK_MS);
+    expect(leaderSession.active).toHaveLength(0);
+    expect(memberSession.active).toHaveLength(0);
 
-    // Tick 12 / 3.00s: both independently persisted multiplayer sessions open
-    // wave 2. No spawn-credit shortage may extend this empty-floor transition.
-    loadCharacter(context.db, leader.accountId, leader.id, START + NORMAL_WAVE_DELAY_MS);
-    loadCharacter(context.db, member.accountId, member.id, START + NORMAL_WAVE_DELAY_MS);
-    expect(activeCount(leader.id)).toBeGreaterThan(0);
-    expect(activeCount(member.id)).toBeGreaterThan(0);
+    // Tick 12 / 3.00s: leader and the separate member account both open wave 2.
+    // A shortage of calibrated spawn credits must not extend the empty screen.
+    settle(leaderSession, START + NORMAL_WAVE_DELAY_MS - TICK_MS, START + NORMAL_WAVE_DELAY_MS);
+    settle(memberSession, START + NORMAL_WAVE_DELAY_MS - TICK_MS, START + NORMAL_WAVE_DELAY_MS);
+    expect(leaderSession.active.length).toBeGreaterThan(0);
+    expect(memberSession.active.length).toBeGreaterThan(0);
   });
 });
