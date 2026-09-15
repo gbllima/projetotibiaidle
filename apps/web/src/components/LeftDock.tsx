@@ -175,28 +175,30 @@ function SkillsOverview({ character }: { character: CharacterView }) {
         {tabs.map((tab) => <button key={tab.id} type="button" className={`btn ${tab.id===selectedId?'gold':''}`} disabled={loading || promoting} onClick={() => void choose(tab.id)} style={{ minWidth:0, padding:'3px 8px', fontSize:10, whiteSpace:'nowrap' }}>{tab.name}</button>)}
       </div>
 
-      <div style={{ padding:'7px 8px', margin:'0 0 8px', border:'1px solid rgba(216,168,65,.35)', borderRadius:4, background:'rgba(80,58,14,.16)' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'center', marginBottom:4 }}>
-          <strong style={{ color:'#d8a841', fontSize:11 }}>PROMOÇÃO</strong>
-          <strong style={{ color: promoted ? '#86d38b' : '#eee', fontSize:11 }}>{promoted ? view.vocation.name : promotionTarget}</strong>
+      {!promoted && (
+        <div style={{ padding:'7px 8px', margin:'0 0 8px', border:'1px solid rgba(216,168,65,.35)', borderRadius:4, background:'rgba(80,58,14,.16)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'center', marginBottom:4 }}>
+            <strong style={{ color:'#d8a841', fontSize:11 }}>PROMOÇÃO</strong>
+            <strong style={{ color:'#eee', fontSize:11 }}>{promotionTarget}</strong>
+          </div>
+          <div style={{ color:'#aaa', fontSize:10, lineHeight:1.45, marginBottom:6 }}>
+            Requisitos: nível <strong style={{ color: promotionLevelOk ? '#86d38b' : '#e6b45a' }}>{PROMOTION_LEVEL}</strong> · <strong style={{ color: promotionGoldOk ? '#86d38b' : '#e6b45a' }}>{formatNumber(PROMOTION_GOLD)} gold</strong>
+          </div>
+          <button
+            type="button"
+            className="btn gold"
+            style={{ width:'100%', fontSize:10, padding:'5px 7px' }}
+            disabled={promoting || !canPromote}
+            onClick={() => void promote()}
+          >
+            {promoting ? 'Promovendo…' : `Promover para ${promotionTarget}`}
+          </button>
+          {!promotionLevelOk && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Alcance o nível {PROMOTION_LEVEL} para liberar a promoção.</div>}
+          {promotionLevelOk && !promotionGoldOk && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Você precisa de {formatNumber(PROMOTION_GOLD)} gold.</div>}
+          {promotionLevelOk && promotionGoldOk && !promotionIdle && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Encerre a hunt para realizar a promoção.</div>}
+          {promotionError && <div className="loss" style={{ fontSize:9, marginTop:4 }}>{promotionError}</div>}
         </div>
-        <div style={{ color:'#aaa', fontSize:10, lineHeight:1.45, marginBottom:6 }}>
-          Requisitos: nível <strong style={{ color: promotionLevelOk ? '#86d38b' : '#e6b45a' }}>{PROMOTION_LEVEL}</strong> · <strong style={{ color: promotionGoldOk ? '#86d38b' : '#e6b45a' }}>{formatNumber(PROMOTION_GOLD)} gold</strong>
-        </div>
-        <button
-          type="button"
-          className="btn gold"
-          style={{ width:'100%', fontSize:10, padding:'5px 7px' }}
-          disabled={promoting || promoted || !canPromote}
-          onClick={() => void promote()}
-        >
-          {promoting ? 'Promovendo…' : promoted ? 'Já promovido' : `Promover para ${promotionTarget}`}
-        </button>
-        {!promoted && !promotionLevelOk && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Alcance o nível {PROMOTION_LEVEL} para liberar a promoção.</div>}
-        {!promoted && promotionLevelOk && !promotionGoldOk && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Você precisa de {formatNumber(PROMOTION_GOLD)} gold.</div>}
-        {!promoted && promotionLevelOk && promotionGoldOk && !promotionIdle && <div style={{ color:'#888', fontSize:9, marginTop:4 }}>Encerre a hunt para realizar a promoção.</div>}
-        {promotionError && <div className="loss" style={{ fontSize:9, marginTop:4 }}>{promotionError}</div>}
-      </div>
+      )}
 
       <div style={{ color:'#aaa', fontSize:11, margin:'0 0 7px' }}>{view.vocation.name}</div>
 
