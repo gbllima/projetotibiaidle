@@ -1,6 +1,8 @@
 import type { AccountView, BossView, CharacterView, HuntView, LobbyPlayer, Settlement, WorldView } from './types.js';
 
 const TOKEN_KEY = 'tibia-idle.token';
+const TRAINING_HEARTBEAT_MS = 8_000;
+const trainingHeartbeatAt = new Map<number, number>();
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -60,6 +62,8 @@ export interface MultiplayerPartyStatus {
   leaderId?: number;
   isLeader: boolean;
   maxMembers: number;
+  minLevel?: number;
+  xpBonusPercent: number;
   members: Array<{
     id: number;
     name: string;
@@ -70,8 +74,33 @@ export interface MultiplayerPartyStatus {
   invite?: { fromId: number; fromName: string; createdAt: number };
 }
 
+export interface FriendView {
+  id: number;
+  name: string;
+  level: number;
+  vocationId: number;
+  appearance?: CharacterView['appearance'];
+  online: boolean;
+  activity: 'Hunt' | 'Treino' | 'Cidade' | 'Offline';
+}
+
 async function multiplayerStatus(id: number): Promise<MultiplayerPartyStatus> {
   return request<MultiplayerPartyStatus>('GET', `/api/multiplayer-party/${id}`);
+}
+
+async function huntsForCharacter(id: number): Promise<{ hunts: HuntView[] }> {
+  const [result, multiplayer] = await Promise.all([
+    request<{ hunts: HuntView[] }>('GET', `/api/characters/${id}/hunts`),
+    multiplayerStatus(id).catch(() => null),
+  ]);
+  if (!multiplayer?.active || multiplayer.minLevel === undefined) return result;
+  const minLevel = multiplayer.minLevel;
+  return {
+    hunts: result.hunts.map((hunt) => ({
+      ...hunt,
+      unlocked: hunt.unlocked && (hunt.recommendedLevel ?? hunt.statedLevel) <= minLevel,
+    })),
+  };
 }
 
 async function startConfiguredPartyHunt(id: number, huntId: string, hours?: number): Promise<{ character: CharacterView }> {
@@ -116,6 +145,19 @@ async function stopConfiguredPartyHunt(id: number): Promise<{ character: Charact
   return request<{ character: CharacterView; goldBanked: number; supplyRefund: number }>('DELETE', `/api/characters/${id}/hunt`);
 }
 
+async function act(id: number, body: Record<string, unknown>) {
+  const result = await request<{ character: CharacterView; targetCharacter?: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body);
+  if (body['type'] === 'train-online') {
+    const now = Date.now();
+    const last = trainingHeartbeatAt.get(id) ?? 0;
+    if (now - last >= TRAINING_HEARTBEAT_MS) {
+      trainingHeartbeatAt.set(id, now);
+      void request<{ ok: true }>('POST', `/api/friends/${id}/activity`, { activity: 'training' }).catch(() => undefined);
+    }
+  }
+  return result;
+}
+
 export const api = {
   health: () => request<HealthView>('GET', '/api/health'),
   register: (username: string, password: string, invite?: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/register', { username, password, invite }),
@@ -137,19 +179,22 @@ export const api = {
   declineMultiplayerParty: (id: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/decline`),
   leaveMultiplayerParty: (id: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('POST', `/api/multiplayer-party/${id}/leave`),
   removeMultiplayerPartyMember: (id: number, memberId: number) => request<{ ok: true; status: MultiplayerPartyStatus }>('DELETE', `/api/multiplayer-party/${id}/members/${memberId}`),
+  friends: (id: number) => request<{ friends: FriendView[] }>('GET', `/api/friends/${id}`),
+  addFriend: (id: number, name: string) => request<{ friends: FriendView[] }>('POST', `/api/friends/${id}`, { name }),
+  removeFriend: (id: number, friendId: number) => request<{ friends: FriendView[] }>('DELETE', `/api/friends/${id}/${friendId}`),
   partyItemsView: (ownerId: number, targetId: number) => request<{ character: CharacterView }>('GET', `/api/characters/${ownerId}/party-items/${targetId}`),
   partyItemAct: (ownerId: number, targetId: number, body: Record<string, unknown>) => request<{ character: CharacterView }>('POST', `/api/characters/${ownerId}/party-items/${targetId}`, body),
   lootPreferences: (id: number) => request<{ ignoredItemIds: number[] }>('GET', `/api/characters/${id}/loot-preferences`),
   backpackToLoot: (id: number, itemId: number, count: number) => request<{ character: CharacterView; ignoredItemIds: number[] }>('POST', `/api/characters/${id}/backpack-to-loot`, { itemId, count }),
   setLootIgnored: (id: number, itemId: number, ignored: boolean) => request<{ character: CharacterView; ignoredItemIds: number[] }>('POST', `/api/characters/${id}/loot-ignore`, { itemId, ignored }),
-  hunts: (id: number) => request<{ hunts: HuntView[] }>('GET', `/api/characters/${id}/hunts`),
+  hunts: huntsForCharacter,
   bosses: (id: number) => request<{ bosses: BossView[] }>('GET', `/api/characters/${id}/bosses`),
   startHunt: startConfiguredPartyHunt,
   stopHunt: stopConfiguredPartyHunt,
   upgradeGear: (id: number) => request<{ character: CharacterView; spent: number }>('POST', `/api/characters/${id}/gear`),
   sellPouch: (id: number) => request<{ character: CharacterView; gold: number }>('POST', `/api/characters/${id}/sell`),
   stashPouch: (id: number) => request<{ character: CharacterView; items: number }>('POST', `/api/characters/${id}/stash`),
-  act: (id: number, body: Record<string, unknown>) => request<{ character: CharacterView; targetCharacter?: CharacterView } & Record<string, unknown>>('POST', `/api/characters/${id}/act`, body),
+  act,
   world: (channel = 'geral') => request<WorldView>('GET', `/api/world?channel=${encodeURIComponent(channel)}`),
   admin: () => request<{
     accounts: Array<{ id: number; username: string; admin: boolean; banned?: boolean; characters: Array<{ id: number; name: string; level: number; gold: number; coins: number }> }>;
