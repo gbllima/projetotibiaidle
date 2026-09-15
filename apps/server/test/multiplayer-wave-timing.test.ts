@@ -2,10 +2,33 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TICK_MS, WAVE_PACK, type CharacterState, type HuntSession } from '@tibia-idle/sim';
 import { createApp } from '../src/app.js';
 import { loadCharacter } from '../src/game.js';
+import { decorateMultiplayerCharacter } from '../src/social-live.js';
 
 const HUNT_ID = 'amazon-camp';
 const START = 1_700_000_000_000;
 const NORMAL_WAVE_DELAY_MS = 3_000;
+
+it('reports the same party wave and enemy count despite different individual kills', async () => {
+  const leader = await player('wave-leader', 'Wave Leader');
+  const member = await player('wave-member', 'Wave Member');
+  await formMultiplayerParty(leader, member);
+  for (const [id, kills] of [[leader.id, 30], [member.id, 0]]) {
+    const row = context.db.findCharacter(id!)!;
+    const session = JSON.parse(row.session!) as HuntSession;
+    session.totals.kills = kills!;
+    context.db.saveCharacter(id!, JSON.stringify(session.character), JSON.stringify(session), row.settledAt);
+  }
+  const view = (id: number) => decorateMultiplayerCharacter(context.db, id, { caveParty: [], partyWave: null as null | {
+    wave: number; packAlive: number; packSize: number;
+  } }).partyWave;
+  const first = view(leader.id);
+  expect(first).not.toBeNull();
+  expect(first).toEqual(view(member.id));
+  expect(first!.wave).toBeGreaterThan(1);
+  const alive = [leader.id, member.id].reduce((sum, id) => sum + (JSON.parse(context.db.findCharacter(id)!.session!) as HuntSession).active.length, 0);
+  expect(first!.packAlive).toBe(alive);
+  expect(first!.packSize).toBeGreaterThanOrEqual(alive);
+});
 
 type Player = {
   accountId: number;

@@ -3,6 +3,7 @@ import {
   TICK_MS,
   addManaSpent,
   deriveStats,
+  describeSession,
   isBossHunt,
   type CharacterState,
   type HuntPolicy,
@@ -206,7 +207,22 @@ export function decorateMultiplayerCharacter<T extends { caveParty?: unknown[] }
     const member = multiplayerMemberView(db, id, characterId);
     return member ? [member] : [];
   });
-  return { ...character, caveParty: members } as T;
+  const active = liveMembers(db, characterId).filter((entry) => entry.session.character.health > 0);
+  const huntId = active.find((entry) => entry.row.id === characterId)?.session.huntId;
+  const group = active.filter((entry) => entry.session.huntId === huntId);
+  const first = group[0];
+  // All viewers use the same party kill total, never their own predicted wave.
+  const shared = first ? describeSession({
+    ...first.session,
+    totals: { ...first.session.totals, kills: group.reduce((sum, entry) => sum + entry.session.totals.kills, 0) },
+  }) : null;
+  const alive = group.reduce((sum, entry) => sum + entry.session.active.length, 0);
+  const partyWave = shared ? {
+    huntId, wave: shared.wave, wavesTotal: shared.wavesTotal,
+    wavesCleared: shared.wavesCleared, bossWave: shared.bossWave,
+    packAlive: alive, packSize: Math.max(shared.packSize, alive),
+  } : null;
+  return { ...character, caveParty: members, partyWave } as T;
 }
 
 function baseVocation(vocationId: number): BaseVocation {

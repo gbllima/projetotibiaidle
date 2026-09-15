@@ -212,6 +212,7 @@ export interface CharacterView {
   partyMemberIds?: number[];
   partyBonus: number;
   deathScene?: { huntId: string; at: number } | null;
+  partyWave?: Pick<SessionView, 'huntId' | 'wave' | 'wavesTotal' | 'wavesCleared' | 'bossWave' | 'packAlive' | 'packSize'> | null;
   partyActivity?: { huntId: string; memberIds: number[]; startedAt: number; session: SessionView } | null;
   caveParty: Array<{
     id: number;

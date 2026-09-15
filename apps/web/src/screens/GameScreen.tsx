@@ -66,6 +66,8 @@ export function GameScreen({
   const { t, locale, setLocale } = useLocale();
   const { character, events } = usePredictedCharacter(server);
   const activitySession = character.session ?? server.partyActivity?.session ?? null;
+  const waveSession = server.partyWave?.huntId === activitySession?.huntId
+    ? server.partyWave ?? activitySession : activitySession;
   const [overlay, setOverlay] = useState<OverlayId>('none');
   const [helperSection, setHelperSection] = useState<'cura' | 'magias'>('cura');
   const [settings, setSettings] = useState(false);
@@ -271,21 +273,21 @@ export function GameScreen({
   }, [events, locale]);
 
   useEffect(() => {
-    const wave = character.session?.wave;
+    const wave = waveSession?.wave;
     if (!wave || lastWave.current === null) {
       lastWave.current = wave ?? null;
       return;
     }
     if (wave !== lastWave.current) {
       const clearedPhase = lastWave.current === 10 && wave === 1;
-      const boss = wave === 10 || character.session?.bossWave;
+      const boss = wave === 10 || waveSession?.bossWave;
       const text = clearedPhase ? t('wavePhaseClear') : boss ? t('bossWave') : `Wave ${lastWave.current}/10 concluída!`;
       setBanner(text);
       pushLog(text);
       window.setTimeout(() => setBanner(null), 2200);
       lastWave.current = wave;
     }
-  }, [character.session?.wave]);
+  }, [waveSession?.wave]);
 
   useEffect(() => {
     const kills = Object.values(character.bestiary ?? {}).reduce((sum, n) => sum + n, 0);
@@ -299,8 +301,8 @@ export function GameScreen({
     : character.queue
       ? huntsById.get(character.queue.huntId) ?? bossesByHuntId.get(character.queue.huntId)
       : null;
-  const wavesTotal = activitySession?.wavesTotal ?? 10;
-  const wavesCleared = activitySession?.wavesCleared ?? 0;
+  const wavesTotal = waveSession?.wavesTotal ?? 10;
+  const wavesCleared = waveSession?.wavesCleared ?? 0;
 
   useEffect(() => {
     const node = logRef.current;
@@ -430,16 +432,16 @@ export function GameScreen({
               {hunt?.name ?? t('hunts')}
               <small>▾</small>
             </button>
-            <div className={`wave ${activitySession?.bossWave ? 'boss' : ''}`}>
+            <div className={`wave ${waveSession?.bossWave ? 'boss' : ''}`}>
               <div className="label">
-                {activitySession?.bossWave ? t('bossWave') : `Wave ${activitySession?.wave ?? 0}/${wavesTotal}`}
-                {activitySession ? ` · Inimigos ${activitySession.packAlive ?? activitySession.active.length}/${activitySession.packSize}` : ''}
+                {waveSession?.bossWave ? t('bossWave') : `Wave ${waveSession?.wave ?? 0}/${wavesTotal}`}
+                {waveSession ? ` · Inimigos ${waveSession.packAlive ?? activitySession?.active.length ?? 0}/${waveSession.packSize}` : ''}
               </div>
               <div className="waves">
                 {Array.from({ length: wavesTotal }, (_, index) => (
                   <i
                     key={index}
-                    className={`${index < (wavesCleared % wavesTotal) ? 'on' : ''} ${index === wavesTotal - 1 ? 'skull' : ''} ${activitySession?.bossWave && index === wavesTotal - 1 ? 'now' : ''}`}
+                    className={`${index < (wavesCleared % wavesTotal) ? 'on' : ''} ${index === wavesTotal - 1 ? 'skull' : ''} ${waveSession?.bossWave && index === wavesTotal - 1 ? 'now' : ''}`}
                   />
                 ))}
               </div>
