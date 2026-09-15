@@ -28,7 +28,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
             <span className="launch-notice-kicker">⚔ ABERTURA OFICIAL DO SERVIDOR ⚔</span>
             <h2 id="launch-notice-title">A AVENTURA<br /><em>COMEÇA EM BREVE</em></h2>
             <div className="launch-notice-date"><span>●</span> 05 DE DEZEMBRO DE 2026</div>
-            <p>Prepare seu personagem para o início oficial do <strong>Knock Idle BR</strong>. O servidor será inaugurado em <strong>5 de dezembro de 2026</strong>.</p>
+            <p>Prepare seu personagem para o início oficial do <strong>Knock Hunt BR</strong>. O servidor será inaugurado em <strong>5 de dezembro de 2026</strong>.</p>
             <button className="launch-notice-action" type="button" onClick={() => setLaunchNoticeOpen(false)}>ENTENDI — CONTINUAR NO SITE</button>
           </div>
         </div>
@@ -36,7 +36,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 
       <div className="landing-glow landing-glow-a" aria-hidden /><div className="landing-glow landing-glow-b" aria-hidden />
       <header className="landing-nav">
-        <div className="landing-brand"><img src={KNOCK_LOGO} alt="Knock Idle BR" /><div><strong>KNOCK IDLE BR</strong><small>O RPG IDLE BRASILEIRO</small></div></div>
+        <div className="landing-brand"><img src={KNOCK_LOGO} alt="Knock Hunt BR" /><div><strong>KNOCK HUNT BR</strong><small>O RPG IDLE BRASILEIRO</small></div></div>
         <nav><a href="#servidor">SERVIDOR</a><a href="#ranking">RANKING</a><a href="#sistemas">SISTEMAS</a><button className="landing-nav-link" onClick={onWiki}>WIKI</button><button className="landing-nav-link" onClick={onAccount}>MINHA CONTA</button></nav>
         <button className="landing-nav-play" onClick={onPlay}>{actionLabel}</button>
       </header>
@@ -49,7 +49,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
           <div className="landing-br-badge"><span>BR</span><div><strong>FEITO PARA QUEM GOSTA DE RPG</strong><small>Progressão idle, hunts, loot e evolução constante.</small></div></div>
         </div>
-        <div className="landing-hero-art"><div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Idle BR — O RPG Idle Brasileiro" /></div></div>
+        <div className="landing-hero-art"><div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Hunt BR — O RPG Idle Brasileiro" /></div></div>
       </section>
 
       <section className="landing-fair-economy" aria-label="Economia justa">
@@ -64,7 +64,7 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 
       <section id="ranking" className="landing-section">
         <div className="landing-section-heading"><div><span>01</span><h2>O MUNDO ESTÁ VIVO</h2></div><p>Dados públicos do servidor atualizados diretamente pelo jogo.</p></div>
-        <div className="landing-data-grid"><DataCard sprite={<LandingItemSprite itemId={3351} size={48} />} value={stats?.characters} label="PERSONAGENS CRIADOS" text="Aventureiros que já começaram sua jornada no Knock Idle BR." large /><DataCard sprite={<LandingItemSprite itemId={3350} size={48} />} value={stats?.hunting} label="EM CAÇADA" text="Personagens enfrentando criaturas neste momento." /><DataCard sprite={<CreatureIcon lookType={34} size={48} />} value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Criaturas espalhadas pelas áreas e hunts do servidor." /></div>
+        <div className="landing-data-grid"><DataCard sprite={<LandingItemSprite itemId={3351} size={48} />} value={stats?.characters} label="PERSONAGENS CRIADOS" text="Aventureiros que já começaram sua jornada no Knock Hunt BR." large /><DataCard sprite={<LandingItemSprite itemId={3350} size={48} />} value={stats?.hunting} label="EM CAÇADA" text="Personagens enfrentando criaturas neste momento." /><DataCard sprite={<CreatureIcon lookType={34} size={48} />} value={stats?.monsters} label="MONSTROS DISPONÍVEIS" text="Criaturas espalhadas pelas áreas e hunts do servidor." /></div>
       </section>
 
       <section id="sistemas" className="landing-features">
@@ -72,9 +72,9 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
         <div className="landing-feature-grid"><Feature sprite={<LandingSprite src={SWORD_HOME} />} title="VOCAÇÕES" text="Escolha seu estilo de combate e desenvolva seu personagem." /><Feature sprite={<LandingSprite src={HUNTS_HOME} />} title="HUNTS" text="Explore áreas, enfrente criaturas e evolua continuamente." /><Feature sprite={<LandingItemSprite itemId={3031} />} title="LOOT & GOLD" text="Colete recursos, negocie itens e fortaleça seu equipamento." /><Feature sprite={<LandingSprite src="/assets/item-icons/2979.webp" />} title="MUNDO ONLINE" text="Compartilhe o servidor com outros aventureiros brasileiros." /></div>
       </section>
 
-      <section className="landing-cta"><div><span>PRONTO PARA COMEÇAR?</span><h2>ENTRE NO MUNDO DO<br /><em>KNOCK IDLE BR.</em></h2></div><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button></section>
+      <section className="landing-cta"><div><span>PRONTO PARA COMEÇAR?</span><h2>ENTRE NO MUNDO DO<br /><em>KNOCK HUNT BR.</em></h2></div><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button></section>
       <div className="landing-portal-links"><button onClick={onWiki}>WIKI E TUTORIAL</button><button onClick={onAccount}>MINHA CONTA</button></div>
-      <footer className="landing-footer"><strong>KNOCK IDLE BR</strong> <span>•</span> O RPG IDLE BRASILEIRO</footer>
+      <footer className="landing-footer"><strong>KNOCK HUNT BR</strong> <span>•</span> O RPG IDLE BRASILEIRO</footer>
     </main>
   );
 }
