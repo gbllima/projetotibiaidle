@@ -11,6 +11,11 @@ import {
   type SimEvent,
 } from '@tibia-idle/sim';
 import type { CharacterRow, Database } from './db.js';
+import {
+  isMultiplayerDown,
+  multiplayerSessionFromRow,
+  synchronizeMultiplayerRevives,
+} from './multiplayer-death.js';
 import { parsePartyHealSettings } from './party-healing.js';
 import { GameError } from './settle.js';
 
@@ -179,22 +184,27 @@ function multiplayerMemberView(db: Database, memberId: number, selfId: number) {
   if (!row) return null;
   const state = stateFromRow(row);
   const stats = deriveStats(state);
-  let active = false;
-  if (row.session) {
-    try { active = (JSON.parse(row.session) as HuntSession).status === 'active'; } catch { active = false; }
-  }
+  const session = multiplayerSessionFromRow(row);
+  const diedInHunt = isMultiplayerDown(session);
+  const active = Boolean(
+    session
+    && session.status === 'active'
+    && !diedInHunt
+    && session.character.health > 0,
+  );
   return {
     id: row.id,
     name: state.name,
     level: state.level,
     experience: state.experience,
-    health: Math.max(0, Math.round(state.health)),
+    health: diedInHunt ? 0 : Math.max(0, Math.round(state.health)),
     maxHealth: stats.maxHealth,
-    mana: Math.max(0, Math.round(state.mana)),
+    mana: diedInHunt ? 0 : Math.max(0, Math.round(state.mana)),
     maxMana: stats.maxMana,
     vocationId: state.vocationId,
     appearance: state.appearance,
     active,
+    diedInHunt,
     self: row.id === selfId,
     multiplayer: true,
   };
@@ -203,20 +213,40 @@ function multiplayerMemberView(db: Database, memberId: number, selfId: number) {
 export function decorateMultiplayerCharacter<T extends { caveParty?: unknown[] }>(db: Database, characterId: number, character: T): T {
   const ids = multiplayerPartyMemberIds(db, characterId);
   if (ids.length < 2) return character;
+
+  // Revive/corpse state is authoritative and persisted once per shared-wave
+  // transition. Do this before building the view so both accounts see the same
+  // state on the very frame in which the next wave begins.
+  synchronizeMultiplayerRevives(db, ids, characterId);
+
   const members = ids.flatMap((id) => {
     const member = multiplayerMemberView(db, id, characterId);
     return member ? [member] : [];
   });
-  const active = liveMembers(db, characterId).filter((entry) => entry.session.character.health > 0);
-  const huntId = active.find((entry) => entry.row.id === characterId)?.session.huntId;
-  const group = active.filter((entry) => entry.session.huntId === huntId);
-  const first = group[0];
+  const all = ids.flatMap((id) => {
+    const row = db.findCharacter(id);
+    if (!row) return [];
+    const session = multiplayerSessionFromRow(row);
+    return session ? [{ row, session }] : [];
+  });
+  const own = all.find((entry) => entry.row.id === characterId);
+  const huntId = own?.session.huntId
+    ?? all.find((entry) => entry.session.status === 'active' && !isMultiplayerDown(entry.session))?.session.huntId;
+  const group = all.filter((entry) => entry.session.huntId === huntId);
+  const living = group.filter((entry) => (
+    entry.session.status === 'active'
+    && !isMultiplayerDown(entry.session)
+    && entry.session.character.health > 0
+  ));
+  const first = living[0] ?? group[0];
   // All viewers use the same party kill total, never their own predicted wave.
+  // Fallen members stay in this total so the HUD does not jump backwards while
+  // their corpse is waiting for the next wave.
   const shared = first ? describeSession({
     ...first.session,
     totals: { ...first.session.totals, kills: group.reduce((sum, entry) => sum + entry.session.totals.kills, 0) },
   }) : null;
-  const alive = group.reduce((sum, entry) => sum + entry.session.active.length, 0);
+  const alive = living.reduce((sum, entry) => sum + entry.session.active.length, 0);
   const partyWave = shared ? {
     huntId, wave: shared.wave, wavesTotal: shared.wavesTotal,
     wavesCleared: shared.wavesCleared, bossWave: shared.bossWave,
@@ -246,12 +276,11 @@ function liveMembers(db: Database, characterId: number): LiveMember[] {
   return ids.flatMap((id) => {
     const row = db.findCharacter(id);
     if (!row?.session) return [];
-    try {
-      const session = JSON.parse(row.session) as HuntSession;
-      return session.status === 'active' ? [{ row, session }] : [];
-    } catch {
-      return [];
-    }
+    const session = multiplayerSessionFromRow(row);
+    if (!session) return [];
+    return session.status === 'active' && !isMultiplayerDown(session) && session.character.health > 0
+      ? [{ row, session }]
+      : [];
   });
 }
 
