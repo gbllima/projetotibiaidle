@@ -346,7 +346,7 @@ export function RightDock({
       </div>
     </DockBox>
 
-    <DockBox id="loot-pouch" title="Loot Pouch" extra={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span>Slots {lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots}</span><button type="button" className="btn" disabled={busy || lootActionBusy} onClick={() => setLootConfigOpen(true)}>Config</button></span>}>
+    <DockBox id="loot-pouch" title="Loot Pouch" extra={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span>{lootItems.filter((s) => s.count > 0 && !ignoredItemIds.includes(s.itemId)).length} / {lootSlots}</span><button type="button" className="btn" disabled={busy || lootActionBusy} onClick={() => setLootConfigOpen(true)}>Config</button></span>}>
       {!lootEnabledByStamina && <div className="loot-status-warning">Loot desativado: sua stamina chegou a 0. Descanse para voltar a gerar loot.</div>}
       {lootEnabledByStamina && autoSellEnabled && <div className="loot-status-note">Auto-venda ativa em {autoSellPercent}% do valor. Itens em “Não vender” ficam protegidos.</div>}
       <div className="grid8 supply-grid">
@@ -366,7 +366,7 @@ export function RightDock({
       </div>
     </DockBox>
 
-    <DockBox id="supply-pouch" title="Supply Pouch" extra={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span>Slots {view.supplies.filter((s) => s.count > 0).length} / {supplySlots}</span><button type="button" className="btn" aria-label="Configurar Supply Pouch" disabled={busy} onClick={() => setSupplyConfigOpen(true)}>Config</button></span>}>
+    <DockBox id="supply-pouch" title="Supply Pouch" extra={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span>{view.supplies.filter((s) => s.count > 0).length} / {supplySlots}</span><button type="button" className="btn" aria-label="Configurar Supply Pouch" disabled={busy} onClick={() => setSupplyConfigOpen(true)}>Config</button></span>}>
       <div className="grid8 supply-grid">
         {supplyPaged.visible.map((item, index) => <ItemSlot
           key={`supply-${supplyPaged.safePage}-${index}-${item.itemId}`}
