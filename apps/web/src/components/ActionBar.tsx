@@ -292,6 +292,10 @@ export function ActionBar(props: {
     setRotation(null);
   }, [character.id]);
 
+  // Only characters owned by this account belong on the controllable action
+  // bar. Multiplayer allies are visible in the Party panel and hunt scene, but
+  // their rotations/Helper remain controlled by their own player.
+  const controllableIds = new Set(character.partyMemberIds ?? [character.id]);
   const members: BarMember[] = [
     {
       id: character.id,
@@ -302,17 +306,19 @@ export function ActionBar(props: {
       policy: overrides[character.id] ?? character.policy,
       full: character,
     },
-    ...(character.caveParty ?? []).filter((member) => !member.self).map((member) => ({
-      id: member.id,
-      name: member.name,
-      vocationId: member.vocationId,
-      level: member.level,
-      appearance: member.appearance as CharacterView['appearance'] | undefined,
-      policy: overrides[member.id] ?? {
-        spellPriority: member.policy?.spellPriority ?? [],
-        disabledSpells: member.policy?.disabledSpells ?? [],
-      },
-    })),
+    ...(character.caveParty ?? [])
+      .filter((member) => !member.self && controllableIds.has(member.id))
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        vocationId: member.vocationId,
+        level: member.level,
+        appearance: member.appearance as CharacterView['appearance'] | undefined,
+        policy: overrides[member.id] ?? {
+          spellPriority: member.policy?.spellPriority ?? [],
+          disabledSpells: member.policy?.disabledSpells ?? [],
+        },
+      })),
   ];
 
   return (
