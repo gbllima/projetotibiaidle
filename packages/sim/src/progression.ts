@@ -30,6 +30,10 @@ export const GUILD_COST = 50_000;
 export const GOLD_PER_COIN = 100_000;
 export const DAILY_XP_BOOST = 0.1;
 export const DAILY_XP_BOOST_MS = 2 * 60 * 60 * 1000;
+/** Social bonus for a real cross-account multiplayer party. */
+export const MULTIPLAYER_PARTY_XP_BONUS = 0.10;
+/** Session-local marker; everything after the prefix is the normal boosted monster id. */
+export const MULTIPLAYER_PARTY_BOOST_PREFIX = '__knock_mp_party__:';
 export const TUTORIAL_HUNT_ID = 'venore-rotworm-cave';
 export const LOOT_SLOT_GOLD = 10_000;
 export const LOOT_SLOT_STEP = 1;
@@ -408,11 +412,19 @@ export function huntMultipliers(
   let defense = 0;
   let experience = 1;
   let loot = 1;
+  const multiplayerParty = Boolean(boostedMonsterId?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX));
+  const actualBoostedMonsterId = multiplayerParty
+    ? boostedMonsterId!.slice(MULTIPLAYER_PARTY_BOOST_PREFIX.length) || undefined
+    : boostedMonsterId;
 
   if (isVip(character, now)) experience *= 1.05;
   if ((character.xpBoostUntil ?? 0) > now) experience *= 1 + DAILY_XP_BOOST;
   if ((character.storeXpBoostUntil ?? 0) > now) experience *= 1 + (character.storeXpBoostBonus ?? 0);
-  experience *= partyExperienceShare(partyLevels, character.level, character.partySlots ?? 1);
+  // A real multiplayer party gets one deliberately modest social bonus. Do not
+  // stack the older cave-mate/share bonus on top; each player's VIP, stamina,
+  // Prey and paid boosts remain individual and are calculated on their own session.
+  if (multiplayerParty) experience *= 1 + MULTIPLAYER_PARTY_XP_BONUS;
+  else experience *= partyExperienceShare(partyLevels, character.level, character.partySlots ?? 1);
   if (character.guildId) experience *= 1.03;
 
   const wheel = wheelBonus(character);
@@ -426,7 +438,7 @@ export function huntMultipliers(
   experience *= event.experience;
   loot *= event.loot;
 
-  if (boostedMonsterId && boostedMonsterId === monsterId) {
+  if (actualBoostedMonsterId && actualBoostedMonsterId === monsterId) {
     experience *= BOOSTED_EXPERIENCE;
     loot *= BOOSTED_LOOT;
   }

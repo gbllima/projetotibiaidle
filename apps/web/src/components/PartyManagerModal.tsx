@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { PLAYABLE_VOCATION_IDS, vocationsById } from '@tibia-idle/data';
-import { api, type MultiplayerPartyStatus } from '../api/client.js';
+import { api, type FriendView, type MultiplayerPartyStatus } from '../api/client.js';
 import type { CharacterView } from '../api/types.js';
 import { PartyPortrait } from './PartyPortrait.js';
 
@@ -8,7 +8,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
   const initial = character.partyMemberIds ?? [character.id];
   const [formation, setFormation] = useState(() => [character.id, ...initial.filter((id) => id !== character.id)]);
   const [roster, setRoster] = useState<CharacterView[]>([character]);
-  const [tab, setTab] = useState<'single' | 'multi'>('single');
+  const [tab, setTab] = useState<'single' | 'multi' | 'friends'>('single');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -17,6 +17,8 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
   const [canCreate, setCanCreate] = useState(false);
   const [multiplayer, setMultiplayer] = useState<MultiplayerPartyStatus | null>(null);
   const [inviteName, setInviteName] = useState('');
+  const [friends, setFriends] = useState<FriendView[]>([]);
+  const [friendName, setFriendName] = useState('');
   const dialog = useRef<HTMLDivElement>(null);
   const normalizedInitial = [character.id, ...initial.filter((id) => id !== character.id)];
   const dirty = formation.join(',') !== normalizedInitial.join(',');
@@ -26,6 +28,12 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
     const status = await api.multiplayerParty(character.id);
     setMultiplayer(status);
     return status;
+  };
+
+  const refreshFriends = async () => {
+    const result = await api.friends(character.id);
+    setFriends(result.friends);
+    return result.friends;
   };
 
   const refreshCharacter = async () => {
@@ -40,16 +48,25 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
     let live = true;
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.focus();
-    void Promise.all([api.characters(), api.multiplayerParty(character.id)]).then(([result, status]) => {
+    void Promise.all([api.characters(), api.multiplayerParty(character.id), api.friends(character.id)]).then(([result, status, friendsResult]) => {
       if (!live) return;
       setRoster(result.characters);
       setCanCreate(result.account.used < result.account.slots);
       setMultiplayer(status);
+      setFriends(friendsResult.friends);
     }).catch((reason: Error) => { if (live) setError(reason.message); }).finally(() => { if (live) setLoading(false); });
-    const timer = window.setInterval(() => {
+    const partyTimer = window.setInterval(() => {
       void api.multiplayerParty(character.id).then((status) => { if (live) setMultiplayer(status); }).catch(() => undefined);
     }, 2000);
-    return () => { live = false; window.clearInterval(timer); previous?.focus(); };
+    const friendsTimer = window.setInterval(() => {
+      void api.friends(character.id).then((result) => { if (live) setFriends(result.friends); }).catch(() => undefined);
+    }, 5000);
+    return () => {
+      live = false;
+      window.clearInterval(partyTimer);
+      window.clearInterval(friendsTimer);
+      previous?.focus();
+    };
   }, [character.id]);
 
   const add = (id: number, position?: number) => {
@@ -121,6 +138,18 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
     }
   };
 
+  const friendAction = async (work: () => Promise<{ friends: FriendView[] }>) => {
+    setBusy(true); setError('');
+    try {
+      const result = await work();
+      setFriends(result.friends);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível alterar sua lista de amigos.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return <div className="modal party-manager-backdrop" onClick={() => { if (!busy) onClose(); }}>
     <div className="party-manager" role="dialog" aria-modal="true" aria-labelledby="party-manager-title" ref={dialog} tabIndex={-1} onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
@@ -134,6 +163,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
       <div className="party-manager-tabs" role="tablist" aria-label="Modo da party">
         <button role="tab" aria-selected={tab === 'single'} onClick={() => setTab('single')}>Single Player</button>
         <button role="tab" aria-selected={tab === 'multi'} onClick={() => setTab('multi')}>Multiplayer</button>
+        <button role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')}>Amigos</button>
       </div>
       <h2 id="party-manager-title">Gerenciar party</h2>
       <div className="party-manager-scroll" role="tabpanel">
@@ -172,9 +202,10 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
             <button type="submit" disabled={busy || !name.trim()}>Criar personagem</button>
           </form>}
           <p className="party-manager-hint">A formação pessoal é preservada. Ao entrar no multiplayer, ela fica suspensa e retorna quando a party multiplayer terminar.</p>
-        </> : <div className="party-multiplayer-info">
+        </> : tab === 'multi' ? <div className="party-multiplayer-info">
           <h3>Party Multiplayer</h3>
           <p>Cada conta pode levar somente <strong>um personagem</strong>. Seus companions da própria conta e os companions do seu amigo ficam fora enquanto a party multiplayer estiver ativa.</p>
+          <p className="party-manager-hint"><strong>Bônus social: +{multiplayer?.xpBonusPercent ?? 10}% XP.</strong> VIP, stamina, Prey e boosts continuam individuais: um jogador Free não recebe o bônus VIP de outro membro.</p>
 
           {multiplayer?.invite && !multiplayer.active && <div className="party-primary-drop">
             <div className="party-formation-card selected">
@@ -188,6 +219,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
           </div>}
 
           {multiplayer?.active ? <>
+            <p className="party-manager-hint"><strong>Limite de hunt: Level {multiplayer.minLevel ?? '—'}.</strong> A party só acessa hunts liberadas para todos os membros, portanto o menor level define o teto do grupo.</p>
             <h3>Membros <span>{multiplayer.members.length}/{multiplayer.maxMembers}</span></h3>
             <div className="party-available">
               {multiplayer.members.map((member) => <div className={'party-formation-card' + (member.id === multiplayer.leaderId ? ' selected' : '')} key={member.id}>
@@ -212,7 +244,7 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
               <button type="submit" disabled={busy || !inviteName.trim()}>Enviar convite</button>
             </form>}
             <button type="button" disabled={busy} onClick={() => void multiplayerAction(async () => (await api.leaveMultiplayerParty(character.id)).status, true)}>{multiplayer.isLeader ? 'Encerrar party multiplayer' : 'Sair da party multiplayer'}</button>
-            <p className="party-manager-hint">O líder inicia a hunt e o servidor tenta colocar todos os jogadores da party na mesma cave. Se algum membro não puder entrar, a entrada é cancelada para evitar separar o grupo.</p>
+            <p className="party-manager-hint">O líder inicia a hunt e o servidor coloca todos na mesma cave. Se algum membro não tiver level, acesso ou vaga, a entrada do grupo é cancelada para não separar a party.</p>
           </> : <>
             <form className="party-create" onSubmit={(event) => {
               event.preventDefault();
@@ -230,6 +262,35 @@ export function PartyManagerModal({ character, onClose, onSaved }: { character: 
             <p className="party-manager-hint">Seu amigo deve abrir Gerenciar party → Multiplayer para aceitar. O convite expira em 15 minutos.</p>
           </>}
           <button type="button" disabled={busy} onClick={() => void refreshMultiplayer().catch((reason: Error) => setError(reason.message))}>Atualizar</button>
+        </div> : <div className="party-multiplayer-info">
+          <h3>Amigos</h3>
+          <p>Adicione jogadores de outras contas pelo nome do personagem. O status é atualizado enquanto esta janela estiver aberta.</p>
+          <form className="party-create" onSubmit={(event) => {
+            event.preventDefault();
+            const target = friendName.trim();
+            if (!target) return;
+            void friendAction(async () => {
+              const result = await api.addFriend(character.id, target);
+              setFriendName('');
+              return result;
+            });
+          }}>
+            <label>Adicionar amigo<input value={friendName} onChange={(event) => setFriendName(event.target.value)} disabled={busy} placeholder="Nome do personagem" /></label>
+            <button type="submit" disabled={busy || !friendName.trim()}>Adicionar</button>
+          </form>
+          <div className="party-available">
+            {friends.map((friend) => <div className="party-formation-card" key={friend.id}>
+              <PartyPortrait appearance={friend.appearance} />
+              <strong>{friend.name}</strong>
+              <small>Level {friend.level}</small>
+              <span className="party-manager-hint" style={{ color: friend.online ? '#6fcf76' : '#9a9a9a', fontWeight: 700 }}>{friend.online ? 'Online' : 'Offline'}</span>
+              <span className="party-manager-hint">{friend.online ? friend.activity : 'Offline'}</span>
+              <button type="button" className="party-card-primary" disabled={busy} onClick={() => void friendAction(() => api.removeFriend(character.id, friend.id))}>Remover</button>
+            </div>)}
+            {!friends.length && <p>Nenhum amigo adicionado.</p>}
+          </div>
+          <p className="party-manager-hint">Atividades: <strong>Hunt</strong>, <strong>Treino</strong> ou <strong>Cidade</strong>. Jogadores desconectados aparecem como Offline.</p>
+          <button type="button" disabled={busy} onClick={() => void refreshFriends().catch((reason: Error) => setError(reason.message))}>Atualizar</button>
         </div>}
       </div>
       {error && <p className="party-manager-error" role="alert">{error}</p>}
