@@ -3,7 +3,7 @@ export * from './formulas.js';
 export * from './types.js';
 export * from './character.js';
 export * from './combat.js';
-export { advance, waveActiveLimit, WAVE_ACTIVE_LIMIT } from './waveReinforcements.js';
+export { advance, waveActiveLimit, WAVE_ACTIVE_LIMIT } from './waveTiming.js';
 export { startSession } from './starterPacing.js';
 export * from './spells.js';
 export * from './gear.js';
