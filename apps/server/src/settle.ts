@@ -3,6 +3,7 @@ import {
   advance, DEFAULT_RATES, defaultSupplies, deriveStats, describeSession, dailyBoostedMonster,
   ensureHuntTask, isBossHunt, isVip, movePouchToWarehouse, packHuntSupplies, parseBossHuntId,
   bossOnCooldown, getBossEncounterForHunt, recordBossKill, pouchSellValue, startSession, suppliesCost, TICK_MS,
+  MULTIPLAYER_PARTY_BOOST_PREFIX,
   type CharacterState, type HuntSession, type SimEvent, type AdvanceOptions,
 } from '@tibia-idle/sim';
 
@@ -27,6 +28,41 @@ export const STAMINA_MAX = 42 * 60;
 const MIN_SUPPLY_HOURS = 0.2;
 export const DEFAULT_HUNT_HOURS = 1;
 export const BOSS_TRIP_HOURS = 0.25;
+
+type MultiplayerDownSession = HuntSession & {
+  multiplayerDown?: boolean;
+  multiplayerReviveAtKills?: number;
+  reinforcementQueue?: unknown[];
+  reinforcementReadyTick?: number;
+  nextWaveAtTick?: number;
+  waveTimingCreditDebt?: number;
+};
+
+function isMultiplayerHunt(session: HuntSession): boolean {
+  return Boolean(session.boostedMonsterId?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX));
+}
+
+/**
+ * A multiplayer death is still a real death (penalty/death counter already ran),
+ * but it does not eject that account from the shared hunt. The player remains
+ * at 0 HP and takes no further simulation ticks until the party reaches the next
+ * wave; social-live.ts owns that synchronized revive.
+ */
+function holdMultiplayerDeath(session: HuntSession): void {
+  if (session.status !== 'died' || !isMultiplayerHunt(session)) return;
+  const down = session as MultiplayerDownSession;
+  down.multiplayerDown = true;
+  down.multiplayerReviveAtKills = undefined;
+  session.character.health = 0;
+  session.active = [];
+  down.reinforcementQueue = [];
+  down.reinforcementReadyTick = undefined;
+  down.nextWaveAtTick = undefined;
+  down.waveTimingCreditDebt = 0;
+  // Keep the persisted hunt alive. The down flag, not the generic session
+  // status, prevents combat until the shared wave coordinator revives it.
+  session.status = 'active';
+}
 
 export interface SettlementDelta { experience: number; kills: number; lootValue: number; supplyValue: number; levels: number; }
 export interface SettlementResult {
@@ -87,6 +123,9 @@ export function settle(session: HuntSession | null, settledAtMs: number, nowMs: 
   const elapsedMs = Math.max(0, nowMs - settledAtMs);
   const empty = { session, events: [] as SimEvent[], elapsedSeconds: 0, discardedSeconds: 0, stoppedBecause: session && session.status !== 'active' ? session.status : null, offline: false, efficiency: 1, capHours: MAX_OFFLINE_HOURS, delta: emptyDelta(), deathPenalty: session?.lastDeathPenalty ?? null };
   if (!session || session.status !== 'active') return empty;
+  if (isMultiplayerHunt(session) && (session as MultiplayerDownSession).multiplayerDown) {
+    return { ...empty, stoppedBecause: null };
+  }
   const offline = options.offline ?? elapsedMs > OFFLINE_GAP_MS;
   const capHours = offlineCapHours(session.character, nowMs);
   const capMs = capHours * 60 * 60 * 1000;
@@ -96,6 +135,7 @@ export function settle(session: HuntSession | null, settledAtMs: number, nowMs: 
   const before = { experience: session.totals.experience, kills: session.totals.kills, lootValue: session.totals.lootValue, supplyValue: session.totals.supplyValue, level: session.character.level };
   const efficiency = offline ? OFFLINE_EFFICIENCY : 1;
   const events = advance(session, ticks, { maxEvents: options.maxEvents ?? 0, awardKillExperience: options.awardKillExperience, rates: { ...DEFAULT_RATES, experience: DEFAULT_RATES.experience * efficiency, loot: DEFAULT_RATES.loot * efficiency } });
+  holdMultiplayerDeath(session);
   return { session, events, elapsedSeconds: Math.round((ticks * TICK_MS) / 1000), discardedSeconds: Math.round((elapsedMs - appliedMs) / 1000), stoppedBecause: session.status === 'active' ? null : session.status, offline, efficiency, capHours, delta: { experience: session.totals.experience - before.experience, kills: session.totals.kills - before.kills, lootValue: session.totals.lootValue - before.lootValue, supplyValue: session.totals.supplyValue - before.supplyValue, levels: session.character.level - before.level }, deathPenalty: session.lastDeathPenalty ?? null };
 }
 
