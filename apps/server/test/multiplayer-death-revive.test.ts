@@ -112,7 +112,9 @@ describe('multiplayer death between waves', () => {
 
     const memberRow = context.db.findCharacter(member.id)!;
     const doomed = JSON.parse(memberRow.session!) as MultiplayerSession;
-    doomed.character.health = -100;
+    // Zero HP reaches the simulator's real death branch without triggering the
+    // negative-HP flee check first.
+    doomed.character.health = 0;
     doomed.character.policy.healthPotionId = -1;
     doomed.character.policy.manaPotionId = -1;
     doomed.character.policy.spiritPotionId = -1;
