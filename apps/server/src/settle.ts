@@ -32,6 +32,7 @@ export const BOSS_TRIP_HOURS = 0.25;
 type MultiplayerDownSession = HuntSession & {
   multiplayerDown?: boolean;
   multiplayerReviveAtKills?: number;
+  reinforcementPartySize?: number;
   reinforcementQueue?: unknown[];
   reinforcementReadyTick?: number;
   nextWaveAtTick?: number;
@@ -39,7 +40,13 @@ type MultiplayerDownSession = HuntSession & {
 };
 
 function isMultiplayerHunt(session: HuntSession): boolean {
-  return Boolean(session.boostedMonsterId?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX));
+  const multiplayer = session as MultiplayerDownSession;
+  // `boostedMonsterId` carries the social XP marker, but it is not a safe
+  // lifecycle flag: older/live sessions can lose or replace that value while
+  // still being in a real multiplayer hunt. The wave layout is written for
+  // every shared-hunt member and remains authoritative for combat.
+  return (multiplayer.reinforcementPartySize ?? 0) > 1
+    || Boolean(session.boostedMonsterId?.startsWith(MULTIPLAYER_PARTY_BOOST_PREFIX));
 }
 
 /**
