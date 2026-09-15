@@ -1,4 +1,5 @@
 import './PortalScreen.css';
+import './PortalMonsters.css';
 
 type Props = {
   onKnockHunt: () => void;
