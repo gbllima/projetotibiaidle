@@ -1,0 +1,13 @@
+.market-v2-myoffer {
+  grid-template-columns: minmax(0, 1fr) 60px 90px 70px 90px;
+}
+
+@media (max-width: 760px) {
+  .market-v2-myoffer {
+    grid-template-columns: minmax(0, 1fr) 52px 72px 78px;
+  }
+
+  .market-v2-myoffer .market-v2-expiry {
+    display: none;
+  }
+}
