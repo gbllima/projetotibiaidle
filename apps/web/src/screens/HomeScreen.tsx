@@ -4,9 +4,11 @@ import { itemIconUrl } from '../render/itemIcon.js';
 import { storedToken } from '../api/client.js';
 import '../launch-notice.css';
 import './HomeNews.css';
+import './HomeServerStatus.css';
 
 type PublicStats = { beta: 'open' | 'closed'; accounts: number; characters: number; hunting: number; monsters: number };
 type NewsItem = { id: string; title: string; category: string; summary: string; body: string; publishedAt: number; updatedAt: number };
+type ServerStatus = 'checking' | 'online' | 'offline';
 type Props = { onPlay: () => void; onWiki: () => void; onAccount: () => void };
 
 const SWORD_HOME = '/home/swordhome.gif';
@@ -15,10 +17,14 @@ const KNOCK_LOGO = '/home/Hunt.png';
 
 export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   const [stats, setStats] = useState<PublicStats | null>(null);
+  const [serverStatus, setServerStatus] = useState<ServerStatus>('checking');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [launchNoticeOpen, setLaunchNoticeOpen] = useState(true);
   useEffect(() => {
-    void fetch('/api/public-stats').then((r) => r.ok ? r.json() : Promise.reject()).then(setStats).catch(() => setStats(null));
+    void fetch('/api/public-stats')
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((payload: PublicStats) => { setStats(payload); setServerStatus('online'); })
+      .catch(() => { setStats(null); setServerStatus('offline'); });
     void fetch('/api/news')
       .then((r) => r.ok ? r.json() : Promise.reject())
       .then((payload: { news?: NewsItem[] }) => setNews(Array.isArray(payload.news) ? payload.news : []))
@@ -56,17 +62,20 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
           <div className="landing-actions"><button className="landing-primary" onClick={onPlay}>{actionLabel} <b>→</b></button><a className="landing-secondary" href="#servidor">CONHECER O SERVIDOR</a></div>
           <div className="landing-br-badge"><span>BR</span><div><strong>FEITO PARA QUEM GOSTA DE RPG</strong><small>Progressão idle, hunts, loot e evolução constante.</small></div></div>
         </div>
-        <div className="landing-hero-art"><div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Hunt BR — O RPG Idle Brasileiro" /></div></div>
+        <div className="landing-hero-art" id="servidor">
+          <div className={`landing-server-status landing-server-status--${serverStatus}`} role="status" aria-live="polite">
+            <span className="landing-server-status-dot" aria-hidden />
+            <small>SERVIDOR</small>
+            <strong>{serverStatus === 'checking' ? 'VERIFICANDO' : serverStatus === 'online' ? 'ONLINE' : 'OFFLINE'}</strong>
+          </div>
+          <div className="landing-logo-frame"><img className="landing-hero-logo" src={KNOCK_LOGO} alt="Knock Hunt BR — O RPG Idle Brasileiro" /></div>
+        </div>
       </section>
 
       <section className="landing-fair-economy" aria-label="Economia justa">
         <div className="landing-fair-seal"><span>⚖</span><strong>FAIR PLAY</strong></div>
         <div className="landing-fair-copy"><small>ECONOMIA JUSTA</small><h2>SEM PODER <em>EXCLUSIVO PAGO</em></h2><p>Equipamentos, hunts e conquistas continuam sendo obtidos jogando. VIP e boosts aceleram ou ampliam conveniências, mas não liberam equipamentos exclusivos de poder.</p></div>
         <div className="landing-fair-points"><span>✓ EQUIPAMENTOS PELO JOGO</span><span>✓ SEM GEAR EXCLUSIVO PAGO</span><span>✓ COMPETIÇÃO TRANSPARENTE</span></div>
-      </section>
-
-      <section id="servidor" className="landing-stats">
-        <Stat label="STATUS" value={stats?.beta === 'open' ? 'ONLINE' : 'OFFLINE'} accent={stats?.beta === 'open'} /><Stat label="PERSONAGENS" value={stats ? stats.characters.toLocaleString('pt-BR') : '—'} /><Stat label="CONTAS" value={stats ? stats.accounts.toLocaleString('pt-BR') : '—'} /><Stat label="CAÇANDO AGORA" value={stats ? stats.hunting.toLocaleString('pt-BR') : '—'} />
       </section>
 
       <section id="noticias" className="landing-news">
@@ -96,7 +105,6 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
 }
 
 function formatNewsDate(timestamp: number): string { return new Date(timestamp || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase(); }
-function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) { return <div className="landing-stat"><span className={accent ? 'online-dot' : ''} /><small>{label}</small><strong>{value}</strong></div>; }
 function LandingSprite({ src, size = 32 }: { src: string; size?: number }) { return <img className="landing-title-sprite" src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />; }
 function LandingItemSprite({ itemId, size = 32 }: { itemId: number; size?: number }) { const [src, setSrc] = useState<string | null>(null); useEffect(() => { let live = true; void itemIconUrl(itemId).then((url) => { if (live) setSrc(url); }).catch(() => {}); return () => { live = false; }; }, [itemId]); return src ? <LandingSprite src={src} size={size} /> : <span className="landing-title-sprite" aria-hidden />; }
 function DataCard({ value, label, text, sprite, large = false }: { value?: number; label: string; text: string; sprite: ReactNode; large?: boolean }) { return <div className={`landing-data-card${large ? ' large' : ''}`}><div className="landing-data-value-row"><span className="landing-title-sprite" aria-hidden>{sprite}</span><strong>{value === undefined ? '?' : value.toLocaleString('pt-BR')}</strong></div><small>{label}</small><p>{text}</p></div>; }
