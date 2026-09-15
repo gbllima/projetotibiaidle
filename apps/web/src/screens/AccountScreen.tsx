@@ -20,7 +20,7 @@ export function AccountScreen({ onHome, onPlay, onLogout }: { onHome: () => void
     finally { setLoading(false); }
   };
   useEffect(() => { void refresh(); }, []);
-  return <main className="portal-page"><header className="portal-nav"><button onClick={onHome}>← Início</button><strong>KNOCK IDLE BR</strong><button onClick={onLogout}>Sair da conta</button></header><div className="portal-content">
+  return <main className="portal-page"><header className="portal-nav"><button onClick={onHome}>← Início</button><strong>KNOCK HUNT BR</strong><button onClick={onLogout}>Sair da conta</button></header><div className="portal-content">
     <div className="portal-heading"><span>PAINEL DO JOGADOR</span><h1>{account?.username ?? 'Sua conta'}</h1><p>Consulte seus personagens, recursos e progresso sem abrir o jogo.</p></div>
     {error && <p className="portal-error" role="alert">{error}</p>}
     <nav className="portal-tabs"><button className={tab === 'account' ? 'on' : ''} onClick={() => setTab('account')}>Minha conta</button>{account?.admin && <button className={tab === 'admin' ? 'on' : ''} onClick={() => setTab('admin')}>Administração</button>}<button disabled={loading} onClick={() => { void refresh(); }}>{loading ? 'Atualizando…' : 'Atualizar dados'}</button></nav>
