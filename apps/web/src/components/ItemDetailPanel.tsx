@@ -16,6 +16,7 @@ export function ItemDetailPanel({ item, compact }: { item: Item; compact?: boole
   const bonuses = Object.entries(item.bonuses);
   const category = itemCategoryName(item);
   const level = itemLevelRequired(item);
+  const vocationLabel = itemVocationLabel(item);
 
   return (
     <div className={`compact-detail${compact ? ' compact-detail-inline' : ''}`}>
@@ -24,7 +25,7 @@ export function ItemDetailPanel({ item, compact }: { item: Item; compact?: boole
       {item.description && (
         <p className="lede item-detail-desc">{item.description}</p>
       )}
-      <div className="item-vocation-ribbon">{itemVocationLabel(item)}</div>
+      {vocationLabel && <div className="item-vocation-ribbon">{vocationLabel}</div>}
       <div className="kv">
         <span>Categoria</span><strong>{category}</strong>
         <span>Peso</span><strong>{itemWeightOz(item)}</strong>
