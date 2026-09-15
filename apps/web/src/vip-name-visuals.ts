@@ -1,7 +1,7 @@
 import { CombatScene } from './render/combat.js';
 
 const VIP_GOLD = 0xffd447;
-const VIP_STROKE = 0x4a2b00;
+const VIP_STROKE = 0x000000;
 const VIP_REFRESH_MS = 5_000;
 
 type VipPlayer = { id: number; name: string };
@@ -60,12 +60,15 @@ function paintLabel(label: LabelLike | undefined, vip: boolean): void {
   const style = label.style;
 
   if (vip) {
+    // Strong black outline keeps the small Tibia-style font crisp over bright
+    // floors, outfits and spell effects. The gold glow is intentionally softer
+    // than before so it does not wash out the glyphs.
     style['fill'] = VIP_GOLD;
-    style['stroke'] = { color: VIP_STROKE, width: 0.75, join: 'round' };
+    style['stroke'] = { color: VIP_STROKE, width: 1.35, join: 'round' };
     style['dropShadow'] = {
-      color: 0xffb000,
-      alpha: 0.95,
-      blur: 3,
+      color: 0xffbd2e,
+      alpha: 0.72,
+      blur: 1.75,
       distance: 0,
       angle: 0,
     };
@@ -139,19 +142,34 @@ function installChatStyle(): void {
       color: #ffd447 !important;
       font-weight: 800 !important;
       text-shadow:
-        0 0 2px #fff1a8,
-        0 0 5px rgba(255, 190, 35, .95),
-        0 0 10px rgba(255, 157, 0, .65) !important;
+        -1px -1px 0 #000,
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+         0 0 4px rgba(255, 190, 35, .9),
+         0 0 8px rgba(255, 157, 0, .5) !important;
       animation: vip-chat-name-glow 1.65s ease-in-out infinite;
     }
     @keyframes vip-chat-name-glow {
       0%, 100% {
         color: #f5bf2c;
-        text-shadow: 0 0 2px #ffe98a, 0 0 4px rgba(255, 174, 0, .72), 0 0 8px rgba(255, 132, 0, .38);
+        text-shadow:
+          -1px -1px 0 #000,
+           1px -1px 0 #000,
+          -1px  1px 0 #000,
+           1px  1px 0 #000,
+           0 0 3px rgba(255, 174, 0, .72),
+           0 0 6px rgba(255, 132, 0, .35);
       }
       50% {
         color: #ffe36a;
-        text-shadow: 0 0 3px #fff7cf, 0 0 7px rgba(255, 203, 51, 1), 0 0 13px rgba(255, 157, 0, .78);
+        text-shadow:
+          -1px -1px 0 #000,
+           1px -1px 0 #000,
+          -1px  1px 0 #000,
+           1px  1px 0 #000,
+           0 0 5px rgba(255, 203, 51, .95),
+           0 0 9px rgba(255, 157, 0, .55);
       }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -171,7 +189,8 @@ function startChatObserver(): void {
 
 function animateGlow(time: number): void {
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  const pulse = reducedMotion ? 1 : 0.91 + ((Math.sin(time / 330) + 1) / 2) * 0.09;
+  // Keep the pulse subtle so the black outline remains visually stable.
+  const pulse = reducedMotion ? 1 : 0.95 + ((Math.sin(time / 360) + 1) / 2) * 0.05;
   for (const label of [...glowingLabels]) {
     if (label.destroyed) {
       glowingLabels.delete(label);
