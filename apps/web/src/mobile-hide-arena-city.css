@@ -1,0 +1,8 @@
+/* Mobile: the city shortcut remains available in the bottom navigation.
+   Hide only the duplicated Cidade button that is injected into the hunt header. */
+@media (max-width: 768px) {
+  .shell .arena-head .arena-city,
+  .arena-head .arena-city {
+    display: none !important;
+  }
+}
