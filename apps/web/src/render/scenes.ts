@@ -214,7 +214,10 @@ export function paintHuntScene(parent: Container, tiles: Atlas, huntId: string):
   paintProceduralRoom(parent, tiles, huntId);
 }
 
-const THAIS_COUNTER_TALL_PIECES = new Set([2324, 2332, 2328, 2327]);
+// These six appearances form the L-shaped wooden counter in Thais Depot.
+// They mix 32px and 64px sprites, so all pieces need the same baseline nudge
+// or the small connector sprites appear detached from the larger sections.
+const THAIS_COUNTER_PIECES = new Set([2322, 2323, 2324, 2327, 2328, 2332]);
 
 /** Render the real Thais Depot cut generated from the project's OTBM map. */
 export function paintCityScene(parent: Container, tiles: Atlas): void {
@@ -224,7 +227,7 @@ export function paintCityScene(parent: Container, tiles: Atlas): void {
   for (const tile of cityTiles) {
     placeGround(ground, tiles, tile.ground, tile.x, tile.y);
     for (const id of tile.props) {
-      const offsetY = THAIS_COUNTER_TALL_PIECES.has(id) ? 8 : 0;
+      const offsetY = THAIS_COUNTER_PIECES.has(id) ? 8 : 0;
       placeProp(props, tiles, id, tile.x, tile.y, offsetY);
     }
   }
