@@ -50,13 +50,17 @@ function isMultiplayerHunt(session: HuntSession): boolean {
 }
 
 /**
- * A multiplayer death is still a real death (penalty/death counter already ran),
- * but it does not eject that account from the shared hunt. The player remains
- * at 0 HP and takes no further simulation ticks until the party reaches the next
- * wave; social-live.ts owns that synchronized revive.
+ * A real multiplayer member must never be ejected from the shared cave by its
+ * own low-HP auto-flee policy. Actual deaths already arrive as `died`; an
+ * automatic `fled` is converted to the same temporary down/corpse state so the
+ * leader keeps control of the hunt and the member returns on the next wave.
+ *
+ * Real deaths keep the normal death penalty/death counter that the simulator
+ * already applied. Auto-flee knockdowns do not invent an extra death penalty.
  */
-function holdMultiplayerDeath(session: HuntSession): void {
-  if (session.status !== 'died' || !isMultiplayerHunt(session)) return;
+function holdMultiplayerDefeat(session: HuntSession): 'died' | 'fled' | null {
+  if ((session.status !== 'died' && session.status !== 'fled') || !isMultiplayerHunt(session)) return null;
+  const reason = session.status;
   const down = session as MultiplayerDownSession;
   down.multiplayerDown = true;
   down.multiplayerReviveAtKills = undefined;
@@ -69,6 +73,7 @@ function holdMultiplayerDeath(session: HuntSession): void {
   // Keep the persisted hunt alive. The down flag, not the generic session
   // status, prevents combat until the shared wave coordinator revives it.
   session.status = 'active';
+  return reason;
 }
 
 export interface SettlementDelta { experience: number; kills: number; lootValue: number; supplyValue: number; levels: number; }
@@ -157,8 +162,14 @@ export function settle(
   if (ticks <= 0) return { ...empty, capHours, offline };
   const before = { experience: session.totals.experience, kills: session.totals.kills, lootValue: session.totals.lootValue, supplyValue: session.totals.supplyValue, level: session.character.level };
   const efficiency = offline ? OFFLINE_EFFICIENCY : 1;
-  const events = advance(session, ticks, { maxEvents: options.maxEvents ?? 0, awardKillExperience: options.awardKillExperience, rates: { ...DEFAULT_RATES, experience: DEFAULT_RATES.experience * efficiency, loot: DEFAULT_RATES.loot * efficiency } });
-  if (options.holdMultiplayerDeath !== false) holdMultiplayerDeath(session);
+  const advancedEvents = advance(session, ticks, { maxEvents: options.maxEvents ?? 0, awardKillExperience: options.awardKillExperience, rates: { ...DEFAULT_RATES, experience: DEFAULT_RATES.experience * efficiency, loot: DEFAULT_RATES.loot * efficiency } });
+  const heldReason = options.holdMultiplayerDeath !== false ? holdMultiplayerDefeat(session) : null;
+  // If the member's personal safety threshold fired, do not tell the client the
+  // hunt ended/fled: in multiplayer that state is a temporary knockdown and the
+  // corpse remains on the shared floor until the next wave.
+  const events = heldReason === 'fled'
+    ? advancedEvents.filter((event) => event.type !== 'fled')
+    : advancedEvents;
   return { session, events, elapsedSeconds: Math.round((ticks * TICK_MS) / 1000), discardedSeconds: Math.round((elapsedMs - appliedMs) / 1000), stoppedBecause: session.status === 'active' ? null : session.status, offline, efficiency, capHours, delta: { experience: session.totals.experience - before.experience, kills: session.totals.kills - before.kills, lootValue: session.totals.lootValue - before.lootValue, supplyValue: session.totals.supplyValue - before.supplyValue, levels: session.character.level - before.level }, deathPenalty: session.lastDeathPenalty ?? null };
 }
 
