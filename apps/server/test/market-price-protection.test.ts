@@ -82,4 +82,33 @@ describe('Market price protection', () => {
     expect(rule.minAllowedPrice).toBe(Math.max(10, item.sellPrice ?? 0, Math.ceil(reference * 0.25)));
     expect(rule.warningBelowPrice).toBe(Math.ceil(reference * 0.5));
   });
+
+  it('applies the same floor to the legacy market action and blocks Coins listings', async () => {
+    const item = items.find((entry) => (entry.sellPrice ?? 0) >= 20)!;
+    const { token, character } = await player();
+    patchState(character.id, (state) => {
+      state.level = 20;
+      state.warehouse = [{ itemId: item.id, count: 3 }];
+    });
+
+    const underpriced = await post(`/api/characters/${character.id}/act`, {
+      type: 'market-list',
+      itemId: item.id,
+      count: 2,
+      price: 2,
+      currency: 'gold',
+    }, token);
+    expect(underpriced.statusCode).toBe(400);
+    expect(underpriced.json().error).toContain('mínimo permitido');
+
+    const coins = await post(`/api/characters/${character.id}/act`, {
+      type: 'market-list',
+      itemId: item.id,
+      count: 1,
+      price: 100,
+      currency: 'coins',
+    }, token);
+    expect(coins.statusCode).toBe(409);
+    expect(coins.json().error).toContain('apenas Gold');
+  });
 });
