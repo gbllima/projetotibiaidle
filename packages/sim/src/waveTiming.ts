@@ -11,6 +11,9 @@ type TimedReinforcementSession = HuntSession & {
   reinforcementReadyTick?: number;
   reinforcementPartySize?: number;
   reinforcementPartyIndex?: number;
+  reinforcementQueue?: unknown[];
+  /** Temporary credit injected only so the visible wave can open on schedule. */
+  waveTimingCreditDebt?: number;
 };
 
 /**
@@ -35,19 +38,42 @@ function openingVisibleLimit(session: TimedReinforcementSession, waveIndex: numb
  * the empty-floor transition between waves: normal waves open after exactly 3s
  * and the skull wave after exactly 5s.
  *
- * Pre-fund only the first visible group while the transition timer is active.
- * The opening consumes this credit immediately, leaving later reinforcements on
- * the normal calibrated spawn budget.
+ * We temporarily advance only the credit needed for the first visible group.
+ * Once those newly-created monsters enter the floor, the advance is converted
+ * into negative spawn-credit debt. Later reinforcements therefore wait until
+ * the calibrated cave budget has repaid the debt, preserving XP/hour and loot
+ * balance while keeping the visual wave transition fixed.
  */
 function primeWaveOpening(session: HuntSession): void {
   const managed = session as TimedReinforcementSession;
   if (managed.reinforcementReadyTick === undefined || session.active.length > 0) return;
+  // Persisted legacy monsters have already consumed their budget; they can be
+  // released from the queue without borrowing any new spawn credit.
+  if ((managed.reinforcementQueue?.length ?? 0) > 0) return;
 
   const progress = waveProgress(session.totals.kills);
   if (progress.killed !== 0) return;
 
   const opening = Math.min(progress.size, openingVisibleLimit(managed, progress.waveIndex));
-  session.spawnCredits = Math.max(session.spawnCredits, opening);
+  const borrowed = Math.max(0, opening - session.spawnCredits);
+  if (borrowed <= 0) return;
+  session.spawnCredits += borrowed;
+  managed.waveTimingCreditDebt = (managed.waveTimingCreditDebt ?? 0) + borrowed;
+}
+
+function settleOpeningDebt(
+  session: HuntSession,
+  waitingBefore: boolean,
+  nextUidBefore: number,
+  debtBefore: number,
+): void {
+  if (!waitingBefore || debtBefore <= 0 || session.nextUid <= nextUidBefore) return;
+  const managed = session as TimedReinforcementSession;
+  // Negative credit is intentional: combat.ts keeps accruing the calibrated
+  // fractional budget each tick, and reinforcements cannot spawn until it is
+  // positive again. This repays exactly the credit borrowed for the opening.
+  session.spawnCredits -= debtBefore;
+  managed.waveTimingCreditDebt = Math.max(0, (managed.waveTimingCreditDebt ?? 0) - debtBefore);
 }
 
 /**
@@ -63,10 +89,17 @@ export function advance(session: HuntSession, ticks: number, options: AdvanceOpt
 
   for (let step = 0; step < ticks && session.status === 'active'; step += 1) {
     primeWaveOpening(session);
+    const managed = session as TimedReinforcementSession;
+    const waitingBefore = managed.reinforcementReadyTick !== undefined && session.active.length === 0;
+    const debtBefore = managed.waveTimingCreditDebt ?? 0;
+    const nextUidBefore = session.nextUid;
+
     const produced = advanceReinforcements(session, 1, {
       ...options,
       maxEvents: Math.max(0, maxEvents - events.length),
     });
+    settleOpeningDebt(session, waitingBefore, nextUidBefore, debtBefore);
+
     for (const event of produced) {
       if (events.length < maxEvents) events.push(event);
     }
