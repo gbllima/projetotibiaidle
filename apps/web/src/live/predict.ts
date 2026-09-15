@@ -242,8 +242,19 @@ function overlay(server: CharacterView, session: HuntSession | null): CharacterV
   const stats = deriveStats(session.character);
   const localSession = describeSession(session)!;
   const extraPartyMonsters = partyMonsters(server);
+  const combinedActive = extraPartyMonsters.length > 0
+    ? [...localSession.active, ...extraPartyMonsters]
+    : localSession.active;
   const visibleSession = extraPartyMonsters.length > 0
-    ? { ...localSession, active: [...localSession.active, ...extraPartyMonsters] }
+    ? {
+        ...localSession,
+        active: combinedActive,
+        // The hunt header and the PIXI scene must describe the same visible
+        // multiplayer floor. Previously packAlive stayed local while active
+        // included remote monsters, producing counters such as 0/5 with a
+        // creature visibly standing on the map.
+        packAlive: combinedActive.length,
+      }
     : localSession;
 
   return {
