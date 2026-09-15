@@ -4,6 +4,7 @@ import { App } from './App.js';
 import { LocaleProvider } from './i18n/Locale.js';
 import './render/vocationLookPatch.js';
 import './render/combatTextSizePatch.js';
+import './multiplayer-party-leader-control.js';
 import './styles.css';
 import './landing.css';
 import './party.css';
