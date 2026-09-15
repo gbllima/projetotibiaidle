@@ -19,6 +19,7 @@ import './game-site-theme.css';
 import './game-modal-theme.css';
 import './compact-action-helper.css';
 import './helper-ally-heal.css';
+import './warm-project-theme.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
