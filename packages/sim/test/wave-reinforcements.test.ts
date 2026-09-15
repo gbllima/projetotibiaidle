@@ -3,11 +3,61 @@ import {
   advance,
   createCharacter,
   startSession,
+  TICK_MS,
+  WAVE_CYCLE_KILLS,
+  WAVE_PACK,
   waveActiveLimit,
   waveProgress,
 } from '../src/index.js';
 
+const NORMAL_WAVE_DELAY_TICKS = Math.round(3_000 / TICK_MS);
+const BOSS_WAVE_DELAY_TICKS = Math.round(5_000 / TICK_MS);
+
+function passiveTank(name: string) {
+  const character = createCharacter(name, 4);
+  character.level = 100;
+  character.health = 1_000_000_000;
+  character.mana = 0;
+  character.policy.autoAttack = false;
+  character.policy.fleeAt = 0;
+  character.policy.healthPotionAt = 0;
+  character.policy.manaPotionAt = 0;
+  character.policy.stopWhenOutOfSupplies = false;
+  return character;
+}
+
 describe('wave reinforcements', () => {
+  it('opens Amazon Camp wave 2 after exactly 3 seconds even with zero spawn credits', () => {
+    const session = startSession(passiveTank('AmazonTimer'), 'amazon-camp', 77n);
+    session.totals.kills = WAVE_PACK[0]!;
+    session.active = [];
+    session.spawnCredits = 0;
+
+    const early = advance(session, NORMAL_WAVE_DELAY_TICKS - 1, { maxEvents: 80 });
+    expect(waveProgress(session.totals.kills).waveIndex).toBe(1);
+    expect(session.active).toHaveLength(0);
+    expect(early.some((event) => event.type === 'monster_spawn')).toBe(false);
+
+    const onTime = advance(session, 1, { maxEvents: 80 });
+    expect(session.active).toHaveLength(waveActiveLimit(1));
+    expect(onTime.filter((event) => event.type === 'monster_spawn')).toHaveLength(waveActiveLimit(1));
+  });
+
+  it('opens the skull wave after exactly 5 seconds even with zero spawn credits', () => {
+    const session = startSession(passiveTank('BossTimer'), 'amazon-camp', 78n);
+    session.totals.kills = WAVE_CYCLE_KILLS - WAVE_PACK[9]!;
+    session.active = [];
+    session.spawnCredits = 0;
+
+    advance(session, BOSS_WAVE_DELAY_TICKS - 1, { maxEvents: 80 });
+    expect(waveProgress(session.totals.kills).waveIndex).toBe(9);
+    expect(session.active).toHaveLength(0);
+
+    const onTime = advance(session, 1, { maxEvents: 80 });
+    expect(session.active).toHaveLength(1);
+    expect(onTime.filter((event) => event.type === 'monster_spawn')).toHaveLength(1);
+  });
+
   it('keeps the active floor capped while preserving later reinforcements', () => {
     const character = createCharacter('CapTester', 4);
     character.level = 200;
