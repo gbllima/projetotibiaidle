@@ -185,4 +185,43 @@ describe('multiplayer death between waves', () => {
     expect(livingMember?.diedInHunt).toBe(false);
     expect((livingMember?.health ?? 0)).toBeGreaterThan(0);
   });
+
+  it('turns the non-leader low-HP auto-flee into a temporary knockdown instead of sending it to the city', async () => {
+    const leader = await account('fleeleader', 'Flee Leader');
+    const member = await account('fleemember', 'Flee Member');
+    prepareCharacter(leader.id);
+    prepareCharacter(member.id);
+    await formParty(leader, member);
+
+    const memberRow = context.db.findCharacter(member.id)!;
+    const session = JSON.parse(memberRow.session!) as MultiplayerSession;
+    const stats = deriveStats(session.character);
+    session.character.health = Math.max(1, Math.floor(stats.maxHealth * 0.10));
+    session.character.policy.fleeAt = 0.15;
+    session.character.policy.healthPotionAt = 0;
+    session.character.policy.healSpellId = '';
+    session.character.policy.stopWhenOutOfSupplies = false;
+    const now = Date.now();
+    context.db.saveCharacter(member.id, memberRow.state, JSON.stringify(session), now - TICK_MS);
+
+    const result = loadCharacter(context.db, member.accountId, member.id, now);
+    expect(result.settlement.stoppedBecause).toBeNull();
+    expect(result.settlement.events.some((event) => event.type === 'fled')).toBe(false);
+    expect(result.loaded.session).not.toBeNull();
+    expect(result.loaded.session!.status).toBe('active');
+    expect((result.loaded.session as MultiplayerSession).multiplayerDown).toBe(true);
+    expect(result.loaded.session!.character.health).toBe(0);
+
+    const leaderRow = context.db.findCharacter(leader.id)!;
+    expect(leaderRow.session).not.toBeNull();
+    const leaderSession = JSON.parse(leaderRow.session!) as MultiplayerSession;
+    expect(leaderSession.status).toBe('active');
+    expect(leaderSession.huntId).toBe(HUNT_ID);
+
+    const view = decorateMultiplayerCharacter(context.db, leader.id, { caveParty: [] as unknown[] });
+    const corpse = (view.caveParty as Array<{
+      id: number; active?: boolean; diedInHunt?: boolean; health?: number;
+    }>).find((entry) => entry.id === member.id);
+    expect(corpse).toMatchObject({ id: member.id, active: false, diedInHunt: true, health: 0 });
+  });
 });
