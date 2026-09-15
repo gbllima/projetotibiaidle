@@ -179,7 +179,15 @@ export function settle(
   const events = heldReason === 'fled'
     ? advancedEvents.filter((event) => event.type !== 'fled')
     : advancedEvents;
-  return { session, events, elapsedSeconds: Math.round((ticks * TICK_MS) / 1000), discardedSeconds: Math.round((elapsedMs - appliedMs) / 1000), stoppedBecause: session.status === 'active' ? null : session.status, offline, efficiency, capHours, delta: { experience: session.totals.experience - before.experience, kills: session.totals.kills - before.kills, lootValue: session.totals.lootValue - before.lootValue, supplyValue: session.totals.supplyValue - before.supplyValue, levels: session.character.level - before.level }, deathPenalty: session.lastDeathPenalty ?? null };
+  // loadCharacter persists normal live state when elapsedSeconds is positive.
+  // One simulation tick is only 250ms, so rounding that to zero used to return
+  // the correct in-memory corpse while leaving the database at the pre-flee HP.
+  // Preserve sub-second precision for held multiplayer defeats so the down flag
+  // and 0 HP are authoritative before the party renderer performs revive sync.
+  const elapsedSeconds = heldReason
+    ? Math.max(TICK_MS / 1000, Math.round((ticks * TICK_MS) / 1000))
+    : Math.round((ticks * TICK_MS) / 1000);
+  return { session, events, elapsedSeconds, discardedSeconds: Math.round((elapsedMs - appliedMs) / 1000), stoppedBecause: session.status === 'active' ? null : session.status, offline, efficiency, capHours, delta: { experience: session.totals.experience - before.experience, kills: session.totals.kills - before.kills, lootValue: session.totals.lootValue - before.lootValue, supplyValue: session.totals.supplyValue - before.supplyValue, levels: session.character.level - before.level }, deathPenalty: session.lastDeathPenalty ?? null };
 }
 
 export class GameError extends Error { constructor(message: string, readonly status = 400) { super(message); this.name = 'GameError'; } }
