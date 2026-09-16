@@ -210,7 +210,7 @@ export function adminAct(
     if (type === 'ban' && isAdminUsername(target.username)) throw new GameError('Não é possível banir um administrador.', 403);
     if (type === 'ban') {
       for (const row of db.charactersForAccount(targetId)) stopAdministrativeHunt(targetId, row.id);
-      db.setWorld('ban:' + target.id, JSON.stringify({ reason: String(body.reason ?? 'Banido pelo administrador').slice(0, 500), at: now, by: accountId }));
+      db.setWorld('ban:' + targetId, JSON.stringify({ reason: String(body.reason ?? 'Banido pelo administrador').slice(0, 500), at: now, by: accountId }));
       db.revokeAccountTokens(targetId);
     } else db.setWorld('ban:' + targetId, '');
     db.setWorld('admin-audit:' + now + ':' + targetId, JSON.stringify({ type, by: accountId, targetId }));
