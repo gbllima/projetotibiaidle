@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { itemsById } from '@tibia-idle/data';
+import { itemRarity } from '../format.js';
 import { itemIconUrl } from '../render/itemIcon.js';
 import { ItemTooltip } from './ItemTooltip.js';
 
@@ -96,11 +97,15 @@ export function ItemSlot({
   if (locked) return <div className="cell locked">SLOT<br />BLOQUEADO</div>;
 
   const name = label ?? itemsById.get(itemId ?? 0)?.name;
+  // Rarity belongs to the item itself, not to the container rendering it. When
+  // callers omit the visual hint (for example equipped party paperdolls), derive
+  // it from the item id so moving an item never makes its colored border vanish.
+  const resolvedRarity = rarity ?? (itemId ? itemRarity(itemId) : undefined);
 
   return (
     <>
       <div
-        className={`cell ${compact ? 'compact' : ''} ${rarity && rarity !== 'common' ? rarity : ''} ${itemId && (onClick || onInspect) ? 'clickable' : ''}`}
+        className={`cell ${compact ? 'compact' : ''} ${resolvedRarity && resolvedRarity !== 'common' ? resolvedRarity : ''} ${itemId && (onClick || onInspect) ? 'clickable' : ''}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onMouseMove={(event) => {
