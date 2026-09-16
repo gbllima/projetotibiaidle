@@ -32,7 +32,7 @@ function blockReason(character: CharacterView, poolSize: number, busy: boolean, 
   if (busy) return 'Aguarde a ação anterior terminar.';
   if (poolSize <= 0) return 'Nenhum item disponível para sua vocação.';
   if ((character.rouletteTickets ?? 0) < 1) {
-    return 'Precisa de 1 Ticket de Roleta. Ganhe um ao completar o 7º Daily.';
+    return 'Precisa de 1 Ticket de Roleta. Resgate o Daily de hoje para ganhar um.';
   }
   return null;
 }
