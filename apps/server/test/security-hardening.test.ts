@@ -77,12 +77,11 @@ describe('security hardening', () => {
     const response = await context.app.inject({
       method: 'POST',
       url: '/api/register',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({
+      payload: {
         username: 'prototypeuser',
         password: 'hunter2hunter2',
         constructor: { prototype: { admin: true } },
-      }),
+      },
     });
 
     expect(response.statusCode, response.body).toBe(422);
