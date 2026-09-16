@@ -29,10 +29,10 @@ const DEV_CSP = [
   "frame-ancestors 'none'",
   "form-action 'self'",
   "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "media-src 'self' blob:",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "media-src 'self' blob: https://opengameart.org",
   "worker-src 'self' blob:",
   "connect-src 'self' ws: wss:",
 ].join('; ');
