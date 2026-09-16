@@ -214,6 +214,12 @@ function accountDaily(db: Database, accountId: number): { day: string; streak: n
   }
 }
 
+function rouletteTicketState(db: Database, accountId: number): -1 | 0 | 1 {
+  const raw = Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0);
+  if (!Number.isFinite(raw) || raw === 0) return 0;
+  return raw > 0 ? 1 : -1;
+}
+
 function claimAccountDaily(
   db: Database,
   accountId: number,
@@ -239,32 +245,42 @@ function claimAccountDaily(
   result.loaded.character.dailyClaim = day;
   result.loaded.character.dailyStreak = streak;
 
-  let tickets = Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0) || 0;
-  const rouletteTickets = 1;
-  tickets += rouletteTickets;
-  db.setWorld(ROULETTE_TICKET_KEY(accountId), String(tickets));
+  let ticketState = rouletteTicketState(db, accountId);
+  const rouletteTickets = streak === 7 && ticketState === 0 ? 1 : 0;
+  if (rouletteTickets) ticketState = 1;
+  db.setWorld(ROULETTE_TICKET_KEY(accountId), String(ticketState));
   db.setWorld(DAILY_KEY(accountId), JSON.stringify({ day, streak }));
   saveLoaded(db, result.loaded, now);
 
   return {
     ...result,
-    extra: { ...(result.extra ?? {}), gold: desiredGold, coins: 0, streak, rouletteTickets, ticketBalance: tickets },
+    extra: {
+      ...(result.extra ?? {}),
+      gold: desiredGold,
+      coins: 0,
+      streak,
+      rouletteTickets,
+      ticketBalance: ticketState > 0 ? 1 : 0,
+    },
   };
 }
 
 function spinWithTicket(db: Database, accountId: number, characterId: number, now: number): EconomyActResult {
-  const tickets = Math.max(0, Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0) || 0);
-  if (tickets < ROULETTE_TICKET_COST) throw new GameError('Precisa de 1 Ticket de Roleta. Resgate o Daily de hoje para ganhar um.', 402);
+  const ticketState = rouletteTicketState(db, accountId);
+  if (ticketState < ROULETTE_TICKET_COST) {
+    throw new GameError('Precisa do Ticket único de Roleta da conta, recebido ao completar o 7º Daily.', 402);
+  }
 
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   const originalCoins = loaded.character.coins;
   loaded.character.coins = Math.max(originalCoins, 75);
-  const rng = new Rng(BigInt(now) ^ BigInt(loaded.row.id) ^ BigInt(tickets));
+  const rng = new Rng(BigInt(now) ^ BigInt(loaded.row.id) ^ BigInt(ticketState));
   const result = spinRoulette(loaded.character, rng);
   loaded.character.coins = originalCoins;
   if (!result.ok) throw new GameError(result.reason, result.reason.includes('Depot') ? 409 : 400);
 
-  db.setWorld(ROULETTE_TICKET_KEY(accountId), String(tickets - ROULETTE_TICKET_COST));
+  // -1 means this account already received and spent its one lifetime roulette ticket.
+  db.setWorld(ROULETTE_TICKET_KEY(accountId), '-1');
   saveLoaded(db, loaded, now);
   return {
     loaded,
@@ -273,7 +289,7 @@ function spinWithTicket(db: Database, accountId: number, characterId: number, no
       itemName: result.itemName,
       levelRequired: result.levelRequired,
       cost: ROULETTE_TICKET_COST,
-      ticketBalance: tickets - ROULETTE_TICKET_COST,
+      ticketBalance: 0,
     },
   };
 }
@@ -431,7 +447,7 @@ export function syncAccountEconomy(db: Database, accountId: number, loaded: Load
 }
 
 export function ticketBalance(db: Database, accountId: number): number {
-  return Math.max(0, Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0) || 0);
+  return rouletteTicketState(db, accountId) > 0 ? 1 : 0;
 }
 
 export function economyCharacterView(db: Database, accountId: number, loaded: LoadedCharacter) {
