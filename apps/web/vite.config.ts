@@ -66,6 +66,9 @@ function serveHomeAssets(): Plugin {
 
 export default defineConfig({
   plugins: [react(), serveExtractedAssets(), serveHomeAssets()],
+  esbuild: {
+    legalComments: 'none',
+  },
   server: {
     allowedHosts: ['.trycloudflare.com'],
     proxy: {
@@ -83,9 +86,13 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
+        entryFileNames: 'assets/e-[hash].js',
+        chunkFileNames: 'assets/c-[hash].js',
+        assetFileNames: 'assets/a-[hash][extname]',
         manualChunks: {
           pixi: ['pixi.js'],
           data: [path.resolve(repoRoot, 'packages/data/src/index.ts')],
