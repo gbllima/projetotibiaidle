@@ -65,9 +65,6 @@ function paintLabel(label: LabelLike | undefined, vip: boolean): void {
   const style = label.style;
 
   if (vip) {
-    // Keep the small Tibia-style label readable while giving VIP characters a
-    // warmer, premium gold treatment. The animation below only changes the
-    // fill occasionally, avoiding a costly Pixi text re-raster every frame.
     style['fill'] = VIP_GOLD;
     style['stroke'] = { color: VIP_STROKE, width: 1.35, join: 'round' };
     style['dropShadow'] = {
@@ -114,8 +111,11 @@ function repaintScenes(): void {
 
 function decorateChat(): void {
   document.querySelectorAll<HTMLElement>('.chat-line.say b').forEach((node) => {
-    const vip = vipNames.has(key(node.textContent ?? ''));
+    const name = (node.textContent ?? '').trim();
+    const vip = vipNames.has(key(name));
     node.classList.toggle('vip-chat-name', vip);
+    if (vip) node.dataset.vipName = name;
+    else delete node.dataset.vipName;
   });
 }
 
@@ -148,6 +148,8 @@ function installChatStyle(): void {
     .chat-line.say b.vip-chat-name {
       display: inline-block;
       position: relative;
+      isolation: isolate;
+      overflow: visible;
       color: #ffd447 !important;
       font-weight: 800 !important;
       text-shadow:
@@ -155,57 +157,81 @@ function installChatStyle(): void {
          1px -1px 0 #000,
         -1px  1px 0 #000,
          1px  1px 0 #000,
-         0 0 4px rgba(255, 190, 35, .84),
-         0 0 8px rgba(255, 157, 0, .42) !important;
+         0 0 3px rgba(255, 190, 35, .95),
+         0 0 7px rgba(255, 157, 0, .58) !important;
+      animation: vip-chat-base-glow 2.4s ease-in-out infinite;
     }
 
-    @supports ((background-clip: text) or (-webkit-background-clip: text)) {
-      .chat-line.say b.vip-chat-name {
-        background-image: linear-gradient(
-          110deg,
-          #d49300 0%,
-          #f1b91f 27%,
-          #ffd447 40%,
-          #fff1a1 47%,
-          #fffdf1 50%,
-          #fff0a0 53%,
-          #ffd447 61%,
-          #e4a80d 76%,
-          #d49300 100%
-        );
-        background-size: 245% 100%;
-        background-position: 135% 50%;
-        background-repeat: no-repeat;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        color: transparent !important;
-        filter:
-          drop-shadow(-1px 0 0 #000)
-          drop-shadow(1px 0 0 #000)
-          drop-shadow(0 -1px 0 #000)
-          drop-shadow(0 1px 0 #000)
-          drop-shadow(0 0 2px rgba(255, 185, 28, .78));
-        animation: vip-chat-name-shimmer 2.8s ease-in-out infinite;
+    .chat-line.say b.vip-chat-name::after {
+      content: attr(data-vip-name);
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      white-space: nowrap;
+      color: #fffbe0;
+      font: inherit;
+      font-weight: 900;
+      letter-spacing: inherit;
+      text-shadow:
+        0 0 2px #fff8bf,
+        0 0 5px rgba(255, 225, 110, .95),
+        0 0 8px rgba(255, 174, 25, .7);
+      opacity: 0;
+      clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+      animation: vip-chat-reflection 2.35s linear infinite;
+      will-change: clip-path, opacity;
+    }
+
+    @keyframes vip-chat-base-glow {
+      0%, 100% {
+        color: #f2bd2a;
+        text-shadow:
+          -1px -1px 0 #000,
+           1px -1px 0 #000,
+          -1px  1px 0 #000,
+           1px  1px 0 #000,
+           0 0 2px rgba(255, 173, 24, .72),
+           0 0 5px rgba(255, 142, 0, .38);
+      }
+      50% {
+        color: #ffdb58;
+        text-shadow:
+          -1px -1px 0 #000,
+           1px -1px 0 #000,
+          -1px  1px 0 #000,
+           1px  1px 0 #000,
+           0 0 4px rgba(255, 204, 65, .98),
+           0 0 8px rgba(255, 157, 0, .58);
       }
     }
 
-    @keyframes vip-chat-name-shimmer {
+    @keyframes vip-chat-reflection {
       0%, 18% {
-        background-position: 135% 50%;
+        opacity: 0;
+        clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
       }
-      62%, 100% {
-        background-position: -55% 50%;
+      24% {
+        opacity: 1;
+        clip-path: polygon(0 0, 16% 0, 28% 100%, 10% 100%);
+      }
+      54% {
+        opacity: 1;
+        clip-path: polygon(72% 0, 88% 0, 100% 100%, 82% 100%);
+      }
+      60%, 100% {
+        opacity: 0;
+        clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .chat-line.say b.vip-chat-name {
         animation: none !important;
-        background: none !important;
-        -webkit-text-fill-color: #ffd447 !important;
         color: #ffd447 !important;
-        filter: none !important;
+      }
+      .chat-line.say b.vip-chat-name::after {
+        display: none !important;
       }
     }
   `;
@@ -243,9 +269,6 @@ function shimmerOffset(text: string): number {
 function animateGlow(time: number): void {
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-  // Alpha is cheap to animate every frame. The actual Pixi text fill is updated
-  // at ~11 fps and only when the quantized color changes, so the gleam remains
-  // visible without forcing every VIP name texture to rebuild at 60 fps.
   for (const label of [...glowingLabels]) {
     if (label.destroyed) {
       glowingLabels.delete(label);
