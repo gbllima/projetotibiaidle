@@ -7,6 +7,7 @@ import websocket from '@fastify/websocket';
 import { meta } from '@tibia-idle/data';
 import { Database } from './db.js';
 import { loadWorldEvent, siteNewsSnapshot } from './admin.js';
+import { registerAdminLogs } from './admin-logs.js';
 import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
 import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
@@ -104,6 +105,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   registerMultiplayerFriendGate(app, db);
   registerChatLinkProtection(app);
   registerChatProfanityProtection(app);
+  registerAdminLogs(app, db);
   registerRoutes(app, db);
   registerPartyItemRoutes(app, db);
   registerMultiplayerPartyRoutes(app, db);
