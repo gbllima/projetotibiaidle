@@ -1,0 +1,59 @@
+.hunt-nav-all,
+.hunt-region-tab,
+.hunt-location-btn {
+  background: #1B212C;
+  border-color: #343d4d;
+  color: #d9dde5;
+  box-shadow: none;
+}
+
+.hunt-nav-all:hover:not(.on),
+.hunt-region-tab:hover:not(.on),
+.hunt-location-btn:hover:not(.on) {
+  background: #202735;
+  border-color: #4a5568;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.hunt-nav-all.on,
+.hunt-region-tab.on,
+.hunt-location-btn.on {
+  background: #1B212C;
+  border-color: var(--gold);
+  color: #f2e7ba;
+  box-shadow:
+    0 0 10px rgba(232, 197, 71, 0.10),
+    inset 0 0 0 1px rgba(232, 197, 71, 0.24);
+}
+
+.hunt-nav-all > span,
+.hunt-region-tab > span {
+  color: #c7ccd6;
+}
+
+.hunt-nav-all.on > span,
+.hunt-region-tab.on > span {
+  color: var(--gold);
+}
+
+.hunt-location-btn small {
+  color: #929aaa;
+}
+
+.hunt-location-btn.on small {
+  color: #c7af66;
+}
+
+.hunt-location-list {
+  scrollbar-color: #5a5137 #1B212C;
+}
+
+.hunt-location-list::-webkit-scrollbar-track {
+  background: #1B212C;
+}
+
+.hunt-location-list::-webkit-scrollbar-thumb {
+  background: #5a5137;
+  border: 2px solid #1B212C;
+  border-radius: 999px;
+}
