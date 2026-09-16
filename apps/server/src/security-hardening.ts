@@ -7,7 +7,7 @@ const MAX_JSON_DEPTH = 12;
 const MAX_JSON_NODES = 1_500;
 const PASSWORD_FIELDS = new Set(['password']);
 
-const SOURCE_PROBE = /(?:^|\/)(?:\.git|node_modules|src)(?:\/|$)|(?:^|\/)(?:package(?:-lock)?\.json|pnpm-lock\.yaml|\.env(?:\.[^/]*)?|[^/]+\.(?:map|tsx?|jsx?))(?:$|\?)/i;
+const SOURCE_PROBE = /(?:^|\/)(?:\.git|node_modules|src)(?:\/|$)|(?:^|\/)(?:package(?:-lock)?\.json|pnpm-lock\.yaml|\.env(?:\.[^/]*)?|[^/]+\.(?:map|tsx?|jsx))(?:$|\?)/i;
 const MALFORMED_URL = /%00|(?:%2e){2}(?:%2f|%5c|\/|\\)/i;
 
 const EXECUTABLE_INPUT_PATTERNS: Array<{ reason: string; pattern: RegExp }> = [
