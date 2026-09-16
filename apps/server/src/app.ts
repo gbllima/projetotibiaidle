@@ -11,6 +11,7 @@ import { registerAdminLogs } from './admin-logs.js';
 import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
 import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
+import { registerDepotTransferRoutes } from './depot-transfer.js';
 import { registerMultiplayerPartyRoutes } from './multiplayer-party.js';
 import { registerMultiplayerFriendGate } from './multiplayer-friend-gate.js';
 import { registerSocialLiveRoutes } from './social-live.js';
@@ -112,6 +113,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   registerAdminLogs(app, db);
   registerRoutes(app, db);
   registerPartyItemRoutes(app, db);
+  registerDepotTransferRoutes(app, db);
   registerMultiplayerPartyRoutes(app, db);
   registerSocialLiveRoutes(app, db);
   registerVipVisualRoutes(app, db);
