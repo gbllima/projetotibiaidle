@@ -6,6 +6,7 @@ import { loadCharacter, takeAwaySummary } from './game.js';
 import { economyCharacterView, syncAccountEconomy } from './economy.js';
 import { markOffline, markOnline } from './presence.js';
 import { applyMultiplayerLiveHealing, decorateMultiplayerCharacter } from './social-live.js';
+import { captureMultiplayerLootBaseline, redistributeMultiplayerLoot } from './multiplayer-loot.js';
 
 /**
  * Live session updates.
@@ -202,7 +203,9 @@ export function registerWebSocket(app: FastifyInstance, db: Database): void {
       if (!subscription) return;
       try {
         const supportEvents = applyMultiplayerLiveHealing(db, subscription.characterId);
+        const lootBaseline = captureMultiplayerLootBaseline(db, subscription.characterId);
         const { loaded, settlement } = loadCharacter(db, subscription.accountId, subscription.characterId);
+        redistributeMultiplayerLoot(db, subscription.characterId, loaded.session, lootBaseline);
         syncAccountEconomy(db, subscription.accountId, loaded);
 
         const baseCharacter = economyCharacterView(db, subscription.accountId, loaded);
