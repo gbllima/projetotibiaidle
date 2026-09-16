@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createCharacter, startSession, type CharacterState, type HuntSession } from '@tibia-idle/sim';
 import { Database } from '../src/db.js';
-import { adminAct } from '../src/admin.js';
+import { adminAct, siteNewsSnapshot } from '../src/admin.js';
 
 const NOW = Date.UTC(2026, 8, 10, 22, 0, 0);
 let db: Database;
@@ -66,6 +66,48 @@ describe('admin edge cases', () => {
     expect(secondState.premium).toBe(true);
     expect(secondState.vipUntil).toBe(expectedUntil);
     expect(Number(db.getWorld(`vip:${playerId}`))).toBe(expectedUntil);
+  });
+
+  it('stores, edits and sorts administrator-selected news publication dates', () => {
+    const older = NOW - 2 * 86_400_000;
+    const newer = NOW - 86_400_000;
+    const movedToNewest = NOW + 60_000;
+    const base = {
+      category: 'Atualização',
+      summary: 'Resumo válido para a notícia.',
+      body: '# SERVIDOR\n- Alteração publicada.',
+      published: true,
+    };
+
+    const first = adminAct(db, adminId, { type: 'news-create', ...base, title: 'Atualização antiga', publishedAt: older }, NOW) as { news: { id: string; publishedAt: number } };
+    adminAct(db, adminId, { type: 'news-create', ...base, title: 'Atualização recente', publishedAt: newer }, NOW + 1);
+
+    expect(first.news.publishedAt).toBe(older);
+    expect(siteNewsSnapshot(db, true).map((item) => item.title)).toEqual(['Atualização recente', 'Atualização antiga']);
+
+    adminAct(db, adminId, {
+      type: 'news-update',
+      id: first.news.id,
+      ...base,
+      title: 'Atualização antiga editada',
+      publishedAt: movedToNewest,
+    }, NOW + 2);
+
+    const snapshot = siteNewsSnapshot(db, true);
+    expect(snapshot[0]?.title).toBe('Atualização antiga editada');
+    expect(snapshot[0]?.publishedAt).toBe(movedToNewest);
+  });
+
+  it('rejects invalid custom news publication dates', () => {
+    expect(() => adminAct(db, adminId, {
+      type: 'news-create',
+      title: 'Data inválida',
+      category: 'Atualização',
+      summary: 'Resumo válido para a notícia.',
+      body: 'Conteúdo válido para a notícia.',
+      published: true,
+      publishedAt: Number.NaN,
+    }, NOW)).toThrow('Data de publicação inválida');
   });
 
   it('rejects non-finite or excessive numeric admin mutations', () => {

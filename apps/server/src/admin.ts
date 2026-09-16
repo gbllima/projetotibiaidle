@@ -146,10 +146,14 @@ export function adminAct(
     const summary = String(body.summary ?? '').trim();
     const content = String(body.body ?? '').trim();
     const published = body.published === undefined ? true : Boolean(body.published);
+    const requestedPublishedAt = body.publishedAt === undefined ? undefined : Number(body.publishedAt);
     if (title.length < 3 || title.length > 120) throw new GameError('O título deve ter entre 3 e 120 caracteres.', 422);
     if (category.length > 40) throw new GameError('A categoria pode ter no máximo 40 caracteres.', 422);
     if (summary.length < 5 || summary.length > 280) throw new GameError('O resumo deve ter entre 5 e 280 caracteres.', 422);
     if (content.length < 5 || content.length > 8000) throw new GameError('O texto da notícia deve ter entre 5 e 8000 caracteres.', 422);
+    if (requestedPublishedAt !== undefined && (!Number.isSafeInteger(requestedPublishedAt) || requestedPublishedAt <= 0)) {
+      throw new GameError('Data de publicação inválida.', 422);
+    }
 
     const news = readSiteNews(db);
     if (type === 'news-create') {
@@ -162,7 +166,7 @@ export function adminAct(
         published,
         createdAt: now,
         updatedAt: now,
-        publishedAt: now,
+        publishedAt: requestedPublishedAt ?? now,
       };
       news.unshift(item);
       saveSiteNews(db, news.slice(0, 100));
@@ -182,7 +186,7 @@ export function adminAct(
       body: content,
       published,
       updatedAt: now,
-      publishedAt: published && !previous.published ? now : previous.publishedAt,
+      publishedAt: requestedPublishedAt ?? (published && !previous.published ? now : previous.publishedAt),
     };
     news[index] = item;
     saveSiteNews(db, news);
