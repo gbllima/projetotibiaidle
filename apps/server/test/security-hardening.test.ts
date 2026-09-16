@@ -100,13 +100,29 @@ describe('security hardening', () => {
     expect(response.statusCode, response.body).toBe(200);
   });
 
-  it('blocks source/configuration probes without exposing whether the file exists', async () => {
-    const response = await context.app.inject({ method: 'GET', url: '/src/app.ts' });
-    expect(response.statusCode).toBe(404);
-    expect(response.json().error).toBe('Not found.');
+  it('blocks source/configuration probes, including encoded paths, without exposing file existence', async () => {
+    const paths = ['/src/app.ts', '/s%72c/app.ts', '/vite.config.js'];
+    for (const url of paths) {
+      const response = await context.app.inject({ method: 'GET', url });
+      expect(response.statusCode, `${url}: ${response.body}`).toBe(404);
+      expect(response.json().error).toBe('Not found.');
+    }
 
     const audit = JSON.parse(context.db.getWorld('admin:audit:v1') ?? '[]') as Array<Record<string, unknown>>;
-    expect(audit.some((entry) => entry['action'] === 'source_probe' && entry['suspicious'] === true)).toBe(true);
+    const sourceProbeEvents = audit.filter((entry) => entry['action'] === 'source_probe' && entry['suspicious'] === true);
+    expect(sourceProbeEvents).toHaveLength(1);
+  });
+
+  it('blocks double-encoded traversal attempts', async () => {
+    const response = await context.app.inject({
+      method: 'GET',
+      url: '/%252e%252e%252fsrc/app.ts',
+    });
+    expect(response.statusCode, response.body).toBe(400);
+    expect(response.json().error).toBe('Requisição inválida.');
+
+    const audit = JSON.parse(context.db.getWorld('admin:audit:v1') ?? '[]') as Array<Record<string, unknown>>;
+    expect(audit.some((entry) => entry['action'] === 'malformed_url' && entry['suspicious'] === true)).toBe(true);
   });
 
   it('rejects oversized request bodies before application logic', async () => {
