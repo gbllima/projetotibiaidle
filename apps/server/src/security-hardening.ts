@@ -6,9 +6,11 @@ const AUDIT_LIMIT = 10_000;
 const MAX_JSON_DEPTH = 12;
 const MAX_JSON_NODES = 1_500;
 const PASSWORD_FIELDS = new Set(['password']);
+const SECURITY_AUDIT_COOLDOWN_MS = 5_000;
+const SECURITY_AUDIT_WINDOWS = new WeakMap<Database, Map<string, number>>();
 
-const SOURCE_PROBE = /(?:^|\/)(?:\.git|node_modules|src)(?:\/|$)|(?:^|\/)(?:package(?:-lock)?\.json|pnpm-lock\.yaml|\.env(?:\.[^/]*)?|[^/]+\.(?:map|tsx?|jsx))(?:$|\?)/i;
-const MALFORMED_URL = /%00|(?:%2e){2}(?:%2f|%5c|\/|\\)/i;
+const SOURCE_PROBE = /(?:^|\/)(?:\.git|\.github|node_modules|src)(?:\/|$)|(?:^|\/)(?:package(?:-lock)?\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|yarn\.lock|bun\.lockb?|tsconfig(?:\.[^/]*)?\.json|\.env(?:\.[^/]*)?|\.npmrc|(?:vite|webpack|rollup|eslint|prettier)\.config\.(?:js|cjs|mjs|ts|cts|mts|jsx|tsx)|dockerfile|(?:docker-)?compose\.ya?ml|[^/]+\.(?:map|tsx?|jsx))$/i;
+const MALFORMED_PATH = /(?:^|[\\/])\.\.(?:[\\/]|$)|\u0000/;
 
 const EXECUTABLE_INPUT_PATTERNS: Array<{ reason: string; pattern: RegExp }> = [
   { reason: 'tag script', pattern: /<\s*\/?\s*script\b/i },
@@ -22,6 +24,42 @@ const EXECUTABLE_INPUT_PATTERNS: Array<{ reason: string; pattern: RegExp }> = [
   { reason: 'template de execução', pattern: /<%[=-]?|\{\{\s*(?:constructor|__proto__)\b/i },
 ];
 
+function decodePathForInspection(path: string): string | null {
+  let decoded = path;
+  for (let pass = 0; pass < 2; pass += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      return null;
+    }
+  }
+  return decoded.normalize('NFKC');
+}
+
+function shouldAppendSecurityAudit(db: Database, principal: string, action: string, now: number): boolean {
+  let windows = SECURITY_AUDIT_WINDOWS.get(db);
+  if (!windows) {
+    windows = new Map<string, number>();
+    SECURITY_AUDIT_WINDOWS.set(db, windows);
+  }
+
+  const key = `${principal}:${action}`;
+  const last = windows.get(key);
+  if (last !== undefined && now - last < SECURITY_AUDIT_COOLDOWN_MS) return false;
+  windows.set(key, now);
+
+  if (windows.size > 2_048) {
+    const cutoff = now - 60_000;
+    for (const [entryKey, at] of windows) {
+      if (at < cutoff) windows.delete(entryKey);
+    }
+    if (windows.size > 4_096) windows.clear();
+  }
+  return true;
+}
+
 function appendSecurityAudit(
   db: Database,
   request: FastifyRequest,
@@ -30,6 +68,18 @@ function appendSecurityAudit(
   details: Record<string, unknown> = {},
 ): void {
   try {
+    const header = request.headers.authorization ?? '';
+    const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
+    const accountId = token ? db.accountIdForToken(token) : null;
+    const account = accountId === null ? null : db.findAccountById(accountId);
+    const characterMatch = request.url.match(/\/api\/(?:characters|market-v2)\/(\d+)/);
+    const characterId = characterMatch ? Number(characterMatch[1]) : undefined;
+    const character = characterId ? db.findCharacter(characterId) : null;
+    const now = Date.now();
+    const principal = accountId === null ? `ip:${request.ip}` : `account:${accountId}`;
+
+    if (!shouldAppendSecurityAudit(db, principal, action, now)) return;
+
     const raw = db.getWorld(AUDIT_KEY);
     let audit: Array<Record<string, unknown>> = [];
     if (raw) {
@@ -41,15 +91,7 @@ function appendSecurityAudit(
       }
     }
 
-    const header = request.headers.authorization ?? '';
-    const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
-    const accountId = token ? db.accountIdForToken(token) : null;
-    const account = accountId === null ? null : db.findAccountById(accountId);
-    const characterMatch = request.url.match(/\/api\/(?:characters|market-v2)\/(\d+)/);
-    const characterId = characterMatch ? Number(characterMatch[1]) : undefined;
-    const character = characterId ? db.findCharacter(characterId) : null;
-    const now = Date.now();
-
+    const path = request.url.split('?')[0] ?? request.url;
     audit.push({
       id: `${now}-security-${action}-${Math.random().toString(36).slice(2, 8)}`,
       category: 'security',
@@ -58,10 +100,10 @@ function appendSecurityAudit(
       ...(account?.username ? { username: account.username } : {}),
       ...(characterId ? { characterId } : {}),
       ...(character?.name ? { actor: character.name } : {}),
-      summary: `Requisição de segurança bloqueada em ${request.method} ${request.url.split('?')[0] ?? request.url}.`,
+      summary: `Requisição de segurança bloqueada em ${request.method} ${path}.`,
       details: {
         method: request.method,
-        path: request.url.split('?')[0] ?? request.url,
+        path,
         ...details,
       },
       suspicious: true,
@@ -156,14 +198,16 @@ export function registerSecurityHardening(app: FastifyInstance, db: Database): v
   app.addHook('onRequest', async (request, reply) => {
     addSecurityHeaders(request, reply);
 
-    const path = request.url.split('?')[0] ?? request.url;
-    if ((request.method === 'GET' || request.method === 'HEAD') && SOURCE_PROBE.test(path)) {
-      appendSecurityAudit(db, request, 'source_probe', 'tentativa de acesso a arquivo de código-fonte ou configuração', { path });
-      return reply.status(404).send({ error: 'Not found.' });
-    }
-    if (MALFORMED_URL.test(request.url)) {
-      appendSecurityAudit(db, request, 'malformed_url', 'URL com sequência de traversal ou byte nulo');
+    const rawPath = request.url.split('?')[0] ?? request.url;
+    const inspectedPath = decodePathForInspection(rawPath);
+    if (inspectedPath === null || MALFORMED_PATH.test(inspectedPath)) {
+      appendSecurityAudit(db, request, 'malformed_url', 'URL com codificação inválida, traversal ou byte nulo');
       return reply.status(400).send({ error: 'Requisição inválida.' });
+    }
+
+    if ((request.method === 'GET' || request.method === 'HEAD') && (SOURCE_PROBE.test(rawPath) || SOURCE_PROBE.test(inspectedPath))) {
+      appendSecurityAudit(db, request, 'source_probe', 'tentativa de acesso a arquivo de código-fonte ou configuração', { path: inspectedPath });
+      return reply.status(404).send({ error: 'Not found.' });
     }
   });
 
