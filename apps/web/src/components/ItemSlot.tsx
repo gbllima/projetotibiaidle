@@ -69,6 +69,21 @@ export function ItemSlot({
   const handleClick = (event: MouseEvent) => {
     if (!itemId) return;
     clearHover();
+
+    // Depot slots are wrapped by a parent click handler that equips or withdraws
+    // the item immediately. Keep a normal single click informational so players
+    // do not move items by accident; a deliberate double click still bubbles to
+    // the existing Depot action.
+    const depotSlot = Boolean((event.currentTarget as HTMLElement).closest('.depot-grid'));
+    if (depotSlot && !onClick && !onInspect) {
+      if (event.detail < 2) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (showInfo) setTooltip({ x: event.clientX, y: event.clientY });
+      }
+      return;
+    }
+
     if (event.detail >= 2 && onInspect) {
       event.preventDefault();
       event.stopPropagation();
@@ -91,7 +106,7 @@ export function ItemSlot({
         onMouseMove={(event) => {
           if (tooltip) setTooltip({ x: event.clientX, y: event.clientY });
         }}
-        onClick={itemId && (onClick || onInspect) ? handleClick : undefined}
+        onClick={itemId ? handleClick : undefined}
         onContextMenu={itemId && onContextMenu ? (event) => {
           clearHover();
           onContextMenu(event);
