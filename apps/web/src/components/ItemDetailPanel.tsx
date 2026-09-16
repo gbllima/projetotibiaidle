@@ -8,6 +8,7 @@ import {
   itemWeightOz,
 } from '../itemFormat.js';
 import { formatNumber } from '../format.js';
+import { ItemRarityBadge } from './ItemRarityBadge.js';
 import { ItemSlot } from './ItemSlot.js';
 import './ItemVocationRibbon.css';
 
@@ -25,6 +26,7 @@ export function ItemDetailPanel({ item, compact }: { item: Item; compact?: boole
       {item.description && (
         <p className="lede item-detail-desc">{item.description}</p>
       )}
+      <ItemRarityBadge itemId={item.id} />
       {vocationLabel && <div className="item-vocation-ribbon">{vocationLabel}</div>}
       <div className="kv">
         <span>Categoria</span><strong>{category}</strong>
