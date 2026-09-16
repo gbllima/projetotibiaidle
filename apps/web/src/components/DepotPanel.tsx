@@ -108,26 +108,29 @@ export function DepotPanel({ character, busy, onClose, onAct }: Props) {
             <div className="depot-grid-wrap">
               <div className="depot-grid">
                 {pageStacks.map((stack) => (
-                  <ItemSlot
-                    key={stack.itemId}
-                    itemId={stack.itemId}
-                    count={stack.count}
-                    label={stack.name}
-                    onInspect={inspect}
-                    onClick={(event) => openMenu(event, {
-                      itemId: stack.itemId,
-                      name: stack.name,
-                      count: stack.count,
-                    })}
-                    onContextMenu={(event) => openMenu(event, {
-                      itemId: stack.itemId,
-                      name: stack.name,
-                      count: stack.count,
-                    })}
-                  />
+                  <div className="depot-slot-entry" key={stack.itemId}>
+                    <ItemSlot
+                      itemId={stack.itemId}
+                      count={stack.count}
+                      label={stack.name}
+                      onInspect={inspect}
+                      onClick={(event) => openMenu(event, {
+                        itemId: stack.itemId,
+                        name: stack.name,
+                        count: stack.count,
+                      })}
+                      onContextMenu={(event) => openMenu(event, {
+                        itemId: stack.itemId,
+                        name: stack.name,
+                        count: stack.count,
+                      })}
+                    />
+                  </div>
                 ))}
                 {Array.from({ length: emptySlots }, (_, index) => (
-                  <ItemSlot key={`empty-${safePage}-${index}`} />
+                  <div className="depot-slot-entry" key={`empty-${safePage}-${index}`}>
+                    <ItemSlot />
+                  </div>
                 ))}
               </div>
             </div>
