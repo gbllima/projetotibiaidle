@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import type { AccountView, CharacterView } from '../api/types.js';
 import { AccountAdminPanel } from '../components/AccountAdminPanel.js';
+import { AccountAdminLogs } from '../components/AccountAdminLogs.js';
 import { PartyPortrait } from '../components/PartyPortrait.js';
 import { formatStamina } from '../format.js';
 import './portal.css';
@@ -24,7 +25,7 @@ export function AccountScreen({ onHome, onPlay, onLogout }: { onHome: () => void
     <div className="portal-heading"><span>PAINEL DO JOGADOR</span><h1>{account?.username ?? 'Sua conta'}</h1><p>Consulte seus personagens, recursos e progresso sem abrir o jogo.</p></div>
     {error && <p className="portal-error" role="alert">{error}</p>}
     <nav className="portal-tabs"><button className={tab === 'account' ? 'on' : ''} onClick={() => setTab('account')}>Minha conta</button>{account?.admin && <button className={tab === 'admin' ? 'on' : ''} onClick={() => setTab('admin')}>Administração</button>}<button disabled={loading} onClick={() => { void refresh(); }}>{loading ? 'Atualizando…' : 'Atualizar dados'}</button></nav>
-    {tab === 'admin' && account?.admin ? <AccountAdminPanel /> : <>
+    {tab === 'admin' && account?.admin ? <><AccountAdminLogs /><AccountAdminPanel /></> : <>
       <div className="portal-summary"><article><small>Personagens</small><b>{characters.length}/{account?.slots ?? '—'}</b></article><article><small>Ouro total</small><b>{characters.reduce((sum, entry) => sum + entry.gold, 0).toLocaleString('pt-BR')}</b></article><article><small>Coins totais</small><b>{characters.reduce((sum, entry) => sum + entry.coins, 0).toLocaleString('pt-BR')}</b></article><article><small>Em caçada</small><b>{characters.filter((entry) => entry.session?.status === 'active').length}</b></article></div>
       <div className="portal-grid">{characters.map((character) => <article className="portal-card account-character" key={character.id}>
         <header><PartyPortrait appearance={character.appearance} size={48} /><div><h2>{character.name}</h2><p>{character.vocation.name} · nível {character.level}</p></div></header>
