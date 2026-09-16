@@ -80,7 +80,7 @@ describe('security hardening', () => {
       payload: {
         username: 'prototypeuser',
         password: 'hunter2hunter2',
-        constructor: { prototype: { admin: true } },
+        prototype: { admin: true },
       },
     });
 
