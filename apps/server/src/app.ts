@@ -8,6 +8,7 @@ import { meta } from '@tibia-idle/data';
 import { Database } from './db.js';
 import { loadWorldEvent, siteNewsSnapshot } from './admin.js';
 import { registerAdminLogs } from './admin-logs.js';
+import { registerKnockCoinsLog } from './knock-coins-log.js';
 import { reconcileHunts } from './game.js';
 import { registerRoutes } from './routes.js';
 import { registerPartyItemRoutes, sweepIgnoredLoot } from './party-items.js';
@@ -111,6 +112,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   registerChatLinkProtection(app);
   registerChatProfanityProtection(app);
   registerAdminLogs(app, db);
+  registerKnockCoinsLog(app, db);
   registerRoutes(app, db);
   registerPartyItemRoutes(app, db);
   registerDepotTransferRoutes(app, db);
