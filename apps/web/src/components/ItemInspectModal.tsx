@@ -1,5 +1,6 @@
 import { itemsById } from '@tibia-idle/data';
 import { ItemDetailPanel } from './ItemDetailPanel.js';
+import { visibleItemRarity } from './ItemRarityBadge.js';
 import { WindowHead } from './WindowHead.js';
 
 export function ItemInspectModal({
@@ -11,10 +12,11 @@ export function ItemInspectModal({
 }) {
   const item = itemsById.get(itemId);
   if (!item) return null;
+  const rarity = visibleItemRarity(itemId);
 
   return (
     <div className="modal item-inspect-modal" onClick={onClose}>
-      <div className="modal-card compact-modal item-inspect-card" onClick={(event) => event.stopPropagation()}>
+      <div className={`modal-card compact-modal item-inspect-card${rarity ? ` item-rarity-frame ${rarity}` : ''}`} onClick={(event) => event.stopPropagation()}>
         <WindowHead title="Inspecionar" onClose={onClose} closeLabel="Fechar" />
         <div className="modal-card-body">
           <ItemDetailPanel item={item} />
