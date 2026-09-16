@@ -98,7 +98,6 @@ function accountRecipient(db: Database, accountId: number) {
     username: account?.username,
     characterId: row?.id,
     actor: row?.name,
-    balance: row ? currentCoins(db, row.id) : undefined,
   };
 }
 
@@ -137,14 +136,13 @@ function registerCoinAuditHook(app: FastifyInstance, db: Database): void {
         const sku = String(body['sku'] ?? '');
         const offer = SHOP.find((entry) => entry.id === sku);
         if (!offer || offer.coins <= 0) return;
-        const balance = currentCoins(db, characterId);
         appendCoinAudit(db, {
           action: 'shop_spend',
           ...actor,
           summary: `${actor.actor} comprou ${offer.name} por ${offer.coins.toLocaleString('pt-BR')} KC.`,
           coins: offer.coins,
           direction: 'debit',
-          balance,
+          balance: currentCoins(db, characterId),
           details: {
             sku: offer.id,
             product: offer.name,
@@ -193,7 +191,7 @@ function registerCoinAuditHook(app: FastifyInstance, db: Database): void {
           summary: `${recipient.username ?? `Conta #${owner}`} recebeu ${coins.toLocaleString('pt-BR')} KC da compra #${orderId}.`,
           coins,
           direction: 'credit',
-          balance: recipient.balance,
+          balance: recipient.characterId ? currentCoins(db, recipient.characterId) : undefined,
           details: {
             orderId,
             packId: String(order['pack_id']),
@@ -240,11 +238,13 @@ export function registerKnockCoinsLog(app: FastifyInstance, db: Database): void 
 
     const query = (request.query ?? {}) as Record<string, unknown>;
     const limit = numberFromQuery(query['limit'], 500, 50, 5_000);
-    const orders = orderSnapshot(db).slice(0, limit);
-    const transactions = readCoinAudit(db).slice(-limit).reverse();
-    const paidOrders = orders.filter((entry) => entry.status === 'paid');
-    const pendingOrders = orders.filter((entry) => entry.status === 'pending');
-    const spent = transactions.filter((entry) => entry.direction === 'debit');
+    const allOrders = orderSnapshot(db);
+    const allTransactions = readCoinAudit(db);
+    const orders = allOrders.slice(0, limit);
+    const transactions = allTransactions.slice(-limit).reverse();
+    const paidOrders = allOrders.filter((entry) => entry.status === 'paid');
+    const pendingOrders = allOrders.filter((entry) => entry.status === 'pending');
+    const spent = allTransactions.filter((entry) => entry.direction === 'debit');
 
     return {
       generatedAt: Date.now(),
@@ -252,10 +252,10 @@ export function registerKnockCoinsLog(app: FastifyInstance, db: Database): void 
       orders,
       transactions,
       counts: {
-        orders: orders.length,
+        orders: allOrders.length,
         paid: paidOrders.length,
         pending: pendingOrders.length,
-        transactions: transactions.length,
+        transactions: allTransactions.length,
       },
       totals: {
         purchasedCoins: paidOrders.reduce((sum, entry) => sum + entry.coins, 0),
