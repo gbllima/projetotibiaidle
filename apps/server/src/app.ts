@@ -17,6 +17,7 @@ import { registerVipVisualRoutes } from './vip-visuals.js';
 import { registerMarketV2Routes } from './market-v2.js';
 import { registerMarketPriceProtection } from './market-price-protection.js';
 import { registerChatLinkProtection } from './chat-link-protection.js';
+import { registerChatProfanityProtection } from './chat-profanity-protection.js';
 import { registerWebSocket } from './ws.js';
 import { installVocationAppearanceDefaults } from './vocation-appearance.js';
 import { onlineCharacterIds } from './presence.js';
@@ -102,6 +103,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   registerMarketPriceProtection(app, db);
   registerMultiplayerFriendGate(app, db);
   registerChatLinkProtection(app);
+  registerChatProfanityProtection(app);
   registerRoutes(app, db);
   registerPartyItemRoutes(app, db);
   registerMultiplayerPartyRoutes(app, db);
