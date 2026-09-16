@@ -240,7 +240,7 @@ function claimAccountDaily(
   result.loaded.character.dailyStreak = streak;
 
   let tickets = Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0) || 0;
-  const rouletteTickets = streak === 7 ? 1 : 0;
+  const rouletteTickets = 1;
   tickets += rouletteTickets;
   db.setWorld(ROULETTE_TICKET_KEY(accountId), String(tickets));
   db.setWorld(DAILY_KEY(accountId), JSON.stringify({ day, streak }));
@@ -254,7 +254,7 @@ function claimAccountDaily(
 
 function spinWithTicket(db: Database, accountId: number, characterId: number, now: number): EconomyActResult {
   const tickets = Math.max(0, Number(db.getWorld(ROULETTE_TICKET_KEY(accountId)) ?? 0) || 0);
-  if (tickets < ROULETTE_TICKET_COST) throw new GameError('Precisa de 1 Ticket de Roleta. Complete o 7º Daily para ganhar um.', 402);
+  if (tickets < ROULETTE_TICKET_COST) throw new GameError('Precisa de 1 Ticket de Roleta. Resgate o Daily de hoje para ganhar um.', 402);
 
   const { loaded } = loadCharacter(db, accountId, characterId, now);
   const originalCoins = loaded.character.coins;
