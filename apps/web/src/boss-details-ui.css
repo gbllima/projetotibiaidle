@@ -1,0 +1,25 @@
+.boss-browser .boss-row.boss-row-with-detail {
+  margin-bottom: 0;
+  padding-bottom: 43px;
+}
+
+.boss-browser .boss-detail-button--boss {
+  display: block;
+  width: fit-content;
+  margin: -43px 11px 7px auto;
+  position: relative;
+  z-index: 2;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .boss-browser .boss-row.boss-row-with-detail {
+    padding-bottom: 47px !important;
+  }
+
+  .boss-browser .boss-detail-button--boss {
+    margin-top: -47px;
+    margin-bottom: 8px;
+  }
+}
