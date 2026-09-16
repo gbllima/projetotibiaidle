@@ -11,6 +11,34 @@ const apiTarget = process.env['API_URL'] ?? 'http://127.0.0.1:3000';
 const assetsDir = path.join(repoRoot, 'tools', 'extractor', 'out', 'assets');
 const homeDir = path.join(repoRoot, 'home');
 
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'X-Permitted-Cross-Domain-Policies': 'none',
+};
+
+const DEV_CSP = [
+  "default-src 'self'",
+  "base-uri 'none'",
+  "object-src 'none'",
+  "frame-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "connect-src 'self' ws: wss:",
+].join('; ');
+
+const PREVIEW_CSP = DEV_CSP.replace("script-src 'self' 'unsafe-inline'", "script-src 'self'");
+
 const MIME: Record<string, string> = {
   '.webp': 'image/webp',
   '.png': 'image/png',
@@ -71,6 +99,10 @@ export default defineConfig({
   },
   server: {
     allowedHosts: ['.trycloudflare.com'],
+    headers: {
+      ...SECURITY_HEADERS,
+      'Content-Security-Policy': DEV_CSP,
+    },
     proxy: {
       '/api': { target: apiTarget, changeOrigin: true },
       '/ws': { target: apiTarget, ws: true },
@@ -78,6 +110,10 @@ export default defineConfig({
   },
   preview: {
     allowedHosts: ['.trycloudflare.com'],
+    headers: {
+      ...SECURITY_HEADERS,
+      'Content-Security-Policy': PREVIEW_CSP,
+    },
   },
   resolve: {
     alias: {
