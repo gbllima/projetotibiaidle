@@ -4,6 +4,9 @@ import { BossDetailsModal } from './components/BossDetailsModal.js';
 
 let activeRoot: Root | null = null;
 let activeHost: HTMLDivElement | null = null;
+let buttonLayer: HTMLDivElement | null = null;
+let refreshQueued = false;
+let listenersBound = false;
 
 function closeBossDetails() {
   activeRoot?.unmount();
@@ -42,28 +45,79 @@ function encounterForRow(row: HTMLElement): BossEncounter | null {
   return matchingName.find((entry) => entry.location === location) ?? matchingName[0] ?? null;
 }
 
-export function enhanceBossDetailButtons() {
-  document.querySelectorAll<HTMLButtonElement>('.boss-browser .boss-row').forEach((row) => {
-    const next = row.nextElementSibling as HTMLElement | null;
-    if (row.dataset.bossDetailEnhanced === '1' && next?.classList.contains('boss-detail-button--boss')) return;
+function ensureButtonLayer(): HTMLDivElement {
+  if (buttonLayer?.isConnected) return buttonLayer;
+  const layer = document.createElement('div');
+  layer.className = 'boss-detail-overlay-layer';
+  document.body.appendChild(layer);
+  buttonLayer = layer;
+  return layer;
+}
 
+function syncBossDetailButtons() {
+  const layer = ensureButtonLayer();
+  layer.replaceChildren();
+
+  const rows = Array.from(document.querySelectorAll<HTMLButtonElement>('.boss-browser .boss-row'));
+  if (rows.length === 0) return;
+
+  for (const row of rows) {
     const encounter = encounterForRow(row);
-    if (!encounter) return;
+    if (!encounter) continue;
 
-    row.dataset.bossDetailEnhanced = '1';
-    row.classList.add('boss-row-with-detail');
+    const rect = row.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+
+    const modalBody = row.closest<HTMLElement>('.hunt-modal-body');
+    const clip = modalBody?.getBoundingClientRect();
+    if (clip && (rect.bottom <= clip.top || rect.top >= clip.bottom)) continue;
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn gold hunt-detail-button boss-detail-button--boss';
+    button.className = 'btn gold boss-detail-floating-button';
     button.textContent = 'Detalhe';
     button.setAttribute('aria-label', `Detalhe de ${monstersById.get(encounter.monsterId)?.name ?? encounter.monsterId}`);
-    button.dataset.encounterId = encounter.id;
+
+    const width = 68;
+    const height = 25;
+    const left = Math.max(rect.left + 6, rect.right - width - 12);
+    let top = rect.bottom - height - 12;
+    if (clip) {
+      top = Math.max(clip.top + 4, Math.min(top, clip.bottom - height - 4));
+    }
+
+    button.style.left = `${Math.round(left)}px`;
+    button.style.top = `${Math.round(top)}px`;
+    button.style.width = `${width}px`;
+    button.style.height = `${height}px`;
+
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
       openBossDetails(encounter);
     });
-    row.insertAdjacentElement('afterend', button);
+
+    layer.appendChild(button);
+  }
+}
+
+function scheduleBossDetailButtons() {
+  if (refreshQueued) return;
+  refreshQueued = true;
+  window.requestAnimationFrame(() => {
+    refreshQueued = false;
+    syncBossDetailButtons();
   });
+}
+
+function bindViewportListeners() {
+  if (listenersBound) return;
+  listenersBound = true;
+  window.addEventListener('resize', scheduleBossDetailButtons);
+  window.addEventListener('scroll', scheduleBossDetailButtons, true);
+}
+
+export function enhanceBossDetailButtons() {
+  bindViewportListeners();
+  scheduleBossDetailButtons();
 }
