@@ -114,12 +114,43 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
       </section>
 
       <section id="noticias" className="landing-news">
-        <div className="landing-section-heading"><div><span>01</span><h2>NOTÍCIAS DO SERVIDOR</h2></div><p>Atualizações, eventos e comunicados oficiais do Knock Hunt BR.</p></div>
-        {news.length > 0 ? <div className="landing-news-grid">{news.slice(0, 6).map((item, index) => <article className={`landing-news-card${index === 0 ? ' landing-news-card--featured' : ''}`} key={item.id}>
-          <div className="landing-news-meta"><span>{item.category || 'Novidade'}</span><time dateTime={new Date(item.publishedAt || item.updatedAt).toISOString()}>{formatNewsDate(item.publishedAt || item.updatedAt)}</time></div>
-          <h3>{item.title}</h3><p>{item.summary}</p>
-          <details className="landing-news-details"><summary>LER NOTÍCIA <b>→</b></summary><div>{item.body.split(/\n+/).filter(Boolean).map((paragraph, paragraphIndex) => <p key={paragraphIndex}>{paragraph}</p>)}</div></details>
-        </article>)}</div> : <div className="landing-news-empty"><span>✦</span><strong>EM BREVE</strong><p>As próximas novidades oficiais do Knock Hunt BR aparecerão aqui.</p></div>}
+        <div className="landing-news-heading">
+          <div className="landing-news-heading-copy">
+            <div className="landing-news-kicker"><span>01</span><b>REGISTRO OFICIAL</b></div>
+            <h2>NOTÍCIAS <em>&</em> ATUALIZAÇÕES</h2>
+            <p>Novidades, changelogs, correções, eventos e tudo que foi feito no servidor Knock Hunt BR.</p>
+          </div>
+          <div className="landing-news-legend" aria-label="Tipos de publicação"><span>NOTÍCIAS</span><span>ATUALIZAÇÕES</span><span>CHANGELOG</span></div>
+        </div>
+        {news.length > 0 ? (
+          <div className="landing-news-list">
+            {news.slice(0, 12).map((item, index) => {
+              const timestamp = item.publishedAt || item.updatedAt;
+              return (
+                <details className="landing-news-entry" key={item.id} open={index === 0 ? true : undefined}>
+                  <summary>
+                    <div className="landing-news-entry-main">
+                      <div className="landing-news-entry-meta">
+                        <time dateTime={new Date(timestamp).toISOString()}>{formatNewsDate(timestamp)} <span>— {formatNewsTime(timestamp)}</span></time>
+                        <div className="landing-news-badges">
+                          {index === 0 && <span className="landing-news-badge landing-news-badge--new">NOVO</span>}
+                          <span className="landing-news-badge">{item.category || 'Novidade'}</span>
+                        </div>
+                      </div>
+                      <h3>{item.title}</h3>
+                      <p>{item.summary}</p>
+                    </div>
+                    <span className="landing-news-chevron" aria-hidden />
+                  </summary>
+                  <div className="landing-news-entry-content">
+                    <div className="landing-news-content-head"><span>REGISTRO DO SERVIDOR</span><small>Publicado em {formatNewsDateLong(timestamp)} às {formatNewsTime(timestamp)}</small></div>
+                    <NewsBody body={item.body} />
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        ) : <div className="landing-news-empty"><span>✦</span><strong>EM BREVE</strong><p>Notícias, atualizações e mudanças do servidor aparecerão aqui.</p></div>}
       </section>
 
       <section id="ranking" className="landing-section">
@@ -139,7 +170,37 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   );
 }
 
-function formatNewsDate(timestamp: number): string { return new Date(timestamp || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase(); }
+function NewsBody({ body }: { body: string }) {
+  const blocks: ReactNode[] = [];
+  let bullets: string[] = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    const items = bullets;
+    bullets = [];
+    blocks.push(<ul className="landing-news-change-list" key={`list-${blocks.length}`}>{items.map((item, index) => <li key={index}>{item}</li>)}</ul>);
+  };
+
+  body.split(/\r?\n/).forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) { flushBullets(); return; }
+    const heading = line.match(/^#{1,3}\s+(.+)$/) ?? line.match(/^\[(.+)]$/);
+    if (heading) {
+      flushBullets();
+      blocks.push(<h4 key={`heading-${blocks.length}`}>{heading[1]}</h4>);
+      return;
+    }
+    const bullet = line.match(/^(?:[-•›>]|✓)\s*(.+)$/);
+    if (bullet) { bullets.push(bullet[1]!); return; }
+    flushBullets();
+    blocks.push(<p key={`paragraph-${blocks.length}`}>{line}</p>);
+  });
+  flushBullets();
+  return <div className="landing-news-rich-body">{blocks}</div>;
+}
+
+function formatNewsDate(timestamp: number): string { return new Date(timestamp || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+function formatNewsDateLong(timestamp: number): string { return new Date(timestamp || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }); }
+function formatNewsTime(timestamp: number): string { return new Date(timestamp || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
 function LandingSprite({ src, size = 32 }: { src: string; size?: number }) { return <img className="landing-title-sprite" src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />; }
 function LandingItemSprite({ itemId, size = 32 }: { itemId: number; size?: number }) { const [src, setSrc] = useState<string | null>(null); useEffect(() => { let live = true; void itemIconUrl(itemId).then((url) => { if (live) setSrc(url); }).catch(() => {}); return () => { live = false; }; }, [itemId]); return src ? <LandingSprite src={src} size={size} /> : <span className="landing-title-sprite" aria-hidden />; }
 function DataCard({ value, label, text, sprite, large = false }: { value?: number; label: string; text: string; sprite: ReactNode; large?: boolean }) { return <div className={`landing-data-card${large ? ' large' : ''}`}><div className="landing-data-value-row"><span className="landing-title-sprite" aria-hidden>{sprite}</span><strong>{value === undefined ? '?' : value.toLocaleString('pt-BR')}</strong></div><small>{label}</small><p>{text}</p></div>; }
