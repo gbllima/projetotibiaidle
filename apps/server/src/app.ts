@@ -19,6 +19,7 @@ import { registerMarketV2Routes } from './market-v2.js';
 import { registerMarketPriceProtection } from './market-price-protection.js';
 import { registerChatLinkProtection } from './chat-link-protection.js';
 import { registerChatProfanityProtection } from './chat-profanity-protection.js';
+import { registerSecurityHardening } from './security-hardening.js';
 import { registerWebSocket } from './ws.js';
 import { installVocationAppearanceDefaults } from './vocation-appearance.js';
 import { onlineCharacterIds } from './presence.js';
@@ -33,6 +34,7 @@ export interface AppOptions {
 const AUTH_RATE_WINDOW_MS = 60_000;
 const AUTH_RATE_LIMIT = 20;
 const AUTH_PATHS = new Set(['/api/login', '/api/register', '/api/guest', '/api/claim']);
+const REQUEST_BODY_LIMIT = 256 * 1024;
 
 export async function createApp(options: AppOptions): Promise<{ app: FastifyInstance; db: Database }> {
   const db = new Database(options.databaseFile);
@@ -57,6 +59,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
   const app = Fastify({
     logger: options.logger ?? false,
     trustProxy: process.env['TRUST_PROXY'] === 'true',
+    bodyLimit: REQUEST_BODY_LIMIT,
   });
 
   const configuredOrigins = (process.env['CORS_ORIGIN'] ?? '')
@@ -101,6 +104,7 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
 
   await app.register(websocket);
 
+  registerSecurityHardening(app, db);
   registerMarketPriceProtection(app, db);
   registerMultiplayerFriendGate(app, db);
   registerChatLinkProtection(app);
