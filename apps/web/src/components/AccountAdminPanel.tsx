@@ -17,6 +17,22 @@ type NewsItem = {
 
 type AdminData = Awaited<ReturnType<typeof api.admin>> & { news?: NewsItem[] };
 
+function newsDateTimeLocal(timestamp = Date.now()): string {
+  const date = new Date(timestamp);
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function formatNewsAdminDate(timestamp: number): string {
+  return new Date(timestamp || Date.now()).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function AccountAdminPanel() {
   const [data, setData] = useState<AdminData | null>(null);
   const [accountId, setAccountId] = useState(0);
@@ -38,6 +54,7 @@ export function AccountAdminPanel() {
   const [newsSummary, setNewsSummary] = useState('');
   const [newsBody, setNewsBody] = useState('');
   const [newsPublished, setNewsPublished] = useState(true);
+  const [newsPublishedAt, setNewsPublishedAt] = useState(() => newsDateTimeLocal());
 
   useEffect(() => {
     void api.admin()
@@ -78,6 +95,7 @@ export function AccountAdminPanel() {
     setNewsSummary('');
     setNewsBody('');
     setNewsPublished(true);
+    setNewsPublishedAt(newsDateTimeLocal());
   };
 
   const editNews = (item: NewsItem) => {
@@ -87,10 +105,16 @@ export function AccountAdminPanel() {
     setNewsSummary(item.summary);
     setNewsBody(item.body);
     setNewsPublished(item.published);
+    setNewsPublishedAt(newsDateTimeLocal(item.publishedAt || item.updatedAt || item.createdAt));
     window.setTimeout(() => document.getElementById('admin-news-title')?.focus(), 0);
   };
 
   const saveNews = async () => {
+    const publishedAt = new Date(newsPublishedAt).getTime();
+    if (!Number.isFinite(publishedAt) || publishedAt <= 0) {
+      setError('Escolha uma data de publicação válida.');
+      return;
+    }
     const ok = await run({
       type: newsId ? 'news-update' : 'news-create',
       ...(newsId ? { id: newsId } : {}),
@@ -99,6 +123,7 @@ export function AccountAdminPanel() {
       summary: newsSummary.trim(),
       body: newsBody.trim(),
       published: newsPublished,
+      publishedAt: Math.trunc(publishedAt),
     });
     if (ok) resetNews();
   };
@@ -119,11 +144,12 @@ export function AccountAdminPanel() {
             <label>Título<input id="admin-news-title" value={newsTitle} onChange={(event) => setNewsTitle(event.target.value)} minLength={3} maxLength={120} required placeholder="Ex.: Nova atualização disponível" /></label>
             <label>Categoria<input value={newsCategory} onChange={(event) => setNewsCategory(event.target.value)} maxLength={40} placeholder="Atualização, Evento, Comunicado..." /></label>
           </div>
+          <label>Data da publicação<input type="datetime-local" value={newsPublishedAt} onChange={(event) => setNewsPublishedAt(event.target.value)} required /></label>
           <label>Resumo<input value={newsSummary} onChange={(event) => setNewsSummary(event.target.value)} minLength={5} maxLength={280} required placeholder="Texto curto exibido no card da notícia." /></label>
           <label>Conteúdo<textarea value={newsBody} onChange={(event) => setNewsBody(event.target.value)} minLength={5} maxLength={8000} required placeholder="Escreva aqui a notícia completa. Quebras de linha serão preservadas." /></label>
           <label className="admin-news-publish"><input type="checkbox" checked={newsPublished} onChange={(event) => setNewsPublished(event.target.checked)} /><span><strong>Publicar na página inicial</strong><small>Desmarque para salvar como rascunho.</small></span></label>
           <div className="admin-news-actions">
-            <button className="btn gold" type="submit" disabled={busy || !newsTitle.trim() || !newsSummary.trim() || !newsBody.trim()}>{newsId ? 'Salvar alterações' : 'Publicar notícia'}</button>
+            <button className="btn gold" type="submit" disabled={busy || !newsTitle.trim() || !newsSummary.trim() || !newsBody.trim() || !newsPublishedAt}>{newsId ? 'Salvar alterações' : 'Publicar notícia'}</button>
             {newsId && <button className="btn" type="button" disabled={busy} onClick={resetNews}>Cancelar edição</button>}
           </div>
         </form>
@@ -131,7 +157,7 @@ export function AccountAdminPanel() {
         <div className="admin-news-list">
           {news.length === 0 ? <p className="admin-news-empty">Nenhuma notícia cadastrada ainda.</p> : news.map((item) => <article className="admin-news-item" key={item.id}>
             <div className="admin-news-item-copy">
-              <div className="admin-news-meta"><span>{item.category}</span><em className={item.published ? 'is-live' : ''}>{item.published ? 'PUBLICADA' : 'RASCUNHO'}</em><time>{new Date(item.updatedAt || item.createdAt).toLocaleDateString('pt-BR')}</time></div>
+              <div className="admin-news-meta"><span>{item.category}</span><em className={item.published ? 'is-live' : ''}>{item.published ? 'PUBLICADA' : 'RASCUNHO'}</em><time>{formatNewsAdminDate(item.publishedAt || item.updatedAt || item.createdAt)}</time></div>
               <strong>{item.title}</strong><p>{item.summary}</p>
             </div>
             <div className="admin-news-item-actions"><button className="btn" disabled={busy} onClick={() => editNews(item)}>Editar</button><button className="btn danger" disabled={busy} onClick={() => { if (window.confirm(`Excluir a notícia "${item.title}"?`)) void run({ type: 'news-delete', id: item.id }); }}>Excluir</button></div>
