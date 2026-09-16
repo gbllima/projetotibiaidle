@@ -63,3 +63,8 @@
   border: 2px solid #0d100d !important;
   border-radius: 999px;
 }
+
+/* Event bosses stay loaded in the catalog, but are intentionally hidden from players for now. */
+.hunt-modal .hunt-tab[data-tab="event"] {
+  display: none !important;
+}
