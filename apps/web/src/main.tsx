@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { LocaleProvider } from './i18n/Locale.js';
+import { enhanceBossDetailButtons } from './boss-details-ui.js';
 import './render/vocationLookPatch.js';
 import './render/combatTextSizePatch.js';
 import './multiplayer-party-leader-control.js';
@@ -31,6 +32,7 @@ import './warm-project-theme.css';
 import './party-mobile-close.css';
 import './mobile-hide-arena-city.css';
 import './hunt-nav-theme.css';
+import './boss-details-ui.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
@@ -86,6 +88,7 @@ function enhanceMobileTutorial() {
 function enhanceUi() {
   enhanceChatConsole();
   enhanceMobileTutorial();
+  enhanceBossDetailButtons();
 }
 
 const chatObserver = new MutationObserver(enhanceUi);
