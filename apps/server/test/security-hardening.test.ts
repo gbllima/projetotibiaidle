@@ -41,6 +41,9 @@ describe('security hardening', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-security-policy']).toContain("script-src 'self'");
     expect(response.headers['content-security-policy']).toContain("frame-ancestors 'none'");
+    expect(response.headers['content-security-policy']).toContain('https://fonts.googleapis.com');
+    expect(response.headers['content-security-policy']).toContain('https://fonts.gstatic.com');
+    expect(response.headers['content-security-policy']).toContain('https://opengameart.org');
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['x-frame-options']).toBe('DENY');
     expect(response.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
