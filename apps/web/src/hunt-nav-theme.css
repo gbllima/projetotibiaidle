@@ -1,59 +1,65 @@
-.hunt-nav-all,
-.hunt-region-tab,
-.hunt-location-btn {
-  background: #1B212C;
-  border-color: #343d4d;
-  color: #d9dde5;
-  box-shadow: none;
+/* Hunt navigation follows the same warm palette used by the rest of the game.
+   Keep this file loaded last because older desktop/mobile rules still use blue-gray surfaces. */
+.hunt-modal .hunt-nav-all,
+.hunt-modal .hunt-region-tab,
+.hunt-modal .hunt-location-btn {
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+  border-color: #34372d !important;
+  color: #d8d8ce !important;
+  box-shadow: none !important;
 }
 
-.hunt-nav-all:hover:not(.on),
-.hunt-region-tab:hover:not(.on),
-.hunt-location-btn:hover:not(.on) {
-  background: #202735;
-  border-color: #4a5568;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+.hunt-modal .hunt-nav-all:hover:not(.on),
+.hunt-modal .hunt-region-tab:hover:not(.on),
+.hunt-modal .hunt-location-btn:hover:not(.on) {
+  background: linear-gradient(180deg, #1b201b 0%, #121612 100%) !important;
+  border-color: #57543b !important;
+  color: #f0ead2 !important;
+  box-shadow: inset 0 0 0 1px rgba(232, 197, 71, 0.06) !important;
 }
 
-.hunt-nav-all.on,
-.hunt-region-tab.on,
-.hunt-location-btn.on {
-  background: #1B212C;
-  border-color: var(--gold);
-  color: #f2e7ba;
+.hunt-modal .hunt-nav-all.on,
+.hunt-modal .hunt-region-tab.on,
+.hunt-modal .hunt-location-btn.on {
+  background: linear-gradient(180deg, #242413 0%, #13150e 100%) !important;
+  border-color: var(--gold) !important;
+  color: #f5e7a7 !important;
   box-shadow:
     0 0 10px rgba(232, 197, 71, 0.10),
-    inset 0 0 0 1px rgba(232, 197, 71, 0.24);
+    inset 0 0 0 1px rgba(232, 197, 71, 0.24) !important;
 }
 
-.hunt-nav-all > span,
-.hunt-region-tab > span {
-  color: #c7ccd6;
+.hunt-modal .hunt-nav-all > span,
+.hunt-modal .hunt-region-tab > span {
+  background: rgba(6, 8, 6, 0.46) !important;
+  color: #c9c9bc !important;
+  border-color: rgba(232, 197, 71, 0.08) !important;
 }
 
-.hunt-nav-all.on > span,
-.hunt-region-tab.on > span {
-  color: var(--gold);
+.hunt-modal .hunt-nav-all.on > span,
+.hunt-modal .hunt-region-tab.on > span {
+  background: rgba(232, 197, 71, 0.08) !important;
+  color: var(--gold) !important;
 }
 
-.hunt-location-btn small {
-  color: #929aaa;
+.hunt-modal .hunt-location-btn small {
+  color: #96988e !important;
 }
 
-.hunt-location-btn.on small {
-  color: #c7af66;
+.hunt-modal .hunt-location-btn.on small {
+  color: #c9b86e !important;
 }
 
-.hunt-location-list {
-  scrollbar-color: #5a5137 #1B212C;
+.hunt-modal .hunt-location-list {
+  scrollbar-color: #62572f #0d100d;
 }
 
-.hunt-location-list::-webkit-scrollbar-track {
-  background: #1B212C;
+.hunt-modal .hunt-location-list::-webkit-scrollbar-track {
+  background: #0d100d !important;
 }
 
-.hunt-location-list::-webkit-scrollbar-thumb {
-  background: #5a5137;
-  border: 2px solid #1B212C;
+.hunt-modal .hunt-location-list::-webkit-scrollbar-thumb {
+  background: #62572f !important;
+  border: 2px solid #0d100d !important;
   border-radius: 999px;
 }
