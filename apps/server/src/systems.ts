@@ -1435,18 +1435,8 @@ export function act(
     case 'tutorial-start': {
       if ((character.onboardingStep ?? 0) !== 0) return { loaded };
       character.onboardingStep = 1;
-      if (!loaded.session && !db.queuedHunt(loaded.row.id)) {
-        const hunts = listHunts(character, db);
-        const hunt = hunts.find((entry) => entry.id === TUTORIAL_HUNT_ID && entry.unlocked)
-          ?? hunts.find((entry) => entry.unlocked);
-        if (hunt) {
-          try {
-            tryStartOrQueue(db, loaded, hunt.id, now);
-          } catch {
-            // Keep the tip even if the first cave cannot start yet.
-          }
-        }
-      }
+      // Keep fresh characters in the city. The guided tutorial now teaches
+      // how to open Hunts and choose a target before combat begins.
       persist(db, loaded, now);
       return { loaded };
     }
