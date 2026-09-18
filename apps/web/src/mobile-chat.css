@@ -39,17 +39,16 @@
   }
 
   /*
-   * Mobile is a vertically scrolling layout, so an absolute HUD can still end
-   * up after the canvas. Pin the lower HUD to the phone viewport instead. This
-   * makes it a true MMO overlay just like desktop while the map keeps its full
-   * height behind it.
+   * Anchor the lower HUD to the game-stage itself, not to the phone viewport.
+   * This makes the chat physically overlap the lower part of the map/canvas,
+   * exactly like the desktop HUD.
    */
   .bottom-console {
-    position: fixed !important;
+    position: absolute !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: calc(66px + env(safe-area-inset-bottom)) !important;
-    z-index: 1480 !important;
+    bottom: 0 !important;
+    z-index: 80 !important;
     display: block !important;
     width: 100% !important;
     height: 0 !important;
@@ -71,12 +70,12 @@
    * language as the desktop chat: warm green/brown chrome, gold borders,
    * translucent log, identical tabs and input controls.
    */
-  .shell .chat-console {
-    position: fixed !important;
+  .game-stage .chat-console {
+    position: absolute !important;
     left: 8px !important;
     right: 8px !important;
-    bottom: calc(122px + env(safe-area-inset-bottom)) !important;
-    z-index: 1482 !important;
+    bottom: 58px !important;
+    z-index: 82 !important;
     display: grid;
     grid-template-rows: 30px minmax(0, 78px) 30px;
     width: auto !important;
@@ -92,19 +91,19 @@
     box-shadow: 0 -1px 0 rgba(197,149,55,.18), 0 -4px 12px rgba(0,0,0,.08);
   }
 
-  .shell .action-bar,
-  .shell .actionbar {
-    position: fixed !important;
+  .game-stage .action-bar,
+  .game-stage .actionbar {
+    position: absolute !important;
     left: 8px !important;
     right: 8px !important;
-    bottom: calc(70px + env(safe-area-inset-bottom)) !important;
-    z-index: 1481 !important;
+    bottom: 6px !important;
+    z-index: 81 !important;
     width: auto !important;
     max-width: none !important;
     margin: 0 !important;
   }
 
-  .shell .chat-console__head {
+  .game-stage .chat-console__head {
     position: relative;
     display: flex;
     align-items: stretch;
@@ -116,7 +115,7 @@
     background: linear-gradient(180deg, rgba(37,41,31,.56) 0%, rgba(21,25,20,.46) 100%) !important;
   }
 
-  .shell .chat-console__tabs {
+  .game-stage .chat-console__tabs {
     display: flex;
     flex: 1;
     min-width: 0;
@@ -126,9 +125,9 @@
     scrollbar-width: none;
   }
 
-  .shell .chat-console__tabs::-webkit-scrollbar { display: none; }
+  .game-stage .chat-console__tabs::-webkit-scrollbar { display: none; }
 
-  .shell .chat-console__tabs button {
+  .game-stage .chat-console__tabs button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -148,18 +147,18 @@
     white-space: nowrap;
   }
 
-  .shell .chat-console__tabs button:active {
+  .game-stage .chat-console__tabs button:active {
     color: #f2cf73;
     background: #20241b;
   }
 
-  .shell .chat-console__tabs button.on {
+  .game-stage .chat-console__tabs button.on {
     color: #f5d67e;
     background: linear-gradient(180deg, #343522 0%, #202317 100%);
     box-shadow: inset 0 -2px 0 #c49537;
   }
 
-  .shell .chat-console__log {
+  .game-stage .chat-console__log {
     min-height: 0 !important;
     max-height: 78px !important;
     padding: 5px 8px;
@@ -171,7 +170,7 @@
     scrollbar-color: #66512b #0d100d;
   }
 
-  .shell .chat-console__input {
+  .game-stage .chat-console__input {
     grid-template-columns: 1fr 30px;
     gap: 4px;
     height: 30px;
@@ -181,7 +180,7 @@
     background: rgba(13,16,13,.22) !important;
   }
 
-  .shell .chat-console__input input {
+  .game-stage .chat-console__input input {
     height: 23px;
     min-height: 23px !important;
     padding: 2px 7px;
@@ -192,13 +191,13 @@
     font-size: 10px;
   }
 
-  .shell .chat-console__input input:focus {
+  .game-stage .chat-console__input input:focus {
     outline: none;
     border-color: #8a6a2e;
     box-shadow: 0 0 0 1px rgba(196,149,55,.18);
   }
 
-  .shell .chat-console__send {
+  .game-stage .chat-console__send {
     width: 30px;
     height: 23px;
     min-height: 23px !important;
@@ -209,7 +208,7 @@
     color: #e0bd62;
   }
 
-  .shell .chat-console__minimize {
+  .game-stage .chat-console__minimize {
     display: grid !important;
     place-items: center;
     position: absolute;
@@ -232,14 +231,14 @@
     cursor: pointer;
   }
 
-  .shell .chat-console__minimize:active {
+  .game-stage .chat-console__minimize:active {
     background: #353728;
     color: #ffe08a;
   }
 
-  .shell .chat-console.is-minimized {
+  .game-stage .chat-console.is-minimized {
     display: block;
-    bottom: 62px !important;
+    bottom: 58px !important;
     height: 31px;
     max-height: 31px;
     min-height: 31px !important;
@@ -247,36 +246,32 @@
     border-radius: 4px 4px 0 0;
   }
 
-  .shell .chat-console.is-minimized .chat-console__log,
-  .shell .chat-console.is-minimized .chat-console__input {
+  .game-stage .chat-console.is-minimized .chat-console__log,
+  .game-stage .chat-console.is-minimized .chat-console__input {
     display: none !important;
   }
 
-  .shell .chat-console.is-minimized .chat-console__head,
-  .shell .chat-console.is-minimized .chat-console__tabs button {
+  .game-stage .chat-console.is-minimized .chat-console__head,
+  .game-stage .chat-console.is-minimized .chat-console__tabs button {
     height: 30px;
     min-height: 30px !important;
   }
 
-  .shell .chat-console.is-minimized .chat-console__head {
+  .game-stage .chat-console.is-minimized .chat-console__head {
     border-bottom: 0;
   }
 }
 
 @media (max-width: 480px) {
-  .shell .bottom-console {
-    bottom: calc(62px + env(safe-area-inset-bottom)) !important;
-  }
-
-  .shell .chat-console {
+  .game-stage .chat-console {
     left: 5px !important;
     right: 5px !important;
-    bottom: calc(116px + env(safe-area-inset-bottom)) !important;
+    bottom: 56px !important;
     grid-template-rows: 30px minmax(0, 64px) 30px;
     max-height: 124px;
   }
 
-  .shell .chat-console__tabs button {
+  .game-stage .chat-console__tabs button {
     min-width: 50px;
     padding-inline: 8px;
     font-size: 9px;
@@ -352,7 +347,7 @@
 
   .chat-console__tabs::-webkit-scrollbar { display: none; }
 
-  .shell .chat-console__tabs button {
+  .game-stage .chat-console__tabs button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -371,12 +366,12 @@
     white-space: nowrap;
   }
 
-  .shell .chat-console__tabs button:hover {
+  .game-stage .chat-console__tabs button:hover {
     color: #f2cf73;
     background: #20241b;
   }
 
-  .shell .chat-console__tabs button.on {
+  .game-stage .chat-console__tabs button.on {
     color: #f5d67e;
     background: linear-gradient(180deg, #343522 0%, #202317 100%);
     box-shadow: inset 0 -2px 0 #c49537;
@@ -450,7 +445,7 @@
     color: #ffe08a;
   }
 
-  .shell .chat-console.is-minimized {
+  .game-stage .chat-console.is-minimized {
     display: block;
     bottom: 66px;
     height: 31px;
@@ -460,18 +455,18 @@
     border-radius: 4px 4px 0 0;
   }
 
-  .shell .chat-console.is-minimized .chat-console__log,
-  .shell .chat-console.is-minimized .chat-console__input {
+  .game-stage .chat-console.is-minimized .chat-console__log,
+  .game-stage .chat-console.is-minimized .chat-console__input {
     display: none !important;
   }
 
-  .shell .chat-console.is-minimized .chat-console__head {
+  .game-stage .chat-console.is-minimized .chat-console__head {
     height: 30px;
     min-height: 30px;
     border-bottom: 0;
   }
 
-  .shell .chat-console.is-minimized .chat-console__tabs button {
+  .game-stage .chat-console.is-minimized .chat-console__tabs button {
     height: 30px;
     min-height: 30px;
   }
