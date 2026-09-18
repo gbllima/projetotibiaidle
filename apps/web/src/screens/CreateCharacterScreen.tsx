@@ -43,8 +43,6 @@ const VOC_ACCENT: Record<number, string> = {
 };
 
 const WEAPONS = ['Machado', 'Espada', 'Clava'] as const;
-const FIRST_HUNT = 'venore-rotworm-cave';
-
 export function CreateCharacterScreen({
   account,
   onEnter,
@@ -78,17 +76,9 @@ export function CreateCharacterScreen({
       });
       await onRefresh();
 
-      // First impression matters in an idle: put a brand-new character into
-      // the tutorial hunt immediately so damage, XP and loot appear before the
-      // player has to understand the entire hunt browser. If the cave is full
-      // or the request fails, entering the character still works and the
-      // guided tutorial falls back to the normal hunt-selection step.
-      try {
-        await api.startHunt(created.character.id, FIRST_HUNT, 1);
-      } catch {
-        // Non-fatal onboarding enhancement.
-      }
-
+      // New players enter the city first. The guided tutorial now teaches
+      // where Hunts is, how to choose the enemy/location and only then starts
+      // combat, instead of dropping the player into a hunt without context.
       await onEnter(created.character.id);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Falha ao criar personagem.');
