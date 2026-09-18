@@ -310,6 +310,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
         characters,
         account: {
           username,
+          email: account?.email ?? null,
           guest: isGuestUsername(username),
           admin: isAdminUsername(username),
           slots: economyCharacterSlotCap(db, accountId),
