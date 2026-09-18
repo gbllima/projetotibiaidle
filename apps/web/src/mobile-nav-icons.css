@@ -1,54 +1,47 @@
 @media (max-width: 768px) {
+  /*
+   * Use the inline pixel SVGs rendered by TopNav instead of /assets images.
+   * In production /assets is reserved for the Tibia atlas server, so using it
+   * for UI icons can make the mobile nav icons disappear behind the asset
+   * route. Inline SVGs have no network dependency and work identically on
+   * localhost and the hosted server.
+   */
   .mobile-main-nav .mobile-nav-pixel {
-    display: none !important;
-  }
-
-  .mobile-main-nav button::before {
-    content: "";
-    width: 34px;
-    height: 34px;
-    display: block;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    image-rendering: pixelated;
+    display: block !important;
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px;
+    margin: 0 auto 2px;
+    overflow: visible;
     transform-origin: 50% 55%;
     will-change: transform, filter;
     filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 2px rgba(0,0,0,.8));
   }
 
-  /* Cidade — novo portão medieval 2D. */
-  .mobile-main-nav button:nth-child(1)::before {
-    background-image: url('/assets/ui/mobile-nav/city.png');
+  .mobile-main-nav button::before {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+  }
+
+  .mobile-main-nav button:nth-child(1) .mobile-nav-pixel {
     animation: mobile-city-idle 2.8s ease-in-out infinite;
   }
 
-  /* Hunts — espada e escudo com golpe curto. */
-  .mobile-main-nav button:nth-child(2)::before {
-    background-image: url('/assets/ui/mobile-nav/hunts.png');
+  .mobile-main-nav button:nth-child(2) .mobile-nav-pixel {
     animation: mobile-hunts-idle 2.15s ease-in-out infinite;
   }
 
-  /* Treino — boneco de treino balançando após impacto. */
-  .mobile-main-nav button:nth-child(3)::before {
-    background-image: url('/assets/ui/mobile-nav/training.png');
+  .mobile-main-nav button:nth-child(3) .mobile-nav-pixel {
     animation: mobile-training-idle 2.45s ease-in-out infinite;
   }
 
-  /* Menu — usa o grimório como conteúdo real do pseudo-elemento para evitar falhas de background. */
-  .mobile-main-nav button[data-tutorial='mobile-menu']::before {
-    content: url('/assets/ui/mobile-nav/menu-book.png') !important;
-    width: 32px;
-    height: 32px;
-    display: block;
-    background-image: none !important;
-    background: none !important;
-    overflow: hidden;
+  .mobile-main-nav button[data-tutorial='mobile-menu'] .mobile-nav-pixel {
     animation: mobile-menu-idle 2.7s ease-in-out infinite;
   }
 
-  .mobile-main-nav button:active::before,
-  .mobile-main-nav button.on::before {
+  .mobile-main-nav button:active .mobile-nav-pixel,
+  .mobile-main-nav button.on .mobile-nav-pixel {
     filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 5px rgba(232,197,71,.55)) brightness(1.14);
     animation-duration: 1.15s;
   }
@@ -199,7 +192,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) and (max-width: 768px) {
-  .mobile-main-nav button::before {
+  .mobile-main-nav .mobile-nav-pixel {
     animation: none !important;
   }
 }
