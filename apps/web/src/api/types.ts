@@ -5,6 +5,7 @@ import type { HuntSession, SimEvent } from '@tibia-idle/sim';
 export interface AccountView {
   admin?: boolean;
   username: string;
+  email?: string | null;
   guest: boolean;
   slots: number;
   used: number;
