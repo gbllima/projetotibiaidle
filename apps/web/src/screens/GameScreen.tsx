@@ -375,6 +375,8 @@ export function GameScreen({
           replay={replayTutorial}
           helperOpen={overlay === 'helper' || Boolean(helperCharacter)}
           huntsOpen={pickingHunt}
+          huntMode={pickingHunt ? huntModalTab : null}
+          trainingActive={Boolean(trainingRoomId)}
           gameBusy={busy}
           onSave={async (step) => {
             const result = await api.act(server.id, { type: 'onboard', step });
