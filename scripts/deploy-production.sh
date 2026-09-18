@@ -24,6 +24,14 @@ command -v sqlite3 >/dev/null || fail "sqlite3 não encontrado. Rode: sudo apt i
 
 cd "$REPO_DIR"
 
+# Clones antigos ainda podem ter o arquivo transitório do SQLite versionado.
+# Restauramos apenas esses sidecars antes da checagem de alterações locais.
+for runtime_file in data/tibia-idle.db-shm data/tibia-idle.db-wal; do
+  if git ls-files --error-unmatch "$runtime_file" >/dev/null 2>&1; then
+    git restore -- "$runtime_file" || true
+  fi
+done
+
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   fail "Existem alterações locais em arquivos versionados. Faça commit ou reverta antes do deploy."
 fi
