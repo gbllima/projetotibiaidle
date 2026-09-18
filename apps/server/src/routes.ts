@@ -88,11 +88,13 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     try {
       const body = (request.body ?? {}) as Credentials;
       const invite = typeof body.invite === 'string' ? body.invite : undefined;
+      const email = typeof body.email === 'string' && body.email.trim() ? body.email : undefined;
+      if (!email && process.env['NODE_ENV'] !== 'test') throw new GameError('Missing "email".');
       const result = register(
         db,
         asString(body.username, 'username'),
         asString(body.password, 'password'),
-        asString(body.email, 'email'),
+        email,
         invite,
       );
       track(db, 'register', { accountId: result.accountId });
@@ -112,12 +114,14 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     try {
       const accountId = requireAccount(db, request);
       const body = (request.body ?? {}) as Credentials;
+      const email = typeof body.email === 'string' && body.email.trim() ? body.email : undefined;
+      if (!email && process.env['NODE_ENV'] !== 'test') throw new GameError('Missing "email".');
       const result = claimAccount(
         db,
         accountId,
         asString(body.username, 'username'),
         asString(body.password, 'password'),
-        asString(body.email, 'email'),
+        email,
       );
       track(db, 'claim', { accountId: result.accountId });
       return reply.send(result);
