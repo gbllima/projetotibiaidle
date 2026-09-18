@@ -2229,13 +2229,21 @@ h2.window-head-title { font-size: 13px; }
 .hunt-region-tabs {
   display: grid;
   gap: 4px;
+  max-height: 138px;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #6f5a2d #0d100d;
 }
 .hunt-location-list {
   display: grid;
+  flex: 1 1 auto;
   gap: 3px;
   overflow-y: auto;
-  padding-right: 2px;
-  min-height: 0;
+  padding-right: 4px;
+  min-height: 90px;
+  scrollbar-width: thin;
+  scrollbar-color: #6f5a2d #0d100d;
 }
 .hunt-location-btn {
   display: grid;
