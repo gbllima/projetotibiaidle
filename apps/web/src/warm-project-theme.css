@@ -102,10 +102,25 @@
   }
 
   .shell .modal-card-body,
-  .shell .box .body,
+  .shell .box .body {
+    background-color: #0d100d !important;
+  }
+
   .shell .chat-console,
   .shell .chat-console__body {
-    background-color: #0d100d !important;
+    background: linear-gradient(180deg, rgba(13,16,13,.18) 0%, rgba(13,16,13,.46) 48%, rgba(13,16,13,.74) 100%) !important;
+  }
+
+  .shell .chat-console__head {
+    background: linear-gradient(180deg, rgba(37,41,31,.72) 0%, rgba(21,25,20,.56) 100%) !important;
+  }
+
+  .shell .chat-console__log {
+    background: linear-gradient(180deg, rgba(13,16,13,.14), rgba(13,16,13,.50)) !important;
+  }
+
+  .shell .chat-console__input {
+    background: rgba(13,16,13,.58) !important;
   }
 
   .shell .arena-head {
