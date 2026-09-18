@@ -1398,6 +1398,15 @@ export class CombatScene {
       sitSpriteOnTile(entry.mountSprite, entry.scaleX);
       entry.sprite.y = entry.mountSprite.y - Math.min(12, Math.floor(entry.mountSprite.texture.height * 0.22));
     }
+
+    // The packed Tibia outfit can be visually offset inside its 32px frame.
+    // Keep the ground aura centered under the actual feet rather than under
+    // the container origin, otherwise it appears shifted left/right.
+    if (entry.aura) {
+      const feet = entry.mountSprite ?? entry.sprite;
+      entry.aura.x = Math.round(feet.x);
+      entry.aura.y = Math.round(feet.y);
+    }
   }
 
   /** Y-sort with player/allies drawn above monsters at the same feet row. */
