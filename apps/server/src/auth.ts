@@ -56,18 +56,18 @@ function requireEmail(email: string): string {
   return normalized;
 }
 
-export function register(db: Database, username: string, password: string, email: string, invite?: string): AuthResult {
+export function register(db: Database, username: string, password: string, email?: string, invite?: string): AuthResult {
   if (!USERNAME_PATTERN.test(username)) {
     throw new AuthError('Username must be 3-20 characters: letters, numbers, hyphen or underscore.');
   }
   if (password.length < 8) {
     throw new AuthError('Password must be at least 8 characters.');
   }
-  const normalizedEmail = requireEmail(email);
+  const normalizedEmail = email ? requireEmail(email) : null;
   if (db.findAccount(username)) {
     throw new AuthError('That username is taken.', 409);
   }
-  if (db.findAccountByEmail(normalizedEmail)) {
+  if (normalizedEmail && db.findAccountByEmail(normalizedEmail)) {
     throw new AuthError('Esse email já está em uso.', 409);
   }
 
@@ -120,7 +120,7 @@ export function registerGuest(db: Database): AuthResult {
   throw new AuthError('Could not create a guest account.', 500);
 }
 
-export function claimAccount(db: Database, accountId: number, username: string, password: string, email: string): AuthResult {
+export function claimAccount(db: Database, accountId: number, username: string, password: string, email?: string): AuthResult {
   const account = db.findAccountById(accountId);
   if (!account || !isGuestUsername(account.username)) {
     throw new AuthError('This account is already claimed.', 409);
@@ -134,14 +134,14 @@ export function claimAccount(db: Database, accountId: number, username: string, 
   if (db.findAccount(username)) {
     throw new AuthError('That username is taken.', 409);
   }
-  const normalizedEmail = requireEmail(email);
-  const emailOwner = db.findAccountByEmail(normalizedEmail);
+  const normalizedEmail = email ? requireEmail(email) : null;
+  const emailOwner = normalizedEmail ? db.findAccountByEmail(normalizedEmail) : null;
   if (emailOwner && emailOwner.id !== accountId) {
     throw new AuthError('Esse email já está em uso.', 409);
   }
   const salt = randomBytes(16).toString('hex');
   db.updateAccount(accountId, username, hash(password, salt), salt);
-  db.setAccountEmail(accountId, normalizedEmail);
+  if (normalizedEmail) db.setAccountEmail(accountId, normalizedEmail);
   return issueToken(db, accountId, username);
 }
 
