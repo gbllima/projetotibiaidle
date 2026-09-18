@@ -144,9 +144,13 @@ export default defineConfig({
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/e-[hash].js',
-        chunkFileNames: 'assets/c-[hash].js',
-        assetFileNames: 'assets/a-[hash][extname]',
+        // Keep the Vite bundle separate from Tibia sprite atlases served at
+        // /assets by the Fastify backend. Sharing the same URL prefix makes
+        // production JS/CSS requests fall through to index.html once sprite
+        // assets are installed on the server, causing strict MIME errors.
+        entryFileNames: 'app-assets/e-[hash].js',
+        chunkFileNames: 'app-assets/c-[hash].js',
+        assetFileNames: 'app-assets/a-[hash][extname]',
         manualChunks: {
           pixi: ['pixi.js'],
           data: [path.resolve(repoRoot, 'packages/data/src/index.ts')],
