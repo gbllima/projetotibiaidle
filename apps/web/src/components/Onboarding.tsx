@@ -149,27 +149,87 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
   }, []);
 
   const titles = pt
-    ? [`Vamos aprender jogando, ${character.name}?`, 'Abra o Helper', 'Confira sua cura automática', 'Abra a lista de caçadas', queued ? 'Você está na fila' : 'Selecione uma caçada', 'Sua primeira luta está acontecendo!', 'Volte para a cidade', 'Você aprendeu o essencial!']
-    : [`Let’s learn by playing, ${character.name}!`, 'Open Helper', 'Check automatic healing', 'Open the hunt list', queued ? 'You are in the queue' : 'Select a hunt', 'Your first fight is happening!', 'Return to the city', 'You know the basics!'];
+    ? [
+      `Vamos aprender jogando, ${character.name}?`,
+      'Abra o Helper',
+      'Confira sua cura automática',
+      'Abra a lista de caçadas',
+      queued ? 'Você está na fila' : 'Escolha uma caçada e entre',
+      'Sua primeira luta está acontecendo!',
+      'Volte para a cidade',
+      'Agora vamos conhecer o Treino online',
+      'Abra a aba Treino online',
+      'Escolha uma sala de treino',
+      'Você entrou no Treino online',
+      'Saia do treino',
+      'Você aprendeu o essencial!',
+    ]
+    : [
+      `Let’s learn by playing, ${character.name}!`,
+      'Open Helper',
+      'Check automatic healing',
+      'Open the hunt list',
+      queued ? 'You are in the queue' : 'Choose a hunt and enter',
+      'Your first fight is happening!',
+      'Return to the city',
+      'Now let’s see Online Training',
+      'Open the Online Training tab',
+      'Choose a training room',
+      'You entered Online Training',
+      'Leave training',
+      'You know the basics!',
+    ];
+
   const descriptions = pt ? [
-    'Vou destacar onde clicar. Você vai preparar a cura, escolher uma caçada e acompanhar sua primeira luta. Pode pular a qualquer momento.',
-    target?.selector.includes('mobile-menu') ? 'No celular, toque em Menu, que está destacado. Depois, toque em Helper: é onde você configura poções e magias automáticas.' : 'Clique no Helper destacado. Ele controla a cura e as magias automáticas do seu personagem.',
-    'HP é sua vida; MP é a energia das magias. Confira as poções e os limites de cura. Por exemplo: 70% significa usar a cura quando a vida cair abaixo desse valor. Depois, confirme abaixo.',
-    'Clique em Hunts, no local destacado. Hunt significa caçada: um lugar com monstros para enfrentar e ganhar experiência.',
-    queued ? 'A caçada está ocupada. O combate começa quando surgir uma vaga. O guia continua quando você entrar; você também pode pular o tutorial.' : !huntsOpen ? 'A lista foi fechada. Clique no botão Hunts destacado para abri-la novamente.' : target?.selector === '.hunt-list' ? 'Não há uma caçada disponível nesta lista agora. Confira o ouro, os suprimentos e os filtros, ou escolha outra região. O guia espera você conseguir entrar.' : 'Clique na caçada destacada ou em outra liberada. Comece com nível mínimo baixo e confira o custo de suprimentos. A entrada inicia o combate; se faltar vaga, você vai para a fila.',
-    'O personagem luta sozinho. HP é vida, MP é mana e XP é experiência para subir de nível. Observe essas barras: poções são consumidas para manter você vivo. Loot são os itens deixados pelos monstros.',
-    'Clique em Cidade, no botão destacado. Isso encerra sua caçada. Fechar a aba do navegador não para o combate!',
-    guest ? 'Agora você sabe preparar, caçar e parar. Depois, explore equipamentos, treino e party (sua equipe). Reivindique sua conta de visitante para guardar seu acesso. Este guia pode ser reaberto nas Configurações.' : 'Agora você sabe preparar, caçar e parar. Depois, explore equipamentos, treino e party (sua equipe). Para rever este guia, abra Configurações → Rever tutorial.',
+    'Vou destacar onde clicar. Você vai configurar o Helper, aprender a escolher uma caçada, entrar em uma hunt e depois conhecer o Treino online. Pode pular a qualquer momento.',
+    target?.selector.includes('mobile-menu')
+      ? 'No celular, toque em Menu, que está destacado. Depois toque em Helper. É nele que você configura poções, cura e magias automáticas.'
+      : 'Clique no Helper destacado. É nele que você configura poções, cura e magias automáticas do personagem.',
+    'HP é sua vida e MP é a mana usada nas magias. Confira as poções e os limites de cura. Exemplo: 70% significa usar a cura quando sua vida cair abaixo desse valor. Depois confirme abaixo.',
+    'Clique em Hunts no local destacado. Esse botão abre a seleção de caçadas disponíveis para seu nível.',
+    queued
+      ? 'Essa caçada está cheia e você entrou na fila. O combate começa assim que surgir uma vaga.'
+      : !huntsOpen || huntMode !== 'hunts'
+        ? 'A lista de caçadas foi fechada. Clique novamente em Hunts para continuar.'
+        : target?.selector === '.hunt-list'
+          ? 'Não apareceu uma caçada disponível nessa lista. Confira região, filtros, ouro e suprimentos. O tutorial espera até você conseguir entrar.'
+          : 'Aqui você escolhe onde caçar. Veja o nível indicado, monstros, XP/h e custo de suprimentos. Você também pode escolher por região. Clique em uma caçada liberada para entrar.',
+    'Pronto: você está em uma hunt. O personagem luta automaticamente. HP é vida, MP é mana e XP é experiência. Loot são os itens deixados pelos monstros. A hunt continua mesmo se você fechar a aba.',
+    'Clique em Cidade para encerrar a caçada e voltar ao mapa da cidade.',
+    'Hunts também dá acesso ao Treino online. Clique novamente em Hunts para eu mostrar onde ele fica.',
+    'Agora clique na aba Treino online destacada. Nela ficam as salas com dummies para evoluir suas skills.',
+    'Escolha uma sala disponível e clique em Entrar. Cada sala mostra os dummies disponíveis e a skill que será treinada.',
+    'No Treino online seu personagem fica batendo nos dummies para evoluir a skill. Se possuir cargas de exercise, elas também são usadas durante o treino.',
+    'Clique em Sair para voltar à cidade. Você pode retornar ao Treino online sempre que quiser pelo menu de Hunts ou pelo botão Treino no celular.',
+    guest
+      ? 'Agora você já sabe configurar o Helper, escolher e entrar em uma hunt, voltar para a cidade e usar o Treino online. Reivindique sua conta de visitante para não perder o personagem. Você pode rever este tutorial nas Configurações.'
+      : 'Agora você já sabe configurar o Helper, escolher e entrar em uma hunt, voltar para a cidade e usar o Treino online. Para rever este guia, abra Configurações → Rever tutorial.',
   ] : [
-    'I will highlight where to click. Prepare healing, choose a hunt and watch your first fight. You can skip at any time.',
-    target?.selector.includes('mobile-menu') ? 'Tap the highlighted Menu, then Helper to configure automatic potions and spells.' : 'Click the highlighted Helper. It controls your character’s automatic healing and spells.',
-    'HP is health; MP powers your spells. Check potions and healing thresholds. For example, 70% means healing below that health level. Then confirm below.',
-    'Click the highlighted Hunts button. A hunt is a place to fight monsters and gain experience.',
-    queued ? 'The hunt is occupied. Combat begins when a slot opens. The guide continues when you enter; you can also skip it.' : !huntsOpen ? 'The list was closed. Click the highlighted Hunts button to reopen it.' : target?.selector === '.hunt-list' ? 'No hunt is available in this list right now. Check gold, supplies and filters, or choose another region. The guide waits until you can enter.' : 'Click the highlighted hunt or another unlocked option. Start with a low minimum level and check supply costs. Entering starts combat, or joins the queue if the hunt is full.',
-    'Your character fights automatically. HP is health, MP is mana and XP is experience for new levels. Watch these bars: potions are consumed to keep you alive. Loot means items dropped by monsters.',
-    'Click the highlighted City button to end your hunt. Closing the browser tab does not stop combat!',
-    guest ? 'You can now prepare, hunt and stop. Explore equipment, training and parties later. Claim your guest account to keep access. Replay this guide in Settings.' : 'You can now prepare, hunt and stop. Explore equipment, training and parties later. Replay this guide in Settings.',
+    'I will highlight where to click. You will configure Helper, choose and enter a hunt, then learn Online Training. You can skip at any time.',
+    target?.selector.includes('mobile-menu')
+      ? 'On mobile, tap the highlighted Menu and then Helper. This is where automatic potions, healing and spells are configured.'
+      : 'Click the highlighted Helper. This is where automatic potions, healing and spells are configured.',
+    'HP is health and MP is mana used by spells. Check your potions and healing thresholds. For example, 70% means healing below that health level. Then confirm below.',
+    'Click the highlighted Hunts button. It opens the hunt selection available for your level.',
+    queued
+      ? 'This hunt is full and you joined the queue. Combat starts as soon as a slot opens.'
+      : !huntsOpen || huntMode !== 'hunts'
+        ? 'The hunt list was closed. Click Hunts again to continue.'
+        : target?.selector === '.hunt-list'
+          ? 'No available hunt is visible in this list. Check region, filters, gold and supplies. The tutorial waits until you can enter.'
+          : 'Choose where to hunt here. Check level, monsters, XP/h and supply cost. You can also browse by region. Click an unlocked hunt to enter.',
+    'You are now in a hunt. Your character fights automatically. HP is health, MP is mana and XP is experience. Loot is dropped by monsters. The hunt keeps running even if you close the tab.',
+    'Click City to stop the hunt and return to the city map.',
+    'Hunts also gives access to Online Training. Open Hunts again so I can show you where it is.',
+    'Click the highlighted Online Training tab. It contains rooms with dummies used to raise your skills.',
+    'Choose an available room and click Enter. Each room shows its dummies and the skill that will be trained.',
+    'In Online Training your character attacks dummies to improve the selected skill. Exercise charges are also used when available.',
+    'Click Leave to return to the city. You can enter Online Training again from Hunts, or from the Training button on mobile.',
+    guest
+      ? 'You now know Helper, hunts, returning to the city and Online Training. Claim your guest account so you do not lose the character. Replay this tutorial in Settings.'
+      : 'You now know Helper, hunts, returning to the city and Online Training. Replay this guide from Settings → Replay tutorial.',
   ];
+
   const mobile = viewport.width < 600;
   const right = Math.max(12, viewport.width - panelSize.width - 16);
   const bottom = Math.max(12, viewport.height - panelSize.height - (mobile ? 82 : 16));
@@ -180,7 +240,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     return Math.max(0, Math.min(pos.left + panelSize.width + 12, r.left + r.width) - Math.max(pos.left - 12, r.left))
       * Math.max(0, Math.min(pos.top + panelSize.height + 12, r.top + r.height) - Math.max(pos.top - 12, r.top));
   }
-  const position = step === 0 || step === 7
+  const position = step === 0 || step === 12
     ? { left: Math.max(12, (viewport.width - panelSize.width) / 2), top: Math.max(12, (viewport.height - panelSize.height) / 2) }
     : [...positions].sort((a, b) => overlap(a) - overlap(b))[0]!;
 
@@ -200,10 +260,13 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
           : step === 0 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(1)}>{pt ? 'Começar na prática →' : 'Start playing →'}</button>
           : step === 2 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(3)}>{pt ? 'Cura conferida →' : 'Healing checked →'}</button>
           : step === 5 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(6)}>{pt ? 'Entendi. Como volto?' : 'Got it. How do I return?'}</button>
-          : step === 7 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(99)}>{pt ? 'Concluir tutorial' : 'Finish tutorial'}</button>
+          : step === 10 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(11)}>{pt ? 'Entendi. Como saio?' : 'Got it. How do I leave?'}</button>
+          : step === 12 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(99)}>{pt ? 'Concluir tutorial' : 'Finish tutorial'}</button>
           : <span className="guided-tutorial__waiting">{busy ? (pt ? 'Salvando…' : 'Saving…') : (pt ? 'Faça a ação destacada para continuar.' : 'Perform the highlighted action to continue.')}</span>}
         {!target && !busy && step === 1 && <button onClick={onOpenHelper}>{pt ? 'Abrir Helper' : 'Open Helper'}</button>}
-        {!target && !busy && (step === 3 || (step === 4 && !huntsOpen && !queued)) && <button onClick={onOpenHunts}>{pt ? 'Abrir Hunts' : 'Open Hunts'}</button>}
+        {!target && !busy && (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued) || step === 7) && <button onClick={onOpenHunts}>{pt ? 'Abrir Hunts' : 'Open Hunts'}</button>}
+        {!target && !busy && (step === 8 || (step === 9 && !trainingActive)) && <button onClick={onOpenTraining}>{pt ? 'Abrir Treino online' : 'Open Online Training'}</button>}
+        {!target && !busy && step === 11 && trainingActive && <button onClick={onLeaveTraining}>{pt ? 'Sair do treino' : 'Leave training'}</button>}
       </footer>
     </section>
   </>, document.body);
