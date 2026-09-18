@@ -52,6 +52,9 @@ interface SpriteEntry {
   manaBar?: Graphics;
   lastHealth: number;
   aura?: Graphics;
+  auraSparks?: Graphics[];
+  auraId?: number;
+  auraPhase?: number;
   mountSprite?: AnimatedSprite;
   mountId?: number;
   vitals: boolean;
@@ -292,6 +295,7 @@ export class CombatScene {
         this.tickWalk(ticker.deltaMS);
         this.tickFloaters(ticker.deltaMS);
         this.tickShots(ticker.deltaMS);
+        this.tickAuras(ticker.deltaMS);
       } catch (error) {
         console.error('combat tick', error);
       }
@@ -519,7 +523,10 @@ export class CombatScene {
           }
           this.allies.set(ally.name, created);
           this.setCorpse(created, Boolean(ally.dead));
-          if (!created.dead) void this.drawMount(created, ally.appearance);
+          if (!created.dead) {
+            this.drawAura(created, ally.appearance);
+            void this.drawMount(created, ally.appearance);
+          }
         }
         return;
       }
@@ -531,6 +538,7 @@ export class CombatScene {
       this.setCorpse(existing, Boolean(ally.dead));
       if (existing.dead) return;
       this.layoutHud(existing, ally.health / Math.max(1, ally.maxHealth));
+      this.drawAura(existing, ally.appearance);
       void this.drawMount(existing, ally.appearance);
     });
   }
@@ -606,17 +614,99 @@ export class CombatScene {
   }
 
   private drawAura(entry: SpriteEntry, appearance?: PlayerView['appearance']): void {
+    const auraId = appearance?.aura ?? 0;
+
     if (!entry.aura) {
       entry.aura = new Graphics();
+      entry.aura.roundPixels = true;
       entry.root.addChildAt(entry.aura, 0);
     }
+
+    entry.aura.visible = auraId > 0 && !entry.dead;
+    if (auraId <= 0) {
+      entry.auraId = 0;
+      entry.aura.clear();
+      for (const spark of entry.auraSparks ?? []) {
+        try { spark.destroy(); } catch { /* gone */ }
+      }
+      entry.auraSparks = [];
+      return;
+    }
+
+    // Do not rebuild the graphics on every server sync. Animation is handled
+    // by tickAuras(), so the purchased aura remains smooth even while moving.
+    if (entry.auraId === auraId && (entry.auraSparks?.length ?? 0) > 0) return;
+
+    entry.auraId = auraId;
+    entry.auraPhase = 0;
     entry.aura.clear();
-    if (appearance?.aura === 1) {
-      entry.aura.ellipse(0, -6, 16, 8);
-      entry.aura.fill({ color: 0xe8c547, alpha: 0.35 });
-    } else if (appearance?.aura === 2) {
-      entry.aura.ellipse(0, -6, 16, 8);
-      entry.aura.fill({ color: 0xe05050, alpha: 0.35 });
+    for (const spark of entry.auraSparks ?? []) {
+      try { spark.destroy(); } catch { /* gone */ }
+    }
+    entry.auraSparks = [];
+
+    const base = auraId === 2 ? 0xe84a5f : 0xf0c84b;
+    const glow = auraId === 2 ? 0xff8a96 : 0xffec8a;
+    const core = auraId === 2 ? 0xffd0d5 : 0xfff6c7;
+
+    // Soft footprint glow.
+    entry.aura.ellipse(0, -5, 21, 10);
+    entry.aura.fill({ color: base, alpha: 0.10 });
+
+    // Mid glow gives the ring depth instead of a flat coloured shadow.
+    entry.aura.ellipse(0, -5, 17, 8);
+    entry.aura.fill({ color: base, alpha: 0.17 });
+
+    // Two luminous rings.
+    entry.aura.ellipse(0, -5, 16, 7);
+    entry.aura.stroke({ color: glow, width: 1.15, alpha: 0.92 });
+    entry.aura.ellipse(0, -5, 11, 4.5);
+    entry.aura.stroke({ color: core, width: 0.65, alpha: 0.72 });
+
+    // Orbiting pixel sparks. They are individual graphics so they can move
+    // independently while keeping the Tibia/pixel-art look.
+    for (let i = 0; i < 6; i++) {
+      const spark = new Graphics();
+      const size = i % 3 === 0 ? 1.15 : i % 2 === 0 ? 0.9 : 0.7;
+      spark.circle(0, 0, size);
+      spark.fill({ color: i % 2 === 0 ? core : glow, alpha: 1 });
+      spark.roundPixels = true;
+      entry.aura.addChild(spark);
+      entry.auraSparks.push(spark);
+    }
+  }
+
+  private tickAuras(delta: number): void {
+    const entries = [
+      ...(this.player ? [this.player] : []),
+      ...this.allies.values(),
+    ];
+
+    for (const entry of entries) {
+      const aura = entry.aura;
+      if (!aura || !aura.visible || entry.dead || (entry.auraId ?? 0) <= 0) continue;
+
+      const phase = (entry.auraPhase ?? 0) + delta * 0.0042;
+      entry.auraPhase = phase;
+
+      const pulse = 1 + Math.sin(phase) * 0.045;
+      aura.scale.set(pulse, 1 + Math.sin(phase + 0.8) * 0.035);
+      aura.alpha = 0.82 + Math.sin(phase * 1.6) * 0.12;
+
+      const sparks = entry.auraSparks ?? [];
+      for (let i = 0; i < sparks.length; i++) {
+        const spark = sparks[i]!;
+        if (spark.destroyed) continue;
+        const angle = phase * (i % 2 === 0 ? 1 : -0.82) + i * (Math.PI * 2 / Math.max(1, sparks.length));
+        const radiusX = 13 + (i % 3) * 2.2;
+        const radiusY = 5 + (i % 2) * 1.7;
+        spark.x = Math.round(Math.cos(angle) * radiusX);
+        spark.y = Math.round(-5 + Math.sin(angle) * radiusY);
+        const twinkle = 0.58 + 0.42 * Math.sin(phase * 2.4 + i * 1.3);
+        spark.alpha = Math.max(0.18, twinkle);
+        const sparkScale = 0.8 + 0.25 * Math.sin(phase * 2 + i);
+        spark.scale.set(sparkScale);
+      }
     }
   }
 
@@ -954,6 +1044,7 @@ export class CombatScene {
     entry.dead = dead;
     entry.label.visible = !dead;
     entry.bar.visible = !dead;
+    if (entry.aura) entry.aura.visible = !dead && (entry.auraId ?? 0) > 0;
     if (entry.manaBar) entry.manaBar.visible = !dead;
     if (entry.aura) entry.aura.visible = !dead;
     if (entry.mountSprite) entry.mountSprite.visible = !dead;
