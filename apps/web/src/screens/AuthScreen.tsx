@@ -25,6 +25,32 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const oauthCode = params.get('oauth_code');
+    const oauthError = params.get('oauth_error');
+    if (oauthError) {
+      setError(oauthError);
+      params.delete('oauth_error');
+      const query = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
+      return;
+    }
+    if (!oauthCode) return;
+    setBusy(true);
+    void api.oauthExchange(oauthCode)
+      .then((result) => {
+        storeToken(result.token);
+        params.delete('oauth_code');
+        const query = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
+        onReady();
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Falha no login social.'))
+      .finally(() => setBusy(false));
+  }, [onReady]);
+
+  useEffect(() => {
     void api.health()
       .then((health) => {
         setBetaClosed(health.beta === 'closed');
@@ -221,7 +247,7 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
                   title={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'}
                   onClick={() => setPasswordVisible((current) => !current)}
                 >
-                  {passwordVisible ? '◉' : '◉'}
+                  {passwordVisible ? '👁' : '👁'}
                 </button>
               </div>
             </div>
