@@ -870,6 +870,9 @@ export function GameScreen({
             if (loop) setPickingHunt(true);
           }))}
           onEnterTraining={(roomId) => enterTraining(roomId)}
+          onTabChange={(tab) => {
+            if (tab === 'hunts' || tab === 'training') setHuntModalTab(tab);
+          }}
         />
       )}
 
