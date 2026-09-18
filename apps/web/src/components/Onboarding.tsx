@@ -6,7 +6,7 @@ import './Onboarding.css';
 
 type Rect = { left: number; top: number; width: number; height: number };
 type Target = { rect: Rect; selector: string };
-const TOTAL = 13;
+const TOTAL = 14;
 const SAVED_BASE = 20;
 
 export function Onboarding({ character, guest = false, replay = false, helperOpen, huntsOpen, huntMode, trainingActive, gameBusy,
@@ -86,11 +86,11 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     else if (step === 3 && active) void advance(5);
     else if (step === 3 && huntsOpen && huntMode === 'hunts') void advance(4);
     else if (step === 4 && active) void advance(5);
-    else if (step === 6 && !active && !queued) void advance(7);
-    else if (step === 7 && huntsOpen) void advance(huntMode === 'training' ? 9 : 8);
-    else if (step === 8 && huntsOpen && huntMode === 'training') void advance(9);
-    else if (step === 9 && trainingActive) void advance(10);
-    else if (step === 11 && !trainingActive) void advance(12);
+    else if (step === 7 && !active && !queued) void advance(8);
+    else if (step === 8 && huntsOpen) void advance(huntMode === 'training' ? 10 : 9);
+    else if (step === 9 && huntsOpen && huntMode === 'training') void advance(10);
+    else if (step === 10 && trainingActive) void advance(11);
+    else if (step === 12 && !trainingActive) void advance(13);
   }, [step, helperOpen, huntsOpen, huntMode, trainingActive, active, queued, busy, gameBusy, failedStep, closed]);
 
   let selectors: string[] = [];
@@ -99,13 +99,14 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
   if (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued)) selectors = ['[data-tutorial="hunts"]'];
   if (step === 4 && huntsOpen && huntMode === 'hunts' && !queued) selectors = ['[data-tutorial="hunt-option"]:not(:disabled)', '.hunt-list', '[data-tab="hunts"]'];
   if (step === 4 && queued) selectors = ['.queue-card'];
-  if (step === 5) selectors = ['[data-tutorial="vitals"]', '.topnav'];
-  if (step === 6) selectors = ['[data-tutorial="city"]'];
-  if (step === 7) selectors = ['[data-tutorial="hunts"]'];
-  if (step === 8) selectors = ['[data-tutorial="training-tab"]', '[data-tab="training"]'];
-  if (step === 9) selectors = ['[data-tutorial="training-option"]:not(:disabled)', '.training-browser'];
-  if (step === 10) selectors = ['.training-hud-card', '.training-viewport'];
-  if (step === 11) selectors = ['[data-tutorial="training-exit"]'];
+  if (step === 5) selectors = ['.action-bar__panel', '.action-bar'];
+  if (step === 6) selectors = ['[data-tutorial="vitals"]', '.topnav'];
+  if (step === 7) selectors = ['[data-tutorial="city"]'];
+  if (step === 8) selectors = ['[data-tutorial="hunts"]'];
+  if (step === 9) selectors = ['[data-tutorial="training-tab"]', '[data-tab="training"]'];
+  if (step === 10) selectors = ['[data-tutorial="training-option"]:not(:disabled)', '.training-browser'];
+  if (step === 11) selectors = ['.training-hud-card', '.training-viewport'];
+  if (step === 12) selectors = ['[data-tutorial="training-exit"]'];
   const selectorKey = selectors.join('|');
 
   useEffect(() => {
@@ -240,7 +241,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     return Math.max(0, Math.min(pos.left + panelSize.width + 12, r.left + r.width) - Math.max(pos.left - 12, r.left))
       * Math.max(0, Math.min(pos.top + panelSize.height + 12, r.top + r.height) - Math.max(pos.top - 12, r.top));
   }
-  const position = step === 0 || step === 12
+  const position = step === 0 || step === 13
     ? { left: Math.max(12, (viewport.width - panelSize.width) / 2), top: Math.max(12, (viewport.height - panelSize.height) / 2) }
     : [...positions].sort((a, b) => overlap(a) - overlap(b))[0]!;
 
