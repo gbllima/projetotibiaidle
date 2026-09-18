@@ -55,6 +55,8 @@ export interface HealthView {
   content: Record<string, number>;
   generatedAt: string;
   beta: 'open' | 'closed';
+  oauth?: { google: boolean; discord: boolean };
+  passwordRecovery?: boolean;
 }
 
 export interface MultiplayerPartyStatus {
@@ -173,10 +175,13 @@ async function act(id: number, body: Record<string, unknown>) {
 
 export const api = {
   health: () => request<HealthView>('GET', '/api/health'),
-  register: (username: string, password: string, invite?: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/register', { username, password, invite }),
+  register: (username: string, password: string, email: string, invite?: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/register', { username, password, email, invite }),
   guest: () => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/guest'),
-  claim: (username: string, password: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/claim', { username, password }),
+  claim: (username: string, password: string, email: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/claim', { username, password, email }),
   login: (username: string, password: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/login', { username, password }),
+  forgotPassword: (email: string) => request<{ ok: true; message: string; devResetUrl?: string }>('POST', '/api/password/forgot', { email }),
+  resetPassword: (token: string, password: string) => request<{ token: string; accountId: number; username: string; guest?: boolean }>('POST', '/api/password/reset', { token, password }),
+  oauthExchange: (code: string) => request<{ token: string }>('GET', `/api/oauth/exchange?code=${encodeURIComponent(code)}`),
   logout: () => request<{ ok: boolean }>('POST', '/api/logout'),
   characters: () => request<{ characters: CharacterView[]; account: AccountView }>('GET', '/api/characters'),
   lobby: (characterId?: number) => request<{ players: LobbyPlayer[]; position?: { x: number; y: number } }>('GET', '/api/lobby' + (characterId ? '?characterId=' + characterId : '')),
