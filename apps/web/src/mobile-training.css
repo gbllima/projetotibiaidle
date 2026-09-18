@@ -1,4 +1,7 @@
 @media (max-width:768px){
+  .training-hud{left:6px!important;right:6px!important;top:6px!important;bottom:auto!important;z-index:96!important;display:flex!important;justify-content:center!important}
+  .training-hud-card{width:min(520px,100%)!important;max-width:100%!important;margin:0 auto!important}
+
   .training-callout{padding:8px!important;margin-bottom:8px!important;border-radius:8px!important}
   .training-callout .hunt-callout-copy strong{font-size:12px!important}
   .training-callout .hunt-callout-copy p{font-size:9px!important;line-height:1.3!important;margin-top:3px!important}
