@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+ENV_FILE="${ENV_FILE:-/etc/knock-hunt-br.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+fi
+
 REPO_DIR="${REPO_DIR:-/opt/knock-hunt-br}"
 BRANCH="${BRANCH:-main}"
 APP_NAME="${APP_NAME:-knock-hunt-br}"
