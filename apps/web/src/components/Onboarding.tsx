@@ -264,14 +264,15 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
         {failedStep !== null ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(failedStep)}>{pt ? 'Tentar novamente' : 'Try again'}</button>
           : step === 0 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(1)}>{pt ? 'Começar na prática →' : 'Start playing →'}</button>
           : step === 2 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(3)}>{pt ? 'Cura conferida →' : 'Healing checked →'}</button>
-          : step === 5 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(6)}>{pt ? 'Entendi. Como volto?' : 'Got it. How do I return?'}</button>
-          : step === 10 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(11)}>{pt ? 'Entendi. Como saio?' : 'Got it. How do I leave?'}</button>
-          : step === 12 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(99)}>{pt ? 'Concluir tutorial' : 'Finish tutorial'}</button>
+          : step === 5 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(6)}>{pt ? 'Entendi a barra →' : 'I understand the bar →'}</button>
+          : step === 6 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(7)}>{pt ? 'Entendi. Como volto?' : 'Got it. How do I return?'}</button>
+          : step === 11 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(12)}>{pt ? 'Entendi. Como saio?' : 'Got it. How do I leave?'}</button>
+          : step === 13 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(99)}>{pt ? 'Concluir tutorial' : 'Finish tutorial'}</button>
           : <span className="guided-tutorial__waiting">{busy ? (pt ? 'Salvando…' : 'Saving…') : (pt ? 'Faça a ação destacada para continuar.' : 'Perform the highlighted action to continue.')}</span>}
         {!target && !busy && step === 1 && <button onClick={onOpenHelper}>{pt ? 'Abrir Helper' : 'Open Helper'}</button>}
-        {!target && !busy && (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued) || step === 7) && <button onClick={onOpenHunts}>{pt ? 'Abrir Hunts' : 'Open Hunts'}</button>}
-        {!target && !busy && (step === 8 || (step === 9 && !trainingActive)) && <button onClick={onOpenTraining}>{pt ? 'Abrir Treino online' : 'Open Online Training'}</button>}
-        {!target && !busy && step === 11 && trainingActive && <button onClick={onLeaveTraining}>{pt ? 'Sair do treino' : 'Leave training'}</button>}
+        {!target && !busy && (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued) || step === 8) && <button onClick={onOpenHunts}>{pt ? 'Abrir Hunts' : 'Open Hunts'}</button>}
+        {!target && !busy && (step === 9 || (step === 10 && !trainingActive)) && <button onClick={onOpenTraining}>{pt ? 'Abrir Treino online' : 'Open Online Training'}</button>}
+        {!target && !busy && step === 12 && trainingActive && <button onClick={onLeaveTraining}>{pt ? 'Sair do treino' : 'Leave training'}</button>}
       </footer>
     </section>
   </>, document.body);
