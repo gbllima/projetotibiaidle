@@ -188,13 +188,13 @@ describe('systems', () => {
     });
   });
 
-  it('starts the tutorial hunt for a new character', async () => {
+  it('starts the tutorial in the city for a new character', async () => {
     const { token, character } = await setup();
     const response = await post(`/api/characters/${character.id}/act`, { type: 'tutorial-start' }, token);
     expect(response.statusCode, response.body).toBe(200);
     expect(response.json().character.onboardingStep).toBe(1);
-    expect(response.json().character.session).toBeTruthy();
-    expect(response.json().character.session.huntId).toBe('venore-rotworm-cave');
+    expect(response.json().character.session).toBeNull();
+    expect(response.json().character.queue).toBeNull();
   });
 
   it('buys one loot pouch slot at escalating gold cost', async () => {
