@@ -38,8 +38,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     // Windows are closed after login: resume at the action that opens them.
     if (saved === 2 && !helperOpen) return 1;
     if (saved === 4 && (!huntsOpen || huntMode !== 'hunts') && !active && !queued) return 3;
-    if ((saved === 8 || saved === 9) && !trainingActive) return 7;
-    if ((saved === 10 || saved === 11) && !trainingActive) return 7;
+    if ((saved === 9 || saved === 10 || saved === 11) && !trainingActive) return 8;
     return saved;
   });
   const [busy, setBusy] = useState(false);
