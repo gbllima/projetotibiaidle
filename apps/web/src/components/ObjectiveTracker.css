@@ -257,19 +257,99 @@
 
 @media (max-width: 700px) {
   .objective-tracker {
-    top: 62px;
-    right: 8px;
-    left: 8px;
+    top: 58px;
+    right: 6px;
+    left: 6px;
     width: auto;
-    max-height: calc(100vh - 132px);
+    max-height: calc(100vh - 122px);
+    border-radius: 6px;
   }
 
   .objective-tracker.is-minimized {
     right: auto;
-    width: min(286px, calc(100vw - 16px));
+    width: min(250px, calc(100vw - 12px));
+  }
+
+  .objective-tracker__head {
+    min-height: 38px;
+    gap: 6px;
+    padding: 5px 6px 5px 8px;
+  }
+
+  .objective-tracker__kicker {
+    font-size: 8px;
+    letter-spacing: .12em;
+  }
+
+  .objective-tracker__title strong {
+    font-size: 10px;
+  }
+
+  .objective-tracker__control {
+    width: 23px;
+    height: 23px;
+    font-size: 12px;
   }
 
   .objective-tracker__body {
-    max-height: calc(100vh - 190px);
+    max-height: calc(100vh - 164px);
+    padding: 7px;
+  }
+
+  .objective-tracker__level-line {
+    margin-bottom: 4px;
+    font-size: 9px;
+  }
+
+  .objective-tracker__level-line strong {
+    font-size: 9px;
+  }
+
+  .objective-tracker__bar {
+    height: 5px;
+    margin-bottom: 7px;
+  }
+
+  .objective-tracker__goal {
+    margin-bottom: 6px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .objective-tracker__unlock-list {
+    gap: 5px;
+  }
+
+  .objective-unlock-card {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .objective-unlock-card__icon .ico {
+    width: 27px;
+    height: 27px;
+  }
+
+  .objective-unlock-card__icon .ico img {
+    width: 23px;
+    height: 23px;
+  }
+
+  .objective-unlock-card h4 {
+    margin-bottom: 2px;
+    font-size: 10px;
+  }
+
+  .objective-unlock-card p,
+  .objective-unlock-card small {
+    font-size: 8px;
+    line-height: 1.25;
+  }
+
+  .objective-tracker__later {
+    margin-top: 6px;
+    padding-top: 5px;
+    font-size: 8px;
   }
 }
