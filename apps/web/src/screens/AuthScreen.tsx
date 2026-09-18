@@ -116,6 +116,11 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
   }
 
   function social(provider: 'google' | 'discord') {
+    if (!oauth[provider]) {
+      setError(`Login com ${provider === 'google' ? 'Google' : 'Discord'} ainda precisa das credenciais OAuth no servidor.`);
+      return;
+    }
+    setError('');
     window.location.assign(`/api/oauth/${provider}/start`);
   }
 
@@ -145,7 +150,7 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
               <button
                 className="auth-social auth-social-google"
                 type="button"
-                disabled={busy || !oauth.google}
+                disabled={busy}
                 title={oauth.google ? 'Entrar com Google' : 'Google OAuth ainda não configurado no servidor'}
                 onClick={() => social('google')}
               >
@@ -154,7 +159,7 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
               <button
                 className="auth-social auth-social-discord"
                 type="button"
-                disabled={busy || !oauth.discord}
+                disabled={busy}
                 title={oauth.discord ? 'Entrar com Discord' : 'Discord OAuth ainda não configurado no servidor'}
                 onClick={() => social('discord')}
               >
@@ -247,7 +252,10 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
                   title={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'}
                   onClick={() => setPasswordVisible((current) => !current)}
                 >
-                  {passwordVisible ? '👁' : '👁'}
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                    <circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
                 </button>
               </div>
             </div>
