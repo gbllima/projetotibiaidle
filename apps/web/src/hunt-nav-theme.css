@@ -1,5 +1,32 @@
 /* Hunt navigation follows the same warm palette used by the rest of the game.
    Keep this file loaded last because older desktop/mobile rules still use blue-gray surfaces. */
+.hunt-modal .hunt-tab-bar {
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+  border-color: #403722 !important;
+  box-shadow: inset 0 1px 0 rgba(242,207,115,.04) !important;
+}
+
+.hunt-modal .hunt-tab {
+  color: #a7aa9e !important;
+}
+
+.hunt-modal .hunt-tab:hover:not(.on) {
+  color: #ece8dc !important;
+  background: rgba(242,207,115,.05) !important;
+  border-color: rgba(242,207,115,.12) !important;
+}
+
+.hunt-modal .hunt-tab.on,
+.hunt-modal .hunt-tab[data-tab="training"].on,
+.hunt-modal .hunt-tab[data-tab="boss"].on,
+.hunt-modal .hunt-tab[data-tab="raid"].on,
+.hunt-modal .hunt-tab[data-tab="event"].on {
+  color: #f2cf73 !important;
+  border-color: rgba(232,197,71,.48) !important;
+  background: linear-gradient(180deg, rgba(115,92,38,.30), rgba(13,16,13,.72)) !important;
+  box-shadow: inset 0 -2px 0 #c49537, 0 0 12px rgba(232,197,71,.08) !important;
+}
+
 .hunt-modal .hunt-nav-all,
 .hunt-modal .hunt-region-tab,
 .hunt-modal .hunt-location-btn {
@@ -67,4 +94,28 @@
 /* Event bosses stay loaded in the catalog, but are intentionally hidden from players for now. */
 .hunt-modal .hunt-tab[data-tab="event"] {
   display: none !important;
+}
+
+
+.hunt-modal .hunt-region-tabs,
+.hunt-modal .hunt-location-list {
+  scrollbar-color: #62572f #0d100d;
+}
+
+.hunt-modal .hunt-region-tabs::-webkit-scrollbar,
+.hunt-modal .hunt-location-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.hunt-modal .hunt-region-tabs::-webkit-scrollbar-track,
+.hunt-modal .hunt-location-list::-webkit-scrollbar-track {
+  background: #0d100d !important;
+}
+
+.hunt-modal .hunt-region-tabs::-webkit-scrollbar-thumb,
+.hunt-modal .hunt-location-list::-webkit-scrollbar-thumb {
+  background: #62572f !important;
+  border: 1px solid #0d100d !important;
+  border-radius: 999px;
 }
