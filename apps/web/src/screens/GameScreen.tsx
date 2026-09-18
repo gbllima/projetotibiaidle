@@ -585,7 +585,7 @@ export function GameScreen({
                         <button className="btn gold" type="button" onClick={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}>
                           Trocar sala
                         </button>
-                        <button className="btn ghost" type="button" onClick={leaveTraining}>
+                        <button className="btn ghost" type="button" data-tutorial="training-exit" onClick={leaveTraining}>
                           Sair
                         </button>
                       </div>
