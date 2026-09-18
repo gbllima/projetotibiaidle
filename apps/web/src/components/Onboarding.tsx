@@ -6,23 +6,27 @@ import './Onboarding.css';
 
 type Rect = { left: number; top: number; width: number; height: number };
 type Target = { rect: Rect; selector: string };
-const TOTAL = 8;
+const TOTAL = 13;
 const SAVED_BASE = 20;
 
-export function Onboarding({ character, guest = false, replay = false, helperOpen, huntsOpen, gameBusy,
-  onSave, onClose, onCloseHelper, onOpenHelper, onOpenHunts,
+export function Onboarding({ character, guest = false, replay = false, helperOpen, huntsOpen, huntMode, trainingActive, gameBusy,
+  onSave, onClose, onCloseHelper, onOpenHelper, onOpenHunts, onOpenTraining, onLeaveTraining,
 }: {
   character: CharacterView;
   guest?: boolean;
   replay?: boolean;
   helperOpen: boolean;
   huntsOpen: boolean;
+  huntMode: 'hunts' | 'training' | null;
+  trainingActive: boolean;
   gameBusy: boolean;
   onSave: (step: number) => Promise<void>;
   onClose: () => void;
   onCloseHelper: () => void;
   onOpenHelper: () => void;
   onOpenHunts: () => void;
+  onOpenTraining: () => void;
+  onLeaveTraining: () => void;
 }) {
   const { locale } = useLocale();
   const pt = locale === 'pt';
