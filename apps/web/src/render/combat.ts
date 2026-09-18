@@ -111,7 +111,7 @@ const HP_YELLOW = 0xe8c800;
 const HP_RED = 0xe02020;
 const BAR_EMPTY = 0x000000;
 const HEAD_CACHE = new Map<number, number>();
-const BOUNDS_CACHE = new Map<number, { minX: number; maxX: number; maxY: number }>();
+const BOUNDS_CACHE = new Map<number, { minX: number; maxX: number; maxY: number; feetCenterX: number }>();
 
 /**
  * Tibia-style cave viewport: tiled floor, fence, player in the middle.
@@ -1399,13 +1399,19 @@ export class CombatScene {
       entry.sprite.y = entry.mountSprite.y - Math.min(12, Math.floor(entry.mountSprite.texture.height * 0.22));
     }
 
-    // The packed Tibia outfit can be visually offset inside its 32px frame.
-    // Keep the ground aura centered under the actual feet rather than under
-    // the container origin, otherwise it appears shifted left/right.
+    // Center the ground aura under the lowest opaque part of the current
+    // outfit frame. sitSpriteOnTile already recenters the whole sprite, so
+    // copying sprite.x here would apply that correction twice.
     if (entry.aura) {
-      const feet = entry.mountSprite ?? entry.sprite;
-      entry.aura.x = Math.round(feet.x);
-      entry.aura.y = Math.round(feet.y);
+      const feetSprite = entry.mountSprite ?? entry.sprite;
+      const bounds = opaqueSpriteBounds(feetSprite.texture);
+      if (bounds) {
+        const overallCenterX = (bounds.minX + bounds.maxX + 1) / 2;
+        entry.aura.x = Math.round((bounds.feetCenterX - overallCenterX) * entry.scaleX);
+      } else {
+        entry.aura.x = 0;
+      }
+      entry.aura.y = 0;
     }
   }
 
@@ -1923,6 +1929,7 @@ interface SpriteOpaqueBounds {
   minX: number;
   maxX: number;
   maxY: number;
+  feetCenterX: number;
 }
 
 /** Opaque pixel bounds of a cropped atlas frame (for centering on the 32px SQM). */
@@ -1960,7 +1967,26 @@ function opaqueSpriteBounds(texture: Texture): SpriteOpaqueBounds | null {
       }
     }
     if (maxX < 0) return null;
-    const bounds = { minX, maxX, maxY };
+
+    // Find the visual center of the feet using only the lowest opaque rows.
+    // The full outfit can lean heavily left/right during a walk frame, so its
+    // overall center is not a reliable place for a ground aura.
+    let feetMinX = frame.width;
+    let feetMaxX = -1;
+    const feetTop = Math.max(0, maxY - 7);
+    for (let row = feetTop; row <= maxY; row += 1) {
+      const offset = row * frame.width * 4;
+      for (let col = 0; col < frame.width; col += 1) {
+        if ((pixels[offset + col * 4 + 3] ?? 0) <= 24) continue;
+        if (col < feetMinX) feetMinX = col;
+        if (col > feetMaxX) feetMaxX = col;
+      }
+    }
+    const feetCenterX = feetMaxX >= 0
+      ? (feetMinX + feetMaxX + 1) / 2
+      : (minX + maxX + 1) / 2;
+
+    const bounds = { minX, maxX, maxY, feetCenterX };
     BOUNDS_CACHE.set(key, bounds);
     return bounds;
   } catch {
