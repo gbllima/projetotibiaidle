@@ -75,6 +75,7 @@ interface SpriteEntry {
   appearanceKey?: string;
   direction: number;
   scaleX: number;
+  visualScale?: number;
   moving: boolean;
   stationary?: boolean;
   vocationId?: number;
@@ -503,7 +504,14 @@ export class CombatScene {
           y,
           DIRECTION_SOUTH,
           ally.name,
-          { appearance: ally.appearance, stepMs: PLAYER_STEP_MS, fill: this.cityLobby ? 0x00ff00 : 0x60c8ff, vitals: this.cityLobby, health: 1 },
+          {
+            appearance: ally.appearance,
+            stepMs: PLAYER_STEP_MS,
+            fill: this.cityLobby ? 0x00ff00 : 0x60c8ff,
+            vitals: this.cityLobby,
+            health: 1,
+            visualScale: this.cityLobby && ally.cityNpc === 'merchant' ? 0.82 : 1,
+          },
         );
         if (created) {
           created.vocationId = ally.vocationId;
@@ -1277,6 +1285,7 @@ export class CombatScene {
       health?: number;
       stepMs?: number;
       fill?: number;
+      visualScale?: number;
     } = {},
   ): SpriteEntry | null {
     const actors = this.actors;
@@ -1309,12 +1318,14 @@ export class CombatScene {
       sprite = new AnimatedSprite(textures);
       sprite.roundPixels = true;
       sprite.anchor.set(0.5, 1);
+      sprite.scale.set(options.visualScale ?? 1);
       sprite.animationSpeed = 0.12;
       sprite.play();
     } catch {
       sprite = new AnimatedSprite([placeholderTexture(options.vitals ? 0x3d8f4a : 0xb43c3c)]);
       sprite.roundPixels = true;
       sprite.anchor.set(0.5, 1);
+      sprite.scale.set(options.visualScale ?? 1);
     }
 
     const label = new Text({
@@ -1364,6 +1375,7 @@ export class CombatScene {
         : undefined,
       direction,
       scaleX: 1,
+      visualScale: options.visualScale ?? 1,
       moving: false,
     };
     this.placeAt(entry, tx, ty);
@@ -1407,7 +1419,7 @@ export class CombatScene {
       const bounds = opaqueSpriteBounds(feetSprite.texture);
       if (bounds) {
         const overallCenterX = (bounds.minX + bounds.maxX + 1) / 2;
-        entry.aura.x = Math.round((bounds.feetCenterX - overallCenterX) * entry.scaleX);
+        entry.aura.x = Math.round((bounds.feetCenterX - overallCenterX) * entry.scaleX * (entry.visualScale ?? 1));
       } else {
         entry.aura.x = 0;
       }
@@ -1691,7 +1703,9 @@ export class CombatScene {
     entry.direction = facing.direction;
     entry.scaleX = facing.scaleX;
     entry.moving = moving;
-    entry.sprite.scale.x = facing.scaleX;
+    const visualScale = entry.visualScale ?? 1;
+    entry.sprite.scale.x = facing.scaleX * visualScale;
+    entry.sprite.scale.y = visualScale;
     if (!force && same && entry.sprite.playing) {
       this.alignEntrySprites(entry);
       return;
@@ -1750,7 +1764,7 @@ export class CombatScene {
    * centered on the head (players and creatures share the same look).
    */
   private layoutHud(entry: SpriteEntry, hpRatio: number, _manaRatio?: number, targeted = false): void {
-    const headY = visualHeadY(entry.sprite);
+    const headY = visualHeadY(entry.sprite) * (entry.visualScale ?? 1);
     const barTop = headY - BAR_TO_HEAD - BAR_HEIGHT;
     entry.label.y = barTop - NAME_TO_BAR;
     entry.label.anchor.set(0.5, 1);
