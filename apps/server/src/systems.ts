@@ -35,7 +35,6 @@ import type { Database } from './db.js';
 import { buyCharacterSlot, canManageActivePartyMember, characterSlotCap, listHunts, loadCharacter, MAX_CHARACTER_SLOTS, type LoadedCharacter } from './game.js';
 import { onlineCharacterIds } from './presence.js';
 import { GameError } from './settle.js';
-import { tryStartOrQueue } from './queue.js';
 
 const PREY_BONUSES: PreyBonus[] = ['damage', 'defense', 'experience', 'loot'];
 
