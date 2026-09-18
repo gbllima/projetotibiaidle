@@ -386,6 +386,8 @@ export function GameScreen({
           onCloseHelper={() => { setOverlay('none'); setHelperCharacter(null); }}
           onOpenHelper={() => { setHelperSection('cura'); setOverlay('helper'); }}
           onOpenHunts={() => { setHuntError(''); setHuntModalTab('hunts'); setPickingHunt(true); }}
+          onOpenTraining={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}
+          onLeaveTraining={leaveTraining}
         />
       )}
       <TopNav
