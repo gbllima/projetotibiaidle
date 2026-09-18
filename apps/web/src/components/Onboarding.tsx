@@ -154,11 +154,12 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
       `Vamos aprender jogando, ${character.name}?`,
       'Abra o Helper',
       'Confira sua cura automática',
-      'Abra a lista de caçadas',
-      queued ? 'Você está na fila' : 'Escolha uma caçada e entre',
-      'Sua primeira luta está acontecendo!',
+      'Acesse o ícone Hunts',
+      queued ? 'Você entrou na fila' : 'Escolha o inimigo e a caçada',
+      'Conheça sua barra de magias',
+      'Entenda o combate',
       'Volte para a cidade',
-      'Agora vamos conhecer o Treino online',
+      'Abra Hunts novamente',
       'Abra a aba Treino online',
       'Escolha uma sala de treino',
       'Você entrou no Treino online',
@@ -169,12 +170,13 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
       `Let’s learn by playing, ${character.name}!`,
       'Open Helper',
       'Check automatic healing',
-      'Open the hunt list',
-      queued ? 'You are in the queue' : 'Choose a hunt and enter',
-      'Your first fight is happening!',
+      'Open the Hunts icon',
+      queued ? 'You joined the queue' : 'Choose the enemy and hunt',
+      'Meet your spell bar',
+      'Understand combat',
       'Return to the city',
-      'Now let’s see Online Training',
-      'Open the Online Training tab',
+      'Open Hunts again',
+      'Open Online Training',
       'Choose a training room',
       'You entered Online Training',
       'Leave training',
@@ -182,53 +184,55 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     ];
 
   const descriptions = pt ? [
-    'Vou destacar onde clicar. Você vai configurar o Helper, aprender a escolher uma caçada, entrar em uma hunt e depois conhecer o Treino online. Pode pular a qualquer momento.',
+    'Você vai aprender na prática: configurar o Helper, abrir Hunts, escolher qual inimigo caçar, entender a barra de magias e depois conhecer o Treino online.',
     target?.selector.includes('mobile-menu')
-      ? 'No celular, toque em Menu, que está destacado. Depois toque em Helper. É nele que você configura poções, cura e magias automáticas.'
+      ? 'No celular, toque em Menu e depois em Helper. É nele que você configura poções, cura e magias automáticas.'
       : 'Clique no Helper destacado. É nele que você configura poções, cura e magias automáticas do personagem.',
-    'HP é sua vida e MP é a mana usada nas magias. Confira as poções e os limites de cura. Exemplo: 70% significa usar a cura quando sua vida cair abaixo desse valor. Depois confirme abaixo.',
-    'Clique em Hunts no local destacado. Esse botão abre a seleção de caçadas disponíveis para seu nível.',
+    'HP é sua vida e MP é sua mana. Confira as poções e os limites de cura. Exemplo: 70% significa usar a cura quando sua vida cair abaixo desse valor. Depois confirme abaixo.',
+    'Agora clique no ícone Hunts destacado. É por ele que você escolhe onde e contra quais inimigos o personagem vai caçar.',
     queued
-      ? 'Essa caçada está cheia e você entrou na fila. O combate começa assim que surgir uma vaga.'
+      ? 'A caçada escolhida está cheia e você entrou na fila. Assim que surgir uma vaga, o combate começa automaticamente.'
       : !huntsOpen || huntMode !== 'hunts'
         ? 'A lista de caçadas foi fechada. Clique novamente em Hunts para continuar.'
         : target?.selector === '.hunt-list'
-          ? 'Não apareceu uma caçada disponível nessa lista. Confira região, filtros, ouro e suprimentos. O tutorial espera até você conseguir entrar.'
-          : 'Aqui você escolhe onde caçar. Veja o nível indicado, monstros, XP/h e custo de suprimentos. Você também pode escolher por região. Clique em uma caçada liberada para entrar.',
-    'Pronto: você está em uma hunt. O personagem luta automaticamente. HP é vida, MP é mana e XP é experiência. Loot são os itens deixados pelos monstros. A hunt continua mesmo se você fechar a aba.',
-    'Clique em Cidade para encerrar a caçada e voltar ao mapa da cidade.',
-    'Hunts também dá acesso ao Treino online. Clique novamente em Hunts para eu mostrar onde ele fica.',
-    'Agora clique na aba Treino online destacada. Nela ficam as salas com dummies para evoluir suas skills.',
-    'Escolha uma sala disponível e clique em Entrar. Cada sala mostra os dummies disponíveis e a skill que será treinada.',
-    'No Treino online seu personagem fica batendo nos dummies para evoluir a skill. Se possuir cargas de exercise, elas também são usadas durante o treino.',
-    'Clique em Sair para voltar à cidade. Você pode retornar ao Treino online sempre que quiser pelo menu de Hunts ou pelo botão Treino no celular.',
+          ? 'Não apareceu uma opção disponível nessa lista. Troque a região ou os filtros e confira ouro e suprimentos.'
+          : 'Cada opção mostra os inimigos daquela caçada, nível recomendado, XP/h e custo de suprimentos. Escolha qual inimigo quer enfrentar e clique em uma caçada liberada para entrar.',
+    'Esta é a barra de magias na parte inferior. Ela mostra seus ataques, magias e atalhos principais. Durante a hunt, essas habilidades são usadas conforme a configuração do personagem e do Helper.',
+    'Agora observe o combate: HP é vida, MP é mana e XP é experiência. Loot são os itens deixados pelos inimigos. A hunt continua funcionando mesmo se você fechar a aba.',
+    'Clique em Cidade para encerrar a hunt e voltar ao mapa da cidade.',
+    'Agora abra Hunts novamente. Além das caçadas, esse menu também dá acesso ao Treino online.',
+    'Clique na aba Treino online destacada. Ali ficam as salas com dummies para aumentar suas skills.',
+    'Escolha uma sala e clique em Entrar. Cada sala mostra os dummies disponíveis e a skill que será treinada.',
+    'No Treino online seu personagem bate nos dummies para evoluir a skill. Se houver cargas de exercise, elas também são utilizadas durante o treino.',
+    'Clique em Sair para voltar à cidade. Você pode acessar o Treino online novamente pelo menu Hunts ou pelo botão Treino no celular.',
     guest
-      ? 'Agora você já sabe configurar o Helper, escolher e entrar em uma hunt, voltar para a cidade e usar o Treino online. Reivindique sua conta de visitante para não perder o personagem. Você pode rever este tutorial nas Configurações.'
-      : 'Agora você já sabe configurar o Helper, escolher e entrar em uma hunt, voltar para a cidade e usar o Treino online. Para rever este guia, abra Configurações → Rever tutorial.',
+      ? 'Agora você sabe usar o Helper, escolher inimigos e hunts, entender a barra de magias, voltar para a cidade e usar o Treino online. Reivindique sua conta de visitante para não perder o personagem.'
+      : 'Agora você sabe usar o Helper, escolher inimigos e hunts, entender a barra de magias, voltar para a cidade e usar o Treino online. Você pode rever este tutorial nas Configurações.',
   ] : [
-    'I will highlight where to click. You will configure Helper, choose and enter a hunt, then learn Online Training. You can skip at any time.',
+    'You will learn by doing: configure Helper, open Hunts, choose which enemy to hunt, understand the spell bar and then use Online Training.',
     target?.selector.includes('mobile-menu')
-      ? 'On mobile, tap the highlighted Menu and then Helper. This is where automatic potions, healing and spells are configured.'
+      ? 'On mobile, tap Menu and then Helper. This is where automatic potions, healing and spells are configured.'
       : 'Click the highlighted Helper. This is where automatic potions, healing and spells are configured.',
-    'HP is health and MP is mana used by spells. Check your potions and healing thresholds. For example, 70% means healing below that health level. Then confirm below.',
-    'Click the highlighted Hunts button. It opens the hunt selection available for your level.',
+    'HP is health and MP is mana. Check your potions and healing thresholds. For example, 70% means healing when health drops below that value. Then confirm below.',
+    'Click the highlighted Hunts icon. This is where you choose where to hunt and which enemies your character will fight.',
     queued
-      ? 'This hunt is full and you joined the queue. Combat starts as soon as a slot opens.'
+      ? 'The selected hunt is full and you joined the queue. Combat starts automatically when a slot opens.'
       : !huntsOpen || huntMode !== 'hunts'
         ? 'The hunt list was closed. Click Hunts again to continue.'
         : target?.selector === '.hunt-list'
-          ? 'No available hunt is visible in this list. Check region, filters, gold and supplies. The tutorial waits until you can enter.'
-          : 'Choose where to hunt here. Check level, monsters, XP/h and supply cost. You can also browse by region. Click an unlocked hunt to enter.',
-    'You are now in a hunt. Your character fights automatically. HP is health, MP is mana and XP is experience. Loot is dropped by monsters. The hunt keeps running even if you close the tab.',
+          ? 'No available option is visible. Change region or filters and check gold and supplies.'
+          : 'Each option shows the enemies in that hunt, recommended level, XP/h and supply cost. Choose the enemy you want to fight and click an unlocked hunt to enter.',
+    'This is the spell bar at the bottom. It shows your attacks, spells and main shortcuts. During a hunt, these abilities are used according to your character and Helper configuration.',
+    'Watch combat now: HP is health, MP is mana and XP is experience. Loot is dropped by enemies. The hunt keeps running even if you close the browser tab.',
     'Click City to stop the hunt and return to the city map.',
-    'Hunts also gives access to Online Training. Open Hunts again so I can show you where it is.',
-    'Click the highlighted Online Training tab. It contains rooms with dummies used to raise your skills.',
-    'Choose an available room and click Enter. Each room shows its dummies and the skill that will be trained.',
-    'In Online Training your character attacks dummies to improve the selected skill. Exercise charges are also used when available.',
-    'Click Leave to return to the city. You can enter Online Training again from Hunts, or from the Training button on mobile.',
+    'Open Hunts again. Besides hunting locations, this menu also gives access to Online Training.',
+    'Click the highlighted Online Training tab. It contains rooms with dummies used to improve your skills.',
+    'Choose a room and click Enter. Each room shows its available dummies and the skill that will be trained.',
+    'In Online Training your character attacks dummies to improve the skill. Exercise charges are also used when available.',
+    'Click Leave to return to the city. You can access Online Training again from Hunts or the Training button on mobile.',
     guest
-      ? 'You now know Helper, hunts, returning to the city and Online Training. Claim your guest account so you do not lose the character. Replay this tutorial in Settings.'
-      : 'You now know Helper, hunts, returning to the city and Online Training. Replay this guide from Settings → Replay tutorial.',
+      ? 'You now know Helper, hunts, the spell bar, returning to the city and Online Training. Claim your guest account so you do not lose the character.'
+      : 'You now know Helper, hunts, the spell bar, returning to the city and Online Training. You can replay this tutorial in Settings.',
   ];
 
   const mobile = viewport.width < 600;
