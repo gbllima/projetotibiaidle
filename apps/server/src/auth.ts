@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Database } from './db.js';
 
 /**
@@ -41,16 +41,34 @@ export class AuthError extends Error {
 }
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_-]{3,20}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 
-export function register(db: Database, username: string, password: string, invite?: string): AuthResult {
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function requireEmail(email: string): string {
+  const normalized = normalizeEmail(email);
+  if (!EMAIL_PATTERN.test(normalized) || normalized.length > 254) {
+    throw new AuthError('Informe um email válido.');
+  }
+  return normalized;
+}
+
+export function register(db: Database, username: string, password: string, email: string, invite?: string): AuthResult {
   if (!USERNAME_PATTERN.test(username)) {
     throw new AuthError('Username must be 3-20 characters: letters, numbers, hyphen or underscore.');
   }
   if (password.length < 8) {
     throw new AuthError('Password must be at least 8 characters.');
   }
+  const normalizedEmail = requireEmail(email);
   if (db.findAccount(username)) {
     throw new AuthError('That username is taken.', 409);
+  }
+  if (db.findAccountByEmail(normalizedEmail)) {
+    throw new AuthError('Esse email já está em uso.', 409);
   }
 
   const closed = db.getWorld('beta') === 'closed';
@@ -66,7 +84,7 @@ export function register(db: Database, username: string, password: string, invit
   }
 
   const salt = randomBytes(16).toString('hex');
-  const account = db.createAccount(username, hash(password, salt), salt);
+  const account = db.createAccount(username, hash(password, salt), salt, normalizedEmail);
   if (inviteCode) db.useInvite(inviteCode, account.id);
   return issueToken(db, account.id, account.username);
 }
@@ -102,7 +120,7 @@ export function registerGuest(db: Database): AuthResult {
   throw new AuthError('Could not create a guest account.', 500);
 }
 
-export function claimAccount(db: Database, accountId: number, username: string, password: string): AuthResult {
+export function claimAccount(db: Database, accountId: number, username: string, password: string, email: string): AuthResult {
   const account = db.findAccountById(accountId);
   if (!account || !isGuestUsername(account.username)) {
     throw new AuthError('This account is already claimed.', 409);
@@ -116,9 +134,87 @@ export function claimAccount(db: Database, accountId: number, username: string, 
   if (db.findAccount(username)) {
     throw new AuthError('That username is taken.', 409);
   }
+  const normalizedEmail = requireEmail(email);
+  const emailOwner = db.findAccountByEmail(normalizedEmail);
+  if (emailOwner && emailOwner.id !== accountId) {
+    throw new AuthError('Esse email já está em uso.', 409);
+  }
   const salt = randomBytes(16).toString('hex');
   db.updateAccount(accountId, username, hash(password, salt), salt);
+  db.setAccountEmail(accountId, normalizedEmail);
   return issueToken(db, accountId, username);
+}
+
+
+export function requestPasswordReset(db: Database, email: string): { token: string; email: string; username: string } | null {
+  const normalizedEmail = requireEmail(email);
+  const account = db.findAccountByEmail(normalizedEmail);
+  if (!account || isGuestUsername(account.username)) return null;
+  const token = randomBytes(32).toString('base64url');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  db.createPasswordReset(tokenHash, account.id, PASSWORD_RESET_TTL_MS);
+  return { token, email: normalizedEmail, username: account.username };
+}
+
+export function resetPassword(db: Database, token: string, password: string): AuthResult {
+  if (password.length < 8) throw new AuthError('Password must be at least 8 characters.');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  const accountId = db.passwordResetAccount(tokenHash);
+  if (accountId === null) throw new AuthError('Link de recuperação inválido ou expirado.', 400);
+  const account = db.findAccountById(accountId);
+  if (!account) throw new AuthError('Conta não encontrada.', 404);
+  const salt = randomBytes(16).toString('hex');
+  db.updateAccount(account.id, account.username, hash(password, salt), salt);
+  db.consumePasswordReset(tokenHash);
+  db.revokeAccountTokens(account.id);
+  return issueToken(db, account.id, account.username);
+}
+
+function socialUsername(db: Database, provider: string, email: string, displayName: string): string {
+  const raw = (displayName || email.split('@')[0] || provider)
+    .normalize('NFKD')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 16);
+  const base = raw.length >= 3 ? raw : `${provider}_user`;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const suffix = attempt === 0 ? '' : `_${randomBytes(2).toString('hex')}`;
+    const candidate = `${base.slice(0, 20 - suffix.length)}${suffix}`;
+    if (!db.findAccount(candidate)) return candidate;
+  }
+  return `${provider}_${randomBytes(5).toString('hex')}`.slice(0, 20);
+}
+
+export function loginWithOauth(
+  db: Database,
+  provider: 'google' | 'discord',
+  providerId: string,
+  email: string,
+  displayName: string,
+): AuthResult {
+  const normalizedEmail = requireEmail(email);
+  const identity = db.findOauthIdentity(provider, providerId);
+  if (identity) {
+    const account = db.findAccountById(identity.accountId);
+    if (!account) throw new AuthError('Conta vinculada não encontrada.', 404);
+    return issueToken(db, account.id, account.username);
+  }
+
+  const existing = db.findAccountByEmail(normalizedEmail);
+  if (existing) {
+    db.linkOauthIdentity(provider, providerId, existing.id, normalizedEmail);
+    return issueToken(db, existing.id, existing.username);
+  }
+
+  if (db.getWorld('beta') === 'closed') {
+    throw new AuthError('Beta fechado: login social só está disponível para contas já cadastradas com este email.', 403);
+  }
+
+  const username = socialUsername(db, provider, normalizedEmail, displayName);
+  const password = randomBytes(32).toString('hex');
+  const salt = randomBytes(16).toString('hex');
+  const account = db.createAccount(username, hash(password, salt), salt, normalizedEmail);
+  db.linkOauthIdentity(provider, providerId, account.id, normalizedEmail);
+  return issueToken(db, account.id, account.username);
 }
 
 /**
