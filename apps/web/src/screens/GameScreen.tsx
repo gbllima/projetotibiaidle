@@ -642,7 +642,7 @@ export function GameScreen({
                           maxHealth: 1,
                           mana: 0,
                           maxMana: 1,
-                          appearance: { outfit: 128, head: 0, body: 0, legs: 0, feet: 0, aura: 0, mount: 0, addons: 0 },
+                          appearance: { outfit: 132, head: 78, body: 94, legs: 114, feet: 115, aura: 0, mount: 0, addons: 0 },
                         },
                       ]}
                     />
