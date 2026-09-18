@@ -689,38 +689,89 @@ function Social({ world, comunidade }: { world: WorldView | null; comunidade?: b
 
 function Guild({ character, world, busy, onAct }: { character: CharacterView; world: WorldView | null; busy: boolean; onAct: (body: Record<string, unknown>) => Promise<Record<string, unknown>> }) {
   const [name, setName] = useState('');
-  const mine = world?.guilds.find((guild) => guild.id === character.guildId);
+  const [tab, setTab] = useState<'create' | 'search' | 'ranking'>(() => character.guildId ? 'search' : 'create');
+  const guilds = world?.guilds ?? [];
+  const mine = guilds.find((guild) => guild.id === character.guildId);
   const leader = mine && mine.leaderId === character.id;
+  const ranking = [...guilds].sort((a, b) => b.members.length - a.members.length || a.name.localeCompare(b.name));
+
   return (
-    <div>
-      {mine ? (
-        <div>
-          <h3>{mine.name}</h3>
-          <p>{mine.motd}</p>
-          {mine.members.map((member) => (
-            <div className="hunt-row" key={member.characterId}>
-              <div>{member.name}<div className="meta">{member.rank}</div></div>
-              {leader && member.characterId !== character.id ? (
-                <button className="btn danger" disabled={busy} onClick={() => void onAct({ type: 'guild-kick', characterId: member.characterId })}>Expulsar</button>
-              ) : <b>{member.rank}</b>}
-            </div>
-          ))}
-          <button className="btn" style={{ marginTop: 12 }} disabled={busy} onClick={() => void onAct({ type: 'guild-leave' })}>
-            {leader && mine.members.length > 1 ? 'Sair (passa a liderança)' : 'Sair da guild'}
-          </button>
-        </div>
-      ) : (
-        <div>
-          <label>Fundar guild (50.000 gold)</label>
-          <div className="row">
-            <input value={name} onChange={(event) => setName(event.target.value)} />
-            <button className="btn gold" disabled={busy} onClick={() => void onAct({ type: 'guild-create', name })}>Criar</button>
+    <div className="guild-panel">
+      <div className="guild-top-tabs">
+        <button type="button" className={tab === 'create' ? 'on' : ''} onClick={() => setTab('create')}>Criar</button>
+        <button type="button" className={tab === 'search' ? 'on' : ''} onClick={() => setTab('search')}>Procurar</button>
+        <button type="button" className={tab === 'ranking' ? 'on' : ''} onClick={() => setTab('ranking')}>Ranking</button>
+      </div>
+
+      {tab === 'create' && (
+        mine ? (
+          <div className="guild-current">
+            <h3>{mine.name}</h3>
+            <p>{mine.motd}</p>
+            <p className="lede" style={{ textAlign: 'left' }}>
+              Você já participa de uma guild. Para criar outra, primeiro saia da atual.
+            </p>
+            {mine.members.map((member) => (
+              <div className="hunt-row" key={member.characterId}>
+                <div>{member.name}<div className="meta">{member.rank}</div></div>
+                {leader && member.characterId !== character.id ? (
+                  <button className="btn danger" disabled={busy} onClick={() => void onAct({ type: 'guild-kick', characterId: member.characterId })}>Expulsar</button>
+                ) : <b>{member.rank}</b>}
+              </div>
+            ))}
+            <button className="btn" style={{ marginTop: 12 }} disabled={busy} onClick={() => void onAct({ type: 'guild-leave' })}>
+              {leader && mine.members.length > 1 ? 'Sair (passa a liderança)' : 'Sair da guild'}
+            </button>
           </div>
-          <h3 style={{ marginTop: 14 }}>Entrar</h3>
-          {(world?.guilds ?? []).map((guild) => (
+        ) : (
+          <div className="guild-create-panel">
+            <h3>Criar guild</h3>
+            <p className="lede" style={{ textAlign: 'left' }}>Fundar uma guild custa 50.000 gold.</p>
+            <div className="row">
+              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome da guild" />
+              <button className="btn gold" disabled={busy || name.trim().length < 3} onClick={() => void onAct({ type: 'guild-create', name: name.trim() })}>Criar</button>
+            </div>
+          </div>
+        )
+      )}
+
+      {tab === 'search' && (
+        <div className="guild-search-panel">
+          {mine && (
+            <div className="guild-current-summary">
+              <strong>Sua guild: {mine.name}</strong>
+              <span>{mine.members.length} membros</span>
+            </div>
+          )}
+          {guilds.length === 0 && <p className="soon">Nenhuma guild criada ainda.</p>}
+          {guilds.map((guild) => {
+            const current = guild.id === character.guildId;
+            return (
+              <div className="hunt-row" key={guild.id}>
+                <div>
+                  <strong>{guild.name}</strong>
+                  <div className="meta">{guild.members.length} membros · líder #{guild.leaderId}</div>
+                </div>
+                <button
+                  className={current ? 'btn gold' : 'btn'}
+                  disabled={busy || Boolean(character.guildId)}
+                  onClick={() => void onAct({ type: 'guild-join', guildId: guild.id })}
+                >
+                  {current ? 'Atual' : character.guildId ? 'Já possui guild' : 'Entrar'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === 'ranking' && (
+        <div className="guild-ranking">
+          {ranking.length === 0 && <p className="soon">Ranking vazio.</p>}
+          {ranking.map((guild, index) => (
             <div className="hunt-row" key={guild.id}>
-              <div>{guild.name}<div className="meta">{guild.members.length} membros</div></div>
-              <button className="btn" disabled={busy} onClick={() => void onAct({ type: 'guild-join', guildId: guild.id })}>Entrar</button>
+              <div><strong>#{index + 1} {guild.name}</strong><div className="meta">{guild.members.length} membros</div></div>
+              <b>{guild.members.length}</b>
             </div>
           ))}
         </div>
