@@ -35,7 +35,7 @@ export interface AppOptions {
 
 const AUTH_RATE_WINDOW_MS = 60_000;
 const AUTH_RATE_LIMIT = 20;
-const AUTH_PATHS = new Set(['/api/login', '/api/register', '/api/guest', '/api/claim']);
+const AUTH_PATHS = new Set(['/api/login', '/api/register', '/api/guest', '/api/claim', '/api/password/forgot', '/api/password/reset']);
 const REQUEST_BODY_LIMIT = 256 * 1024;
 
 export async function createApp(options: AppOptions): Promise<{ app: FastifyInstance; db: Database }> {
