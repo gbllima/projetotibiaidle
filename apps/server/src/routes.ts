@@ -81,7 +81,7 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     generatedAt: meta.generatedAt,
     beta: isBetaOpen(db) ? 'open' : 'closed',
     oauth: { google: oauthEnabled('google'), discord: oauthEnabled('discord') },
-    passwordRecovery: Boolean(process.env['RESEND_API_KEY'] && process.env['RESET_EMAIL_FROM']) || process.env['NODE_ENV'] !== 'production',
+    passwordRecovery: true,
   }));
 
   app.post('/api/register', async (request, reply) => {
@@ -141,12 +141,15 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     try {
       const body = (request.body ?? {}) as { email?: unknown };
       const email = asString(body.email, 'email');
+      const apiKey = process.env['RESEND_API_KEY'];
+      const from = process.env['RESET_EMAIL_FROM'];
+      if (process.env['NODE_ENV'] === 'production' && (!apiKey || !from)) {
+        throw new AuthError('Recuperação por email ainda não foi configurada no servidor.', 503);
+      }
       const reset = requestPasswordReset(db, email);
       let devResetUrl: string | undefined;
       if (reset) {
         const resetUrl = `${publicBase(request)}/?reset=${encodeURIComponent(reset.token)}`;
-        const apiKey = process.env['RESEND_API_KEY'];
-        const from = process.env['RESET_EMAIL_FROM'];
         if (apiKey && from) {
           const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
