@@ -1,9 +1,13 @@
+import { randomBytes } from 'node:crypto';
 import { enterCity, moveCity } from './city.js';
 import { partyPrincipal } from './party-access.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { meta } from '@tibia-idle/data';
 import { TICK_MS, isBossHunt } from '@tibia-idle/sim';
-import { accountFromHeader, AuthError, claimAccount, isGuestUsername, isAdminUsername, login, register, registerGuest } from './auth.js';
+import {
+  accountFromHeader, AuthError, claimAccount, isGuestUsername, isAdminUsername, login, loginWithOauth,
+  register, registerGuest, requestPasswordReset, resetPassword,
+} from './auth.js';
 import type { Database } from './db.js';
 import {
   addPartyMember, configureParty, listBosses, listHunts, loadCharacter, lobbyPlayers, removePartyMember,
@@ -22,6 +26,7 @@ import { FREE_OFFLINE_HOURS, GameError, MAX_OFFLINE_HOURS, publicSettlement, VIP
 interface Credentials {
   username?: unknown;
   password?: unknown;
+  email?: unknown;
   invite?: unknown;
 }
 
@@ -47,6 +52,25 @@ function fail(reply: FastifyReply, error: unknown): FastifyReply {
 }
 
 export function registerRoutes(app: FastifyInstance, db: Database): void {
+  const oauthStates = new Map<string, { provider: 'google' | 'discord'; expiresAt: number }>();
+  const oauthCompletions = new Map<string, { token: string; expiresAt: number }>();
+  const oauthTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of oauthStates) if (value.expiresAt <= now) oauthStates.delete(key);
+    for (const [key, value] of oauthCompletions) if (value.expiresAt <= now) oauthCompletions.delete(key);
+  }, 60_000);
+  oauthTimer.unref?.();
+  app.addHook('onClose', async () => clearInterval(oauthTimer));
+
+  const publicBase = (request: FastifyRequest) => {
+    const configured = (process.env['PUBLIC_URL'] ?? '').trim().replace(/\/$/, '');
+    if (configured) return configured;
+    return `${request.protocol}://${request.headers.host ?? 'localhost:3000'}`;
+  };
+  const oauthEnabled = (provider: 'google' | 'discord') => provider === 'google'
+    ? Boolean(process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET'])
+    : Boolean(process.env['DISCORD_CLIENT_ID'] && process.env['DISCORD_CLIENT_SECRET']);
+
   app.get('/api/health', async () => ({
     ok: true,
     tickMs: TICK_MS,
@@ -56,13 +80,21 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     content: meta.counts,
     generatedAt: meta.generatedAt,
     beta: isBetaOpen(db) ? 'open' : 'closed',
+    oauth: { google: oauthEnabled('google'), discord: oauthEnabled('discord') },
+    passwordRecovery: Boolean(process.env['RESEND_API_KEY'] && process.env['RESET_EMAIL_FROM']) || process.env['NODE_ENV'] !== 'production',
   }));
 
   app.post('/api/register', async (request, reply) => {
     try {
       const body = (request.body ?? {}) as Credentials;
       const invite = typeof body.invite === 'string' ? body.invite : undefined;
-      const result = register(db, asString(body.username, 'username'), asString(body.password, 'password'), invite);
+      const result = register(
+        db,
+        asString(body.username, 'username'),
+        asString(body.password, 'password'),
+        asString(body.email, 'email'),
+        invite,
+      );
       track(db, 'register', { accountId: result.accountId });
       return reply.send(result);
     } catch (error) { return fail(reply, error); }
@@ -80,7 +112,13 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
     try {
       const accountId = requireAccount(db, request);
       const body = (request.body ?? {}) as Credentials;
-      const result = claimAccount(db, accountId, asString(body.username, 'username'), asString(body.password, 'password'));
+      const result = claimAccount(
+        db,
+        accountId,
+        asString(body.username, 'username'),
+        asString(body.password, 'password'),
+        asString(body.email, 'email'),
+      );
       track(db, 'claim', { accountId: result.accountId });
       return reply.send(result);
     } catch (error) { return fail(reply, error); }
@@ -93,6 +131,162 @@ export function registerRoutes(app: FastifyInstance, db: Database): void {
       track(db, 'login', { accountId: result.accountId });
       return reply.send(result);
     } catch (error) { return fail(reply, error); }
+  });
+
+  app.post('/api/password/forgot', async (request, reply) => {
+    try {
+      const body = (request.body ?? {}) as { email?: unknown };
+      const email = asString(body.email, 'email');
+      const reset = requestPasswordReset(db, email);
+      let devResetUrl: string | undefined;
+      if (reset) {
+        const resetUrl = `${publicBase(request)}/?reset=${encodeURIComponent(reset.token)}`;
+        const apiKey = process.env['RESEND_API_KEY'];
+        const from = process.env['RESET_EMAIL_FROM'];
+        if (apiKey && from) {
+          const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              from,
+              to: [reset.email],
+              subject: 'Knock Hunt BR — Recuperar senha',
+              html: `<p>Olá, ${reset.username}.</p><p>Use o link abaixo para criar uma nova senha. Ele expira em 30 minutos.</p><p><a href="${resetUrl}">Recuperar minha senha</a></p>`,
+            }),
+          });
+          if (!response.ok) request.log.error({ status: response.status }, 'password reset email failed');
+        } else if (process.env['NODE_ENV'] !== 'production') {
+          devResetUrl = resetUrl;
+        }
+      }
+      return reply.send({
+        ok: true,
+        message: 'Se o email estiver cadastrado, enviaremos as instruções de recuperação.',
+        ...(devResetUrl ? { devResetUrl } : {}),
+      });
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.post('/api/password/reset', async (request, reply) => {
+    try {
+      const body = (request.body ?? {}) as { token?: unknown; password?: unknown };
+      const result = resetPassword(db, asString(body.token, 'token'), asString(body.password, 'password'));
+      track(db, 'password_reset', { accountId: result.accountId });
+      return reply.send(result);
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.get('/api/oauth/:provider/start', async (request, reply) => {
+    try {
+      const provider = (request.params as { provider: string }).provider;
+      if (provider !== 'google' && provider !== 'discord') throw new AuthError('Provedor inválido.', 404);
+      if (!oauthEnabled(provider)) throw new AuthError(`Login com ${provider} ainda não foi configurado no servidor.`, 503);
+      const state = randomBytes(24).toString('base64url');
+      oauthStates.set(state, { provider, expiresAt: Date.now() + 10 * 60_000 });
+      const redirectUri = `${publicBase(request)}/api/oauth/${provider}/callback`;
+      if (provider === 'google') {
+        const params = new URLSearchParams({
+          client_id: process.env['GOOGLE_CLIENT_ID']!,
+          redirect_uri: redirectUri,
+          response_type: 'code',
+          scope: 'openid email profile',
+          state,
+          prompt: 'select_account',
+        });
+        return reply.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+      }
+      const params = new URLSearchParams({
+        client_id: process.env['DISCORD_CLIENT_ID']!,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'identify email',
+        state,
+      });
+      return reply.redirect(`https://discord.com/oauth2/authorize?${params.toString()}`);
+    } catch (error) { return fail(reply, error); }
+  });
+
+  app.get('/api/oauth/:provider/callback', async (request, reply) => {
+    try {
+      const provider = (request.params as { provider: string }).provider;
+      if (provider !== 'google' && provider !== 'discord') throw new AuthError('Provedor inválido.', 404);
+      const query = request.query as { code?: string; state?: string; error?: string };
+      if (query.error) throw new AuthError('Login social cancelado.', 400);
+      const code = asString(query.code, 'code');
+      const state = asString(query.state, 'state');
+      const pending = oauthStates.get(state);
+      oauthStates.delete(state);
+      if (!pending || pending.provider !== provider || pending.expiresAt < Date.now()) {
+        throw new AuthError('Sessão de login social expirada.', 400);
+      }
+      const redirectUri = `${publicBase(request)}/api/oauth/${provider}/callback`;
+      let providerId = '';
+      let email = '';
+      let displayName = '';
+      if (provider === 'google') {
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: process.env['GOOGLE_CLIENT_ID']!,
+            client_secret: process.env['GOOGLE_CLIENT_SECRET']!,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+          }),
+        });
+        if (!tokenResponse.ok) throw new AuthError('Falha ao autenticar com Google.', 502);
+        const tokenPayload = await tokenResponse.json() as { access_token?: string };
+        const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+          headers: { authorization: `Bearer ${tokenPayload.access_token ?? ''}` },
+        });
+        if (!profileResponse.ok) throw new AuthError('Falha ao consultar perfil do Google.', 502);
+        const profile = await profileResponse.json() as { sub?: string; email?: string; email_verified?: boolean; name?: string };
+        if (!profile.sub || !profile.email || !profile.email_verified) throw new AuthError('O Google não forneceu um email verificado.', 400);
+        providerId = profile.sub;
+        email = profile.email;
+        displayName = profile.name ?? '';
+      } else {
+        const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: process.env['DISCORD_CLIENT_ID']!,
+            client_secret: process.env['DISCORD_CLIENT_SECRET']!,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+          }),
+        });
+        if (!tokenResponse.ok) throw new AuthError('Falha ao autenticar com Discord.', 502);
+        const tokenPayload = await tokenResponse.json() as { access_token?: string };
+        const profileResponse = await fetch('https://discord.com/api/users/@me', {
+          headers: { authorization: `Bearer ${tokenPayload.access_token ?? ''}` },
+        });
+        if (!profileResponse.ok) throw new AuthError('Falha ao consultar perfil do Discord.', 502);
+        const profile = await profileResponse.json() as { id?: string; email?: string | null; verified?: boolean; global_name?: string | null; username?: string };
+        if (!profile.id || !profile.email || !profile.verified) throw new AuthError('O Discord não forneceu um email verificado.', 400);
+        providerId = profile.id;
+        email = profile.email;
+        displayName = profile.global_name ?? profile.username ?? '';
+      }
+      const result = loginWithOauth(db, provider, providerId, email, displayName);
+      track(db, 'login', { accountId: result.accountId, extra: provider });
+      const exchange = randomBytes(24).toString('base64url');
+      oauthCompletions.set(exchange, { token: result.token, expiresAt: Date.now() + 2 * 60_000 });
+      return reply.redirect(`${publicBase(request)}/?oauth_code=${encodeURIComponent(exchange)}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha no login social.';
+      return reply.redirect(`${publicBase(request)}/?oauth_error=${encodeURIComponent(message)}`);
+    }
+  });
+
+  app.get('/api/oauth/exchange', async (request, reply) => {
+    const code = String((request.query as { code?: string }).code ?? '');
+    const pending = oauthCompletions.get(code);
+    oauthCompletions.delete(code);
+    if (!pending || pending.expiresAt < Date.now()) return reply.status(400).send({ error: 'Login social expirado.' });
+    return reply.send({ token: pending.token });
   });
 
   app.post('/api/logout', async (request, reply) => {
