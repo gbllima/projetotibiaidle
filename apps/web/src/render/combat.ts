@@ -690,6 +690,7 @@ export class CombatScene {
         return;
       }
       const sprite = new AnimatedSprite(textures);
+      sprite.roundPixels = true;
       sprite.anchor.set(0.5, 1);
       sprite.scale.x = entry.scaleX;
       sprite.animationSpeed = entry.moving ? 0.14 : 0.08;
@@ -1215,18 +1216,20 @@ export class CombatScene {
     let sprite: AnimatedSprite;
     try {
       sprite = new AnimatedSprite(textures);
+      sprite.roundPixels = true;
       sprite.anchor.set(0.5, 1);
       sprite.animationSpeed = 0.12;
       sprite.play();
     } catch {
       sprite = new AnimatedSprite([placeholderTexture(options.vitals ? 0x3d8f4a : 0xb43c3c)]);
+      sprite.roundPixels = true;
       sprite.anchor.set(0.5, 1);
     }
 
     const label = new Text({
       text: name,
       style: { ...NAME_STYLE, fill: options.fill ?? NAME_GREEN },
-      resolution: 2,
+      resolution: 4,
     });
     label.anchor.set(0.5, 1);
     label.roundPixels = true;
@@ -1743,7 +1746,7 @@ export class CombatScene {
     if (this.world && layer.parent === this.world) this.world.addChild(layer);
     const text = new Text({
       text: label,
-      resolution: 2,
+      resolution: 4,
       style: {
         fill: color,
         fontFamily: 'Verdana, Geneva, Tahoma, sans-serif',
