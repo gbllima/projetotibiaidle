@@ -80,6 +80,7 @@ interface SpriteEntry {
   stationary?: boolean;
   vocationId?: number;
   characterId?: number;
+  cityNpc?: 'merchant';
   clickGoalX?: number;
   clickGoalY?: number;
 }
@@ -508,7 +509,7 @@ export class CombatScene {
             appearance: ally.appearance,
             stepMs: PLAYER_STEP_MS,
             fill: this.cityLobby ? 0x00ff00 : 0x60c8ff,
-            vitals: this.cityLobby,
+            vitals: this.cityLobby && ally.cityNpc !== 'merchant',
             health: 1,
             visualScale: this.cityLobby && ally.cityNpc === 'merchant' ? 0.82 : 1,
           },
@@ -516,6 +517,8 @@ export class CombatScene {
         if (created) {
           created.vocationId = ally.vocationId;
           created.characterId = ally.id;
+          created.cityNpc = ally.cityNpc;
+          created.stationary = ally.cityNpc === 'merchant';
           if (this.cityLobby && ally.cityNpc === 'merchant') {
             created.root.eventMode = 'static';
             created.root.cursor = 'pointer';
@@ -543,6 +546,8 @@ export class CombatScene {
       }
       existing.vocationId = ally.vocationId;
       existing.appearance = ally.appearance;
+      existing.cityNpc = ally.cityNpc;
+      existing.stationary = ally.cityNpc === 'merchant';
       this.setCorpse(existing, Boolean(ally.dead));
       if (existing.dead) return;
       this.layoutHud(existing, ally.health / Math.max(1, ally.maxHealth));
@@ -1765,10 +1770,26 @@ export class CombatScene {
    */
   private layoutHud(entry: SpriteEntry, hpRatio: number, _manaRatio?: number, targeted = false): void {
     const headY = visualHeadY(entry.sprite) * (entry.visualScale ?? 1);
+    entry.label.anchor.set(0.5, 1);
+
+    if (entry.cityNpc === 'merchant') {
+      entry.bar.visible = false;
+      entry.label.y = headY - 2;
+      try {
+        entry.label.style.fontSize = 5;
+        entry.label.style.fill = NAME_GREEN;
+        entry.label.style.stroke = { color: 0x000000, width: 2, join: 'round' };
+      } catch {
+        // Keep the previous label style if Pixi rejects a live style update.
+      }
+      return;
+    }
+
+    entry.bar.visible = true;
     const barTop = headY - BAR_TO_HEAD - BAR_HEIGHT;
     entry.label.y = barTop - NAME_TO_BAR;
-    entry.label.anchor.set(0.5, 1);
     try {
+      entry.label.style.fontSize = NAME_STYLE.fontSize;
       entry.label.style.fill = targeted ? NAME_RED : entry.vitals ? NAME_GREEN : nameColorFor(hpRatio);
       entry.label.style.stroke = { color: 0x000000, width: 3, join: 'round' };
     } catch {
