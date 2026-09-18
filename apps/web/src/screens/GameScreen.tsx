@@ -656,7 +656,7 @@ export function GameScreen({
                   onTraining={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}
                 />
               )}
-              {guest && (character.onboardingStep ?? 0) >= 99 && (
+              {guest && !trainingRoomId && (character.onboardingStep ?? 0) >= 99 && (
                 <form className="onboard claim-banner" onSubmit={(event) => {
                   event.preventDefault();
                   void act(async () => {
