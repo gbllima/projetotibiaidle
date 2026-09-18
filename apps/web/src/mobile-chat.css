@@ -17,11 +17,31 @@
     line-height: 1;
   }
 
+  .center {
+    position: relative !important;
+  }
+
+  /* Same behavior as desktop: chat/action bar float over the game viewport. */
   .bottom-console {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 0;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 70 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    pointer-events: none;
+  }
+
+  .bottom-console > * {
+    pointer-events: auto;
   }
 
   /*
@@ -30,25 +50,36 @@
    * translucent log, identical tabs and input controls.
    */
   .chat-console {
-    order: 1;
+    position: absolute !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 62px !important;
+    z-index: 72 !important;
     display: grid;
     grid-template-rows: 30px minmax(0, 78px) 30px;
-    width: 100%;
+    width: auto !important;
     min-height: 0 !important;
     max-height: 138px;
-    margin: 0;
+    margin: 0 !important;
     overflow: hidden;
-    border: 1px solid #594725;
+    border: 1px solid rgba(89,71,37,.82);
     border-radius: 5px 5px 0 0;
-    background: linear-gradient(180deg, rgba(13,16,13,.18) 0%, rgba(13,16,13,.46) 48%, rgba(13,16,13,.86) 100%);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    box-shadow: 0 -1px 0 rgba(197,149,55,.28), 0 -6px 18px rgba(0,0,0,.14);
+    background: linear-gradient(180deg, rgba(13,16,13,.06) 0%, rgba(13,16,13,.12) 48%, rgba(13,16,13,.24) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 -1px 0 rgba(197,149,55,.18), 0 -4px 12px rgba(0,0,0,.08);
   }
 
   .action-bar,
   .actionbar {
-    order: 2;
+    position: absolute !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 6px !important;
+    z-index: 71 !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
 
   .chat-console__head {
@@ -60,7 +91,7 @@
     min-height: 30px;
     padding: 0 31px 0 0;
     border-bottom: 1px solid #4d4029;
-    background: linear-gradient(180deg, rgba(37,41,31,.92) 0%, rgba(21,25,20,.86) 100%);
+    background: linear-gradient(180deg, rgba(37,41,31,.56) 0%, rgba(21,25,20,.46) 100%) !important;
   }
 
   .chat-console__tabs {
@@ -111,7 +142,7 @@
     max-height: 78px !important;
     padding: 5px 8px;
     overflow-y: auto;
-    background: linear-gradient(180deg, rgba(13,16,13,.14), rgba(13,16,13,.64));
+    background: linear-gradient(180deg, rgba(13,16,13,.08), rgba(13,16,13,.18)) !important;
     color: #c9cbbb;
     font-size: 10px;
     line-height: 1.28;
@@ -125,7 +156,7 @@
     min-height: 30px;
     padding: 3px 5px;
     border-top: 1px solid #45391f;
-    background: rgba(13,16,13,.82);
+    background: rgba(13,16,13,.34) !important;
   }
 
   .chat-console__input input {
@@ -186,6 +217,7 @@
 
   .chat-console.is-minimized {
     display: block;
+    bottom: 62px !important;
     height: 31px;
     max-height: 31px;
     min-height: 31px !important;
@@ -211,6 +243,8 @@
 
 @media (max-width: 480px) {
   .chat-console {
+    left: 5px !important;
+    right: 5px !important;
     grid-template-rows: 30px minmax(0, 64px) 30px;
     max-height: 124px;
   }
