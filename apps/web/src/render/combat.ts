@@ -1358,8 +1358,11 @@ export class CombatScene {
         }
       }
       if (player && this.world) {
-        const cameraX = Math.max(0, Math.min((CITY_WIDTH - COLS) * TILE, player.root.x - COLS * TILE / 2));
-        const cameraY = Math.max(0, Math.min((CITY_HEIGHT - ROWS) * TILE, player.root.y - TILE / 2 - ROWS * TILE / 2));
+        // Keep the camera on logical pixel boundaries. A fractional world
+        // translation softens every tile/sprite at once even with nearest
+        // texture sampling enabled.
+        const cameraX = Math.round(Math.max(0, Math.min((CITY_WIDTH - COLS) * TILE, player.root.x - COLS * TILE / 2)));
+        const cameraY = Math.round(Math.max(0, Math.min((CITY_HEIGHT - ROWS) * TILE, player.root.y - TILE / 2 - ROWS * TILE / 2)));
         this.world.position.set(-cameraX * SCALE, -cameraY * SCALE);
       }
       this.sortActors();
@@ -1453,8 +1456,10 @@ export class CombatScene {
     const progress = 1 - entry.walkLeft / entry.stepMs;
     const x = entry.fromX + (entry.destX - entry.fromX) * progress;
     const y = entry.fromY + (entry.destY - entry.fromY) * progress;
-    entry.root.x = x * TILE + TILE / 2;
-    entry.root.y = y * TILE + TILE;
+    // Preserve smooth timing while keeping the visual actor on whole logical
+    // pixels. The world is scaled x2, so this remains fluid without subpixel blur.
+    entry.root.x = Math.round(x * TILE + TILE / 2);
+    entry.root.y = Math.round(y * TILE + TILE);
     this.updateDepth(entry);
     if (entry.walkLeft > 0) return;
     entry.tileX = entry.destX;
