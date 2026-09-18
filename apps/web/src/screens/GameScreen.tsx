@@ -459,6 +459,7 @@ export function GameScreen({
           </div>
           </div>
 
+          <div className="game-stage">
           {activitySession ? (
             <div className="viewport">
               <CombatScene
@@ -758,6 +759,7 @@ export function GameScreen({
                 });
               }}
             />
+          </div>
           </div>
         </main>
 
