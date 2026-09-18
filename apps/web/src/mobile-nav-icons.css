@@ -1,47 +1,50 @@
 @media (max-width: 768px) {
   /*
-   * Use the inline pixel SVGs rendered by TopNav instead of /assets images.
-   * In production /assets is reserved for the Tibia atlas server, so using it
-   * for UI icons can make the mobile nav icons disappear behind the asset
-   * route. Inline SVGs have no network dependency and work identically on
-   * localhost and the hosted server.
+   * Keep the original PNG artwork, but serve it outside /assets.
+   * /assets is reserved by the Fastify server for Tibia sprite atlases in
+   * production, so these UI files live under /mobile-nav instead.
    */
   .mobile-main-nav .mobile-nav-pixel {
-    display: block !important;
-    width: 30px !important;
-    height: 30px !important;
-    flex: 0 0 30px;
+    display: none !important;
+  }
+
+  .mobile-main-nav button::before {
+    content: "";
+    width: 34px;
+    height: 34px;
+    display: block;
     margin: 0 auto 2px;
-    overflow: visible;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    image-rendering: pixelated;
     transform-origin: 50% 55%;
     will-change: transform, filter;
     filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 2px rgba(0,0,0,.8));
   }
 
-  .mobile-main-nav button::before {
-    content: none !important;
-    display: none !important;
-    background: none !important;
-  }
-
-  .mobile-main-nav button:nth-child(1) .mobile-nav-pixel {
+  .mobile-main-nav button:nth-child(1)::before {
+    background-image: url('/mobile-nav/city.png');
     animation: mobile-city-idle 2.8s ease-in-out infinite;
   }
 
-  .mobile-main-nav button:nth-child(2) .mobile-nav-pixel {
+  .mobile-main-nav button:nth-child(2)::before {
+    background-image: url('/mobile-nav/hunts.png');
     animation: mobile-hunts-idle 2.15s ease-in-out infinite;
   }
 
-  .mobile-main-nav button:nth-child(3) .mobile-nav-pixel {
+  .mobile-main-nav button:nth-child(3)::before {
+    background-image: url('/mobile-nav/training.png');
     animation: mobile-training-idle 2.45s ease-in-out infinite;
   }
 
-  .mobile-main-nav button[data-tutorial='mobile-menu'] .mobile-nav-pixel {
+  .mobile-main-nav button[data-tutorial='mobile-menu']::before {
+    background-image: url('/mobile-nav/menu-book.png');
     animation: mobile-menu-idle 2.7s ease-in-out infinite;
   }
 
-  .mobile-main-nav button:active .mobile-nav-pixel,
-  .mobile-main-nav button.on .mobile-nav-pixel {
+  .mobile-main-nav button:active::before,
+  .mobile-main-nav button.on::before {
     filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 5px rgba(232,197,71,.55)) brightness(1.14);
     animation-duration: 1.15s;
   }
@@ -192,7 +195,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) and (max-width: 768px) {
-  .mobile-main-nav .mobile-nav-pixel {
+  .mobile-main-nav button::before {
     animation: none !important;
   }
 }
