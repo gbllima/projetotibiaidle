@@ -37,8 +37,13 @@ export function fitPixelCanvas(app: Application, host: HTMLElement, width: numbe
 
     // Preserve the current responsive size. Only the backing store changes;
     // the CSS box still occupies the same fitted dimensions as before.
-    const cssWidth = Math.max(1, Math.round(width * fit));
-    const cssHeight = Math.max(1, Math.round(height * fit));
+    let cssWidth = Math.max(1, Math.round(width * fit));
+    let cssHeight = Math.max(1, Math.round(height * fit));
+
+    // Flex centering can otherwise place the canvas on a half CSS pixel when
+    // host/canvas parity differs, softening every sprite and label at once.
+    if ((availableWidth - cssWidth) % 2 !== 0 && cssWidth > 1) cssWidth -= 1;
+    if ((Math.round(availableHeight) - cssHeight) % 2 !== 0 && cssHeight > 1) cssHeight -= 1;
 
     app.renderer.resize(width, height, backingResolution);
 
@@ -47,7 +52,8 @@ export function fitPixelCanvas(app: Application, host: HTMLElement, width: numbe
     canvas.style.setProperty('max-width', 'none', 'important');
     canvas.style.setProperty('max-height', 'none', 'important');
     canvas.style.setProperty('image-rendering', 'pixelated', 'important');
-    canvas.style.setProperty('transform', 'translateZ(0)', 'important');
+    canvas.style.removeProperty('transform');
+    canvas.style.setProperty('backface-visibility', 'hidden', 'important');
     canvas.style.flexShrink = '0';
 
     // Browser zoom and moving the window between monitors can change DPR
