@@ -24,18 +24,9 @@ command -v sqlite3 >/dev/null || fail "sqlite3 não encontrado. Rode: sudo apt i
 
 cd "$REPO_DIR"
 
-# Clones antigos ainda podem ter o arquivo transitório do SQLite versionado.
-# Restauramos apenas esses sidecars antes da checagem de alterações locais.
-for runtime_file in data/tibia-idle.db-shm data/tibia-idle.db-wal; do
-  if git ls-files --error-unmatch "$runtime_file" >/dev/null 2>&1; then
-    git restore -- "$runtime_file" || true
-  fi
-done
-
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-  fail "Existem alterações locais em arquivos versionados. Faça commit ou reverta antes do deploy."
-fi
-
+# A VPS de produção é tratada como imutável: arquivos versionados sempre vêm
+# do GitHub. Qualquer alteração local em arquivo versionado é descartada no
+# deploy. Arquivos não versionados (como os assets extraídos) são preservados.
 PREV_HEAD="$(git rev-parse HEAD)"
 STAMP="$(timestamp)"
 DIST_DIR="$REPO_DIR/apps/web/dist"
@@ -64,10 +55,10 @@ mkdir -p "$BACKUP_DIR"
 sqlite3 "$DB_FILE" ".backup '$BACKUP_DIR/tibia-idle-$STAMP.db'"
 find "$BACKUP_DIR" -type f -name 'tibia-idle-*.db' -mtime +14 -delete || true
 
-log "2/6 Atualizando código da branch $BRANCH"
+log "2/6 Sincronizando código da branch $BRANCH"
 git fetch origin "$BRANCH"
-git checkout "$BRANCH"
-git pull --ff-only origin "$BRANCH"
+git checkout -f "$BRANCH"
+git reset --hard "origin/$BRANCH"
 
 log "3/6 Instalando dependências"
 pnpm install --frozen-lockfile
