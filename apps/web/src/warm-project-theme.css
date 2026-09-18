@@ -27,9 +27,11 @@
   border-color: #0d100d !important;
 }
 
-.action-bar__portrait-tag,
+.action-bar__portrait-tag {
+  color: #f2cf73 !important;
+}
 .action-bar__rank {
-  color: #0d100d !important;
+  color: #e8c547 !important;
 }
 
 /* Inventory / slot surfaces. */
@@ -137,4 +139,34 @@
   .shell .action-bar__party-portrait {
     background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
   }
+}
+
+
+/* Hunts uses the same warm green/gold project chrome instead of blue-black surfaces. */
+.hunt-tab-bar {
+  background: linear-gradient(180deg, #151916 0%, #0d100d 100%) !important;
+  border-color: #403722 !important;
+}
+.hunt-tab {
+  color: #a7aa9e !important;
+}
+.hunt-tab:hover:not(.on) {
+  color: #ece8dc !important;
+  background: rgba(242,207,115,.05) !important;
+  border-color: rgba(242,207,115,.12) !important;
+}
+.hunt-tab.on {
+  color: #f2cf73 !important;
+  border-color: rgba(232,197,71,.48) !important;
+  background: linear-gradient(180deg, rgba(115,92,38,.30), rgba(13,16,13,.72)) !important;
+  box-shadow: inset 0 -2px 0 #c49537, 0 0 12px rgba(232,197,71,.08) !important;
+}
+.hunt-tab[data-tab="training"].on,
+.hunt-tab[data-tab="boss"].on,
+.hunt-tab[data-tab="raid"].on,
+.hunt-tab[data-tab="event"].on {
+  color: #f2cf73 !important;
+  border-color: rgba(232,197,71,.48) !important;
+  background: linear-gradient(180deg, rgba(115,92,38,.30), rgba(13,16,13,.72)) !important;
+  box-shadow: inset 0 -2px 0 #c49537, 0 0 12px rgba(232,197,71,.08) !important;
 }
