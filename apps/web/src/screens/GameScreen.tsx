@@ -108,6 +108,7 @@ export function GameScreen({
   } | null>(null);
   const liveDeath = useRef<NonNullable<Settlement['deathPenalty']> | null>(null);
   const [claimUser, setClaimUser] = useState('');
+  const [claimEmail, setClaimEmail] = useState('');
   const [claimPass, setClaimPass] = useState('');
   const lastWave = useRef<number | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -515,7 +516,7 @@ export function GameScreen({
                 <form className="onboard claim-banner" onSubmit={(event) => {
                   event.preventDefault();
                   void act(async () => {
-                    const result = await api.claim(claimUser.trim(), claimPass);
+                    const result = await api.claim(claimUser.trim(), claimPass, claimEmail.trim());
                     storeToken(result.token);
                     onClaimed?.();
                     pushLog(t('claimOk'));
@@ -523,6 +524,7 @@ export function GameScreen({
                 }}>
                   <p>{t('claimLede')}</p>
                   <input value={claimUser} onChange={(event) => setClaimUser(event.target.value)} placeholder={t('account')} autoComplete="username" />
+                  <input type="email" value={claimEmail} onChange={(event) => setClaimEmail(event.target.value)} placeholder="Email" autoComplete="email" />
                   <input type="password" value={claimPass} onChange={(event) => setClaimPass(event.target.value)} placeholder={t('password')} autoComplete="new-password" />
                   <button className="btn gold" disabled={busy} type="submit">{t('claim')}</button>
                 </form>
@@ -660,7 +662,7 @@ export function GameScreen({
                 <form className="onboard claim-banner" onSubmit={(event) => {
                   event.preventDefault();
                   void act(async () => {
-                    const result = await api.claim(claimUser.trim(), claimPass);
+                    const result = await api.claim(claimUser.trim(), claimPass, claimEmail.trim());
                     storeToken(result.token);
                     onClaimed?.();
                     pushLog(t('claimOk'));
@@ -668,6 +670,7 @@ export function GameScreen({
                 }}>
                   <p>{t('claimLede')}</p>
                   <input value={claimUser} onChange={(event) => setClaimUser(event.target.value)} placeholder={t('account')} autoComplete="username" />
+                  <input type="email" value={claimEmail} onChange={(event) => setClaimEmail(event.target.value)} placeholder="Email" autoComplete="email" />
                   <input type="password" value={claimPass} onChange={(event) => setClaimPass(event.target.value)} placeholder={t('password')} autoComplete="new-password" />
                   <button className="btn gold" disabled={busy} type="submit">{t('claim')}</button>
                 </form>
