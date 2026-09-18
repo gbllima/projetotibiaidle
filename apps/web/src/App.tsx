@@ -16,7 +16,12 @@ type Screen = 'portal' | 'monsters' | 'wiki' | 'account' | 'home' | 'boot' | 'au
 
 export function App() {
   const { t } = useLocale();
-  const [screen, setScreen] = useState<Screen>(() => typeof window !== 'undefined' && window.location.hash === '#wiki' ? 'wiki' : 'portal');
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (typeof window === 'undefined') return 'portal';
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('oauth_code') || params.has('oauth_error') || params.has('reset')) return 'auth';
+    return window.location.hash === '#wiki' ? 'wiki' : 'portal';
+  });
   const [afterAuth, setAfterAuth] = useState<'account' | 'game'>('game');
   const [entryError, setEntryError] = useState('');
   const [account, setAccount] = useState<AccountView | null>(null);
