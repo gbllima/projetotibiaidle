@@ -27,4 +27,6 @@ dist/
 .DS_Store
 Thumbs.db
 
+# SQLite: arquivos transitórios nunca devem ser versionados.
 *.db-wal
+*.db-shm
