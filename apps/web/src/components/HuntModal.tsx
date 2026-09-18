@@ -57,6 +57,7 @@ export function HuntModal({
   onEnterTraining,
   onCity,
   onClose,
+  onTabChange,
 }: {
   hunts: HuntView[];
   bosses: BossView[];
@@ -70,6 +71,7 @@ export function HuntModal({
   onCity: () => void;
   onEnterTraining: (roomId: string) => void;
   onClose: () => void;
+  onTabChange?: (tab: HuntTab) => void;
 }) {
   const { t } = useLocale();
   const occupied = hunting || Boolean(character.queue);
@@ -159,6 +161,7 @@ export function HuntModal({
 
   const switchTab = (next: HuntTab) => {
     setTab(next);
+    onTabChange?.(next);
     setQuery('');
     if (next !== 'hunts') {
       setShowAll(false);
@@ -182,7 +185,7 @@ export function HuntModal({
             Hunts
             <span>{hunts.length}</span>
           </button>
-          <button type="button" data-tab="training" className={`hunt-tab ${tab === 'training' ? 'on' : ''}`} onClick={() => switchTab('training')}>
+          <button type="button" data-tab="training" data-tutorial="training-tab" className={`hunt-tab ${tab === 'training' ? 'on' : ''}`} onClick={() => switchTab('training')}>
             Treino online
             <span>{TRAINING_ROOMS.length}</span>
           </button>
@@ -288,6 +291,7 @@ export function HuntModal({
                 <button
                   key={room.id}
                   type="button"
+                  data-tutorial="training-option"
                   className="training-row"
                   style={{ animationDelay: `${index * 55}ms` }}
                   disabled={busy || occupied}
