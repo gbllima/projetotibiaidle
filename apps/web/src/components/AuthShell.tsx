@@ -64,6 +64,118 @@ const AUTH_THEME = `
   border-color: #8e6b2d !important;
   box-shadow: 0 0 0 3px rgba(215, 164, 63, 0.08) !important;
 }
+.auth-password-wrap {
+  position: relative;
+}
+.auth-password-wrap input {
+  padding-right: 44px !important;
+}
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 34px;
+  height: 30px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #c9b066;
+  font-size: 15px;
+  cursor: pointer;
+}
+.auth-password-toggle:hover {
+  background: rgba(242, 207, 115, .08);
+  color: #f2cf73;
+}
+.auth-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.auth-social {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #4b412d;
+  border-radius: 7px;
+  background: #121612;
+  color: #e6e2d6;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.auth-social span {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ecebe6;
+  color: #171913;
+  font-size: 11px;
+  font-weight: 900;
+}
+.auth-social:hover:not(:disabled) {
+  border-color: #8e6b2d;
+  background: #191d17;
+}
+.auth-social:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+.auth-social-discord span {
+  border-radius: 6px;
+  background: #5865f2;
+  color: white;
+}
+.auth-mode-heading {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #403722;
+  border-radius: 7px;
+  background: #0c100d;
+}
+.auth-mode-heading strong {
+  color: #f2cf73;
+  font-size: 14px;
+}
+.auth-mode-heading p {
+  margin: 4px 0 0;
+  color: #8f958b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.auth-text-action {
+  margin: 8px auto 0;
+  border: 0;
+  background: transparent;
+  color: #c5ae69;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.auth-info {
+  margin: 8px 0 4px;
+  padding: 9px 11px;
+  border: 1px solid rgba(82, 148, 93, .35);
+  border-radius: 7px;
+  background: rgba(46, 93, 54, .12);
+  color: #bcd3bb;
+  font-size: 11px;
+  line-height: 1.4;
+}
+@media (max-width: 430px) {
+  .auth-social-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .auth-submit {
   background: linear-gradient(180deg, #efc55f 0%, #c88b2c 55%, #a56b20 100%) !important;
   border: 1px solid #9a6e25 !important;
