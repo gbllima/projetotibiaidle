@@ -49,8 +49,6 @@ CREATE TABLE IF NOT EXISTS accounts (
   created_at    INTEGER NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS accounts_email_unique ON accounts(email) WHERE email IS NOT NULL;
-
 CREATE TABLE IF NOT EXISTS characters (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
