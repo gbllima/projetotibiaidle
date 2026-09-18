@@ -62,6 +62,7 @@ export function CreateCharacterScreen({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [claimUser, setClaimUser] = useState('');
+  const [claimEmail, setClaimEmail] = useState('');
   const [claimPass, setClaimPass] = useState('');
   const full = (account?.used ?? 0) > 0;
 
@@ -92,7 +93,7 @@ export function CreateCharacterScreen({
     setBusy(true);
     setError('');
     try {
-      const result = await api.claim(claimUser.trim(), claimPass);
+      const result = await api.claim(claimUser.trim(), claimPass, claimEmail.trim());
       storeToken(result.token);
       await onRefresh();
     } catch (err) {
@@ -126,6 +127,13 @@ export function CreateCharacterScreen({
                 onChange={(event) => setClaimUser(event.target.value)}
                 autoComplete="username"
                 placeholder={t('account')}
+              />
+              <input
+                type="email"
+                value={claimEmail}
+                onChange={(event) => setClaimEmail(event.target.value)}
+                autoComplete="email"
+                placeholder="Email"
               />
               <input
                 type="password"
