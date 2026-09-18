@@ -8,6 +8,9 @@ DB_FILE="${DATABASE_FILE:-/var/lib/knock-hunt-br/tibia-idle.db}"
 BACKUP_DIR="${BACKUP_DIR:-/var/lib/knock-hunt-br/backups}"
 NODE_HEAP_MB="${NODE_HEAP_MB:-1536}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:3000/api/public-stats}"
+APP_PORT="${PORT:-3000}"
+APP_HOST="${HOST:-127.0.0.1}"
+APP_TRUST_PROXY="${TRUST_PROXY:-true}"
 
 timestamp() { date '+%Y-%m-%d_%H-%M-%S'; }
 log() { printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
@@ -43,7 +46,8 @@ rollback() {
   log "Falha detectada. Restaurando versão anterior..."
   restore_frontend || true
   git reset --hard "$PREV_HEAD" >/dev/null 2>&1 || true
-  pm2 restart "$APP_NAME" >/dev/null 2>&1 || true
+  DATABASE_FILE="$DB_FILE" PORT="$APP_PORT" HOST="$APP_HOST" TRUST_PROXY="$APP_TRUST_PROXY" \
+    pm2 restart "$APP_NAME" --update-env >/dev/null 2>&1 || true
   pm2 save >/dev/null 2>&1 || true
   fail "Deploy revertido para $(git rev-parse --short "$PREV_HEAD")."
 }
@@ -71,7 +75,8 @@ fi
 NODE_OPTIONS="--max-old-space-size=$NODE_HEAP_MB" pnpm build
 
 log "5/6 Reiniciando servidor"
-pm2 restart "$APP_NAME"
+DATABASE_FILE="$DB_FILE" PORT="$APP_PORT" HOST="$APP_HOST" TRUST_PROXY="$APP_TRUST_PROXY" \
+  pm2 restart "$APP_NAME" --update-env
 pm2 save
 
 log "6/6 Verificando saúde"
