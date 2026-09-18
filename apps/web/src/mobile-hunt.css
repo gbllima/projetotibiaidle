@@ -99,12 +99,21 @@
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: none;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: #6f5a2d #0d100d;
   }
 
   .hunt-region-tabs::-webkit-scrollbar,
   .hunt-location-list::-webkit-scrollbar {
-    display: none;
+    display: block;
+    height: 5px;
+  }
+
+  .hunt-region-tabs::-webkit-scrollbar-thumb,
+  .hunt-location-list::-webkit-scrollbar-thumb {
+    background: #6f5a2d;
+    border-radius: 99px;
   }
 
   .hunt-region-tab,
