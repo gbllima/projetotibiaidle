@@ -19,6 +19,7 @@ import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
 export interface AccountRow {
   id: number;
   username: string;
+  email: string | null;
   passwordHash: string;
   salt: string;
   createdAt: number;
@@ -42,10 +43,13 @@ const SCHEMA = `
 CREATE TABLE IF NOT EXISTS accounts (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT    NOT NULL UNIQUE,
+  email         TEXT,
   password_hash TEXT    NOT NULL,
   salt          TEXT    NOT NULL,
   created_at    INTEGER NOT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS accounts_email_unique ON accounts(email) WHERE email IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS characters (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,6 +72,27 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE INDEX IF NOT EXISTS sessions_account ON sessions(account_id);
+
+CREATE TABLE IF NOT EXISTS oauth_identities (
+  provider      TEXT NOT NULL,
+  provider_id   TEXT NOT NULL,
+  account_id    INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  email         TEXT,
+  created_at    INTEGER NOT NULL,
+  PRIMARY KEY(provider, provider_id)
+);
+
+CREATE INDEX IF NOT EXISTS oauth_account ON oauth_identities(account_id);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash  TEXT PRIMARY KEY,
+  account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  created_at  INTEGER NOT NULL,
+  expires_at  INTEGER NOT NULL,
+  used_at     INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS password_resets_account ON password_resets(account_id);
 
 CREATE TABLE IF NOT EXISTS market (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,6 +214,11 @@ export class Database {
     this.db.exec('PRAGMA journal_mode = WAL');
     this.db.exec('PRAGMA foreign_keys = ON');
     this.db.exec(SCHEMA);
+    const accountColumns = this.db.prepare('PRAGMA table_info(accounts)').all() as Array<{ name: string }>;
+    if (!accountColumns.some((column) => column.name === 'email')) {
+      this.db.exec('ALTER TABLE accounts ADD COLUMN email TEXT');
+    }
+    this.db.exec('CREATE UNIQUE INDEX IF NOT EXISTS accounts_email_unique ON accounts(email) WHERE email IS NOT NULL');
   }
 
   close(): void {
@@ -211,11 +241,11 @@ export class Database {
     }
   }
 
-  createAccount(username: string, passwordHash: string, salt: string): AccountRow {
+  createAccount(username: string, passwordHash: string, salt: string, email: string | null = null): AccountRow {
     const now = Date.now();
     this.db
-      .prepare('INSERT INTO accounts (username, password_hash, salt, created_at) VALUES (?, ?, ?, ?)')
-      .run(username, passwordHash, salt, now);
+      .prepare('INSERT INTO accounts (username, email, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(username, email, passwordHash, salt, now);
     const account = this.findAccount(username);
     if (!account) throw new Error('account insert did not persist');
     return account;
@@ -223,16 +253,27 @@ export class Database {
 
   findAccount(username: string): AccountRow | null {
     const row = this.db
-      .prepare('SELECT id, username, password_hash, salt, created_at FROM accounts WHERE username = ?')
+      .prepare('SELECT id, username, email, password_hash, salt, created_at FROM accounts WHERE username = ?')
       .get(username) as Record<string, unknown> | undefined;
     return row ? this.toAccount(row) : null;
   }
 
   findAccountById(id: number): AccountRow | null {
     const row = this.db
-      .prepare('SELECT id, username, password_hash, salt, created_at FROM accounts WHERE id = ?')
+      .prepare('SELECT id, username, email, password_hash, salt, created_at FROM accounts WHERE id = ?')
       .get(id) as Record<string, unknown> | undefined;
     return row ? this.toAccount(row) : null;
+  }
+
+  findAccountByEmail(email: string): AccountRow | null {
+    const row = this.db
+      .prepare('SELECT id, username, email, password_hash, salt, created_at FROM accounts WHERE lower(email) = lower(?)')
+      .get(email) as Record<string, unknown> | undefined;
+    return row ? this.toAccount(row) : null;
+  }
+
+  setAccountEmail(id: number, email: string | null): void {
+    this.db.prepare('UPDATE accounts SET email = ? WHERE id = ?').run(email, id);
   }
 
   updateAccount(id: number, username: string, passwordHash: string, salt: string): void {
@@ -245,6 +286,7 @@ export class Database {
     return {
       id: Number(row['id']),
       username: String(row['username']),
+      email: row['email'] === null || row['email'] === undefined ? null : String(row['email']),
       passwordHash: String(row['password_hash']),
       salt: String(row['salt']),
       createdAt: Number(row['created_at']),
@@ -253,7 +295,7 @@ export class Database {
 
   listAccounts(): AccountRow[] {
     const rows = this.db
-      .prepare('SELECT id, username, password_hash, salt, created_at FROM accounts ORDER BY id')
+      .prepare('SELECT id, username, email, password_hash, salt, created_at FROM accounts ORDER BY id')
       .all() as Record<string, unknown>[];
     return rows.map((row) => this.toAccount(row));
   }
@@ -279,6 +321,43 @@ export class Database {
 
   deleteToken(token: string): void {
     this.db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  }
+
+  findOauthIdentity(provider: string, providerId: string): { accountId: number; email: string | null } | null {
+    const row = this.db.prepare(
+      'SELECT account_id, email FROM oauth_identities WHERE provider = ? AND provider_id = ?',
+    ).get(provider, providerId) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      accountId: Number(row['account_id']),
+      email: row['email'] === null || row['email'] === undefined ? null : String(row['email']),
+    };
+  }
+
+  linkOauthIdentity(provider: string, providerId: string, accountId: number, email: string | null): void {
+    this.db.prepare(
+      'INSERT OR REPLACE INTO oauth_identities (provider, provider_id, account_id, email, created_at) VALUES (?, ?, ?, ?, ?)',
+    ).run(provider, providerId, accountId, email, Date.now());
+  }
+
+  createPasswordReset(tokenHash: string, accountId: number, ttlMs: number): void {
+    const now = Date.now();
+    this.db.prepare('DELETE FROM password_resets WHERE account_id = ? OR expires_at < ?').run(accountId, now);
+    this.db.prepare(
+      'INSERT INTO password_resets (token_hash, account_id, created_at, expires_at, used_at) VALUES (?, ?, ?, ?, NULL)',
+    ).run(tokenHash, accountId, now, now + ttlMs);
+  }
+
+  passwordResetAccount(tokenHash: string): number | null {
+    const row = this.db.prepare(
+      'SELECT account_id, expires_at, used_at FROM password_resets WHERE token_hash = ?',
+    ).get(tokenHash) as Record<string, unknown> | undefined;
+    if (!row || row['used_at'] !== null || Number(row['expires_at']) < Date.now()) return null;
+    return Number(row['account_id']);
+  }
+
+  consumePasswordReset(tokenHash: string): void {
+    this.db.prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ?').run(Date.now(), tokenHash);
   }
 
   createCharacter(accountId: number, name: string, vocationId: number, state: string): CharacterRow {
