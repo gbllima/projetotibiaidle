@@ -39,30 +39,12 @@
   }
 
   /*
-   * Anchor the lower HUD to the game-stage itself, not to the phone viewport.
-   * This makes the chat physically overlap the lower part of the map/canvas,
-   * exactly like the desktop HUD.
+   * On mobile only the chat floats over the map. The spell/action bar returns
+   * to normal flow below the game viewport, so it no longer covers guest claim
+   * prompts or other in-game overlays.
    */
   .bottom-console {
-    position: absolute !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    z-index: 80 !important;
-    display: block !important;
-    width: 100% !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    pointer-events: none;
-  }
-
-  .bottom-console > * {
-    pointer-events: auto;
+    display: contents !important;
   }
 
   /*
@@ -99,14 +81,21 @@
 
   .game-stage .action-bar,
   .game-stage .actionbar {
-    position: absolute !important;
-    left: 8px !important;
-    right: 8px !important;
-    bottom: 6px !important;
-    z-index: 81 !important;
-    width: auto !important;
-    max-width: none !important;
-    margin: 0 !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 20 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 5px 0 0 !important;
+    padding: 0 5px 2px !important;
+  }
+
+  .game-stage .claim-banner {
+    bottom: 148px !important;
+    z-index: 95 !important;
+    width: min(420px, calc(100% - 20px)) !important;
   }
 
   .game-stage .chat-console__head {
@@ -290,6 +279,11 @@
     bottom: 56px !important;
     grid-template-rows: 30px minmax(0, 64px) 30px;
     max-height: 124px;
+  }
+
+  .game-stage .claim-banner {
+    bottom: 134px !important;
+    width: calc(100% - 12px) !important;
   }
 
   .game-stage .chat-console__tabs button {
