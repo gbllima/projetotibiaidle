@@ -37,7 +37,9 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     if (replay || saved < 0 || saved >= TOTAL) return 0;
     // Windows are closed after login: resume at the action that opens them.
     if (saved === 2 && !helperOpen) return 1;
-    if (saved === 4 && !huntsOpen && !active && !queued) return 3;
+    if (saved === 4 && (!huntsOpen || huntMode !== 'hunts') && !active && !queued) return 3;
+    if ((saved === 8 || saved === 9) && !trainingActive) return 7;
+    if ((saved === 10 || saved === 11) && !trainingActive) return 7;
     return saved;
   });
   const [busy, setBusy] = useState(false);
@@ -76,25 +78,34 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     }
   }
 
-  // Progress depends on confirmed game state, never merely on clicking a hunt.
+  // Progress depends on confirmed game state, never merely on clicking a highlighted control.
   useEffect(() => {
     if (closed || busy || gameBusy || failedStep !== null) return;
     if (step === 1 && helperOpen) void advance(2);
     else if (step === 2 && !helperOpen && seenHelper.current) void advance(3);
     else if (step === 3 && active) void advance(5);
-    else if (step === 3 && (huntsOpen || queued)) void advance(4);
+    else if (step === 3 && huntsOpen && huntMode === 'hunts') void advance(4);
     else if (step === 4 && active) void advance(5);
     else if (step === 6 && !active && !queued) void advance(7);
-  }, [step, helperOpen, huntsOpen, active, queued, busy, gameBusy, failedStep, closed]);
+    else if (step === 7 && huntsOpen) void advance(huntMode === 'training' ? 9 : 8);
+    else if (step === 8 && huntsOpen && huntMode === 'training') void advance(9);
+    else if (step === 9 && trainingActive) void advance(10);
+    else if (step === 11 && !trainingActive) void advance(12);
+  }, [step, helperOpen, huntsOpen, huntMode, trainingActive, active, queued, busy, gameBusy, failedStep, closed]);
 
   let selectors: string[] = [];
   if (step === 1) selectors = ['[data-tutorial="helper"]', '[data-tutorial="mobile-menu"]'];
   if (step === 2) selectors = ['.helper-main h3', '.helper-main'];
-  if (step === 3 || (step === 4 && !huntsOpen && !queued)) selectors = ['[data-tutorial="hunts"]'];
-  if (step === 4 && huntsOpen && !queued) selectors = ['[data-tutorial="hunt-option"]:not(:disabled)', '.hunt-list', '[data-tab="hunts"]'];
+  if (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued)) selectors = ['[data-tutorial="hunts"]'];
+  if (step === 4 && huntsOpen && huntMode === 'hunts' && !queued) selectors = ['[data-tutorial="hunt-option"]:not(:disabled)', '.hunt-list', '[data-tab="hunts"]'];
   if (step === 4 && queued) selectors = ['.queue-card'];
   if (step === 5) selectors = ['[data-tutorial="vitals"]', '.topnav'];
   if (step === 6) selectors = ['[data-tutorial="city"]'];
+  if (step === 7) selectors = ['[data-tutorial="hunts"]'];
+  if (step === 8) selectors = ['[data-tutorial="training-tab"]', '[data-tab="training"]'];
+  if (step === 9) selectors = ['[data-tutorial="training-option"]:not(:disabled)', '.training-browser'];
+  if (step === 10) selectors = ['.training-hud-card', '.training-viewport'];
+  if (step === 11) selectors = ['[data-tutorial="training-exit"]'];
   const selectorKey = selectors.join('|');
 
   useEffect(() => {
