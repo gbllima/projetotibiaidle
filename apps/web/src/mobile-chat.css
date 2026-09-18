@@ -93,7 +93,8 @@
   }
 
   .game-stage .claim-banner {
-    bottom: 148px !important;
+    top: 54px !important;
+    bottom: auto !important;
     z-index: 95 !important;
     width: min(420px, calc(100% - 20px)) !important;
   }
@@ -282,7 +283,8 @@
   }
 
   .game-stage .claim-banner {
-    bottom: 134px !important;
+    top: 46px !important;
+    bottom: auto !important;
     width: calc(100% - 12px) !important;
   }
 
