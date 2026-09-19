@@ -145,12 +145,7 @@ const MARKET_CATEGORY_ORDER = ['Todos', 'Armas', 'Escudos', 'Capacetes', 'Armadu
 const MARKET_VOCATIONS = ['Todas', 'Knight', 'Paladin', 'Sorcerer', 'Druid', 'Monk'];
 
 function categoryButtons(state: UiState): string {
-  const discovered = new Set([
-    ...(state.snapshot?.items ?? []).map((item) => item.category),
-    ...(state.snapshot?.inventory ?? []).map((item) => item.category),
-  ]);
-  const categories = MARKET_CATEGORY_ORDER.filter((category) => category === 'Todos' || discovered.has(category));
-  return categories.map((category) => `
+  return MARKET_CATEGORY_ORDER.map((category) => `
     <button type="button" class="${state.category === category ? 'on' : ''}" data-market-category="${esc(category)}">${esc(category)}</button>
   `).join('');
 }
@@ -456,6 +451,7 @@ function bind(host: HTMLElement): void {
   host.querySelectorAll<HTMLButtonElement>('[data-market-category]').forEach((button) => button.addEventListener('click', () => {
     state.category = button.dataset['marketCategory'] ?? 'Todos';
     state.selectedItemId = null;
+    state.selectedSellId = null;
     render(host);
   }));
   host.querySelectorAll<HTMLButtonElement>('[data-market-vocation]').forEach((button) => button.addEventListener('click', () => {
