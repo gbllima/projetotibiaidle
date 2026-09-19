@@ -17,6 +17,7 @@ interface OutfitsMeta {
 export type OutfitColors = { head: number; body: number; legs: number; feet: number };
 
 const GROUP_IDLE = '0';
+const GROUP_MOVING = '1';
 const DIRECTION_SOUTH = 2;
 const ASSET_BUST = 'outfits-recolor-2';
 
@@ -48,12 +49,14 @@ function spriteIndex(
   layer: number,
   addon = 0,
   mount = 0,
+  phase = 0,
 ): number {
   const dir = direction % Math.max(1, group.patternWidth);
   const add = addon % Math.max(1, group.patternHeight);
   const depth = mount % Math.max(1, group.patternDepth);
   const lay = layer % Math.max(1, group.layers);
-  return (((depth * group.patternHeight + add) * group.patternWidth + dir) * group.layers) + lay;
+  const frame = phase % Math.max(1, group.frames);
+  return (((((frame * group.patternDepth) + depth) * group.patternHeight + add) * group.patternWidth + dir) * group.layers) + lay;
 }
 
 function tintFromMask(r: number, g: number, b: number, colors: {
@@ -119,13 +122,15 @@ export async function outfitIconUrl(
   addon = 0,
   direction = DIRECTION_SOUTH,
   mounted = false,
+  phase = 0,
+  groupName = GROUP_IDLE,
 ): Promise<string | null> {
   const colorKey = colors
     ? `${colors.head}-${colors.body}-${colors.legs}-${colors.feet}`
     : 'plain';
   const dir = ((direction % 4) + 4) % 4;
   const mountIdx = mounted ? 1 : 0;
-  const cacheKey = `${lookType}:${size}:${colorKey}:${addon}:d${dir}:m${mountIdx}`;
+  const cacheKey = `${lookType}:${size}:${colorKey}:${addon}:d${dir}:m${mountIdx}:p${phase}:g${groupName}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
@@ -133,7 +138,7 @@ export async function outfitIconUrl(
   const entry = meta.entries[String(lookType)];
   if (!entry) return null;
 
-  const group = entry.groups[GROUP_IDLE] ?? Object.values(entry.groups)[0];
+  const group = entry.groups[groupName] ?? entry.groups[GROUP_IDLE] ?? Object.values(entry.groups)[0];
   if (!group) return null;
 
   // Bitmask addons: compose base + selected addon rows (Global behaviour).
@@ -145,17 +150,17 @@ export async function outfitIconUrl(
   try {
     let composed: ImageData | null = null;
     for (const row of uniqueRows) {
-      const baseId = group.sprites[spriteIndex(group, dir, 0, row, mountIdx)]
-        ?? group.sprites[spriteIndex(group, DIRECTION_SOUTH, 0, row, mountIdx)]
-        ?? (row === 0 ? group.sprites[mountIdx * group.patternHeight * group.patternWidth] : undefined);
+      const baseId = group.sprites[spriteIndex(group, dir, 0, row, mountIdx, phase)]
+        ?? group.sprites[spriteIndex(group, DIRECTION_SOUTH, 0, row, mountIdx, phase)]
+        ?? (row === 0 ? group.sprites[spriteIndex(group, DIRECTION_SOUTH, 0, 0, mountIdx, 0)] : undefined);
       if (baseId == null) continue;
       const base = await cropSprite(meta, baseId);
       if (!base) continue;
 
       let layer = base;
       if (colors && group.layers > 1) {
-        const maskId = group.sprites[spriteIndex(group, dir, 1, row, mountIdx)]
-          ?? group.sprites[spriteIndex(group, DIRECTION_SOUTH, 1, row, mountIdx)];
+        const maskId = group.sprites[spriteIndex(group, dir, 1, row, mountIdx, phase)]
+          ?? group.sprites[spriteIndex(group, DIRECTION_SOUTH, 1, row, mountIdx, phase)];
         const mask = maskId != null ? await cropSprite(meta, maskId) : null;
         layer = applyRecolor(base, mask, colors);
       }
