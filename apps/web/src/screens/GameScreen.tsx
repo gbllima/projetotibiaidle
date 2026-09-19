@@ -1,11 +1,11 @@
 import { AwayModal } from '../components/AwayModal.js';
-import { CITY_MERCHANT } from '@tibia-idle/data';
+import { CITY_MERCHANT, CITY_SPAWN, STARTER_VOCATION_APPEARANCE, cityWalkable } from '@tibia-idle/data';
 import { PartyManagerModal } from '../components/PartyManagerModal.js';
 import { PartyMemberModal } from '../components/PartyMemberModal.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { huntsById, itemsById } from '@tibia-idle/data';
 import { ApiError, api, storeToken } from '../api/client.js';
-import type { BossView, CharacterView, HuntView, Settlement, WorldView } from '../api/types.js';
+import type { BossView, CharacterView, HuntView, LobbyPlayer, Settlement, WorldView } from '../api/types.js';
 import { ActionBar } from '../components/ActionBar.js';
 import { CombatScene } from '../components/CombatScene.js';
 import { HelperModal } from '../components/HelperModal.js';
@@ -27,6 +27,51 @@ import { useLocale } from '../i18n/Locale.js';
 import { usePredictedCharacter } from '../live/predict.js';
 
 type PolicyView = CharacterView['policy'];
+
+const CITY_BOT_TEMPLATES = [
+  { name: '[BOT] Aric', vocationId: 4, gender: 'm' as const, dx: -3, dy: 1 },
+  { name: '[BOT] Lyra', vocationId: 3, gender: 'f' as const, dx: 3, dy: 2 },
+  { name: '[BOT] Kael', vocationId: 1, gender: 'm' as const, dx: -2, dy: -2 },
+  { name: '[BOT] Nara', vocationId: 2, gender: 'f' as const, dx: 1, dy: 3 },
+  { name: '[BOT] Rook', vocationId: 9, gender: 'm' as const, dx: 3, dy: -2 },
+] as const;
+
+function nearestBotTile(targetX: number, targetY: number): { x: number; y: number } {
+  if (cityWalkable(targetX, targetY)) return { x: targetX, y: targetY };
+  for (let radius = 1; radius <= 5; radius += 1) {
+    for (let dy = -radius; dy <= radius; dy += 1) {
+      for (let dx = -radius; dx <= radius; dx += 1) {
+        if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+        const x = targetX + dx;
+        const y = targetY + dy;
+        if (cityWalkable(x, y)) return { x, y };
+      }
+    }
+  }
+  return { ...CITY_SPAWN };
+}
+
+function createCityBots(): LobbyPlayer[] {
+  return CITY_BOT_TEMPLATES.map((bot, index) => {
+    const visual = STARTER_VOCATION_APPEARANCE[bot.vocationId];
+    const outfit = bot.gender === 'f' ? visual?.female : visual?.male;
+    return {
+      id: -1000 - index,
+      name: bot.name,
+      level: 18 + index * 7,
+      vocationId: bot.vocationId,
+      active: true,
+      cityPosition: nearestBotTile(CITY_SPAWN.x + bot.dx, CITY_SPAWN.y + bot.dy),
+      appearance: visual && outfit ? {
+        outfit,
+        ...visual.colors,
+        aura: 0,
+        mount: 0,
+        addons: 0,
+      } : undefined,
+    };
+  });
+}
 
 function applyPolicyPatch(view: CharacterView, patch: Record<string, unknown>): CharacterView | null {
   if (patch.helperReset === true || patch.helperCopyFrom === 'hunt') return null;
@@ -86,6 +131,7 @@ export function GameScreen({
   const [hunts, setHunts] = useState<HuntView[]>([]);
   const [bosses, setBosses] = useState<BossView[]>([]);
   const [lobbyPlayers, setLobbyPlayers] = useState<Awaited<ReturnType<typeof api.lobby>>['players']>([]);
+  const [cityBots, setCityBots] = useState<LobbyPlayer[]>(() => createCityBots());
   const bossesByHuntId = useMemo(() => new Map(bosses.map((boss) => [boss.huntId, boss])), [bosses]);
   const huntLabel = (huntId: string) => huntsById.get(huntId)?.name ?? bossesByHuntId.get(huntId)?.name ?? huntId;
   const [busy, setBusy] = useState(false);
@@ -147,6 +193,25 @@ export function GameScreen({
     void api.hunts(character.id).then((payload) => setHunts(payload.hunts)).catch(() => undefined);
     void api.bosses(character.id).then((payload) => setBosses(payload.bosses)).catch(() => undefined);
   }, [character.id, character.level, pickingHunt]);
+
+  useEffect(() => {
+    if (character.session || trainingRoomId) return;
+    const directions = [[0, -1], [1, 0], [0, 1], [-1, 0], [0, 0]] as const;
+    const timer = window.setInterval(() => {
+      setCityBots((current) => current.map((bot, index) => {
+        const position = bot.cityPosition ?? CITY_SPAWN;
+        const start = Math.floor(Math.random() * directions.length);
+        for (let offset = 0; offset < directions.length; offset += 1) {
+          const [dx, dy] = directions[(start + offset + index) % directions.length]!;
+          const x = position.x + dx;
+          const y = position.y + dy;
+          if (cityWalkable(x, y)) return { ...bot, cityPosition: { x, y } };
+        }
+        return bot;
+      }));
+    }, 900);
+    return () => window.clearInterval(timer);
+  }, [Boolean(character.session), trainingRoomId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -700,6 +765,17 @@ export function GameScreen({
                           mana: 0,
                           maxMana: 1,
                           appearance: player.appearance,
+                        })),
+                        ...cityBots.map((bot) => ({
+                          id: bot.id,
+                          cityPosition: bot.cityPosition,
+                          name: bot.name,
+                          vocationId: bot.vocationId,
+                          health: 1,
+                          maxHealth: 1,
+                          mana: 0,
+                          maxMana: 1,
+                          appearance: bot.appearance,
                         })),
                         {
                           name: 'Mercador',
