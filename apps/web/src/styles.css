@@ -3970,25 +3970,94 @@ button.compact-row.on { background: #1e2430; box-shadow: inset 0 0 0 1px var(--g
   margin: 6px 0 14px;
 }
 .select-voc {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-  min-height: 64px;
-  padding: 10px 12px;
+  min-height: 92px;
+  padding: 9px 11px 9px 9px;
   text-align: left;
   background: #161a22;
   color: #eceef2;
   border: 1px solid #2c3340;
   border-left: 3px solid var(--voc-accent, #d7a43f);
   border-radius: 8px;
-  transition: background .15s, border-color .15s, box-shadow .15s;
+  transition: transform .16s ease, background .15s, border-color .15s, box-shadow .15s;
+}
+.select-voc-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
 }
 .select-voc strong { font-size: 13px; }
 .select-voc small { color: #a9afba; font-size: 11px; line-height: 1.4; }
-.select-voc:hover { background: #202630; border-color: var(--voc-accent, #d7a43f); }
+.select-voc-sprite-shell {
+  position: relative;
+  width: 64px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--voc-accent, #d7a43f) 46%, #2c3340);
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 50% 68%, color-mix(in srgb, var(--voc-accent, #d7a43f) 13%, transparent), transparent 48%),
+    linear-gradient(180deg, rgba(22, 28, 24, .96), rgba(10, 14, 12, .98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.select-voc-sprite {
+  position: relative;
+  z-index: 2;
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 5px 4px rgba(0,0,0,.72));
+  animation: select-vocation-skate .82s ease-in-out infinite;
+}
+.select-voc-sprite-shadow {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 7px;
+  width: 32px;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(0,0,0,.48);
+  filter: blur(2px);
+  animation: select-vocation-shadow .82s ease-in-out infinite;
+}
+.select-voc-sprite-fallback {
+  position: relative;
+  z-index: 2;
+  color: var(--voc-accent, #d7a43f);
+  font-size: 22px;
+}
+.select-voc-sprite-shell.is-active {
+  border-color: var(--voc-accent, #d7a43f);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--voc-accent, #d7a43f) 35%, transparent),
+    0 0 14px color-mix(in srgb, var(--voc-accent, #d7a43f) 20%, transparent);
+}
+@keyframes select-vocation-skate {
+  0%, 100% { transform: translate3d(-2px, 1px, 0); }
+  50% { transform: translate3d(2px, -2px, 0); }
+}
+@keyframes select-vocation-shadow {
+  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: .5; }
+  50% { transform: translateX(-50%) scaleX(.78); opacity: .32; }
+}
+.select-voc:hover {
+  transform: translateY(-2px);
+  background: #202630;
+  border-color: var(--voc-accent, #d7a43f);
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+}
 .select-voc.active {
   background: #25271e;
   border-color: var(--voc-accent, #d7a43f);
@@ -4005,6 +4074,17 @@ body { min-height: 100vh; }
 .auth-page::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb { background: #5b4828; border: 2px solid #080b0a; border-radius: 8px; }
 
 @media (max-width:760px){.auth-page{padding:16px 10px 28px}.auth-card,.select-card{padding:20px 16px}.select-grid{grid-template-columns:1fr}.select-topbar{flex-direction:column}.select-topbar-actions{width:100%}.select-create{padding:14px}.auth-logo img{max-width:110px!important}}
+@media (max-width:520px) {
+  .select-voc-grid { grid-template-columns: 1fr; }
+  .select-voc { grid-template-columns: 72px minmax(0,1fr); min-height: 94px; }
+  .select-voc-sprite-shell { width: 68px; height: 72px; }
+  .select-voc-sprite { width: 62px; height: 62px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .select-voc-sprite,
+  .select-voc-sprite-shadow { animation: none; }
+}
+
 
 
 .guild-top-tabs {
