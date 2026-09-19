@@ -1432,14 +1432,21 @@
     0 0 18px rgba(215, 164, 63, .13);
 }
 
+.landing-why-card:nth-child(2) .landing-why-icon {
+  width: 66px;
+  height: 66px;
+  margin-top: -5px;
+  overflow: hidden;
+}
+
 .landing-why-icon .landing-outfit-sprite {
-  width: 56px;
-  height: 56px;
-  max-width: none;
+  width: 58px;
+  height: 58px;
+  max-width: 58px;
   object-fit: contain;
+  object-position: center center;
   image-rendering: pixelated;
-  transform: scale(1.25);
-  transform-origin: center bottom;
+  transform: none;
   filter: drop-shadow(0 6px 5px rgba(0,0,0,.78));
 }
 
@@ -1472,6 +1479,148 @@
     0 32px 76px rgba(0, 0, 0, .58),
     0 0 42px rgba(46, 130, 72, .11),
     0 0 20px rgba(215, 164, 63, .08);
+}
+
+
+/* Ambient motion: subtle, always-on feedback to make the landing feel alive. */
+@keyframes landingStarsDrift {
+  0% { background-position: 25px 15px, 100px 75px; }
+  50% { background-position: 70px 48px, 130px 42px; }
+  100% { background-position: 115px 82px, 160px 9px; }
+}
+
+@keyframes landingAmbientFloatA {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-36px, 26px, 0) scale(1.08); }
+}
+
+@keyframes landingAmbientFloatB {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(44px, -24px, 0) scale(1.1); }
+}
+
+@keyframes landingHeroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes landingIconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes landingGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(215, 164, 63, 0), 0 0 10px rgba(215, 164, 63, .08);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(215, 164, 63, .035), 0 0 24px rgba(215, 164, 63, .2);
+  }
+}
+
+@keyframes landingOnlinePulse {
+  0%, 100% { transform: scale(1); opacity: .9; }
+  50% { transform: scale(1.35); opacity: 1; }
+}
+
+@keyframes landingButtonBreath {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow:
+      inset 0 1px 0 #ffeab2,
+      inset 0 -2px 0 rgba(99, 56, 13, .55),
+      0 8px 22px #0006,
+      0 0 0 rgba(215, 164, 63, 0);
+  }
+  50% {
+    filter: brightness(1.06);
+    box-shadow:
+      inset 0 1px 0 #fff1bf,
+      inset 0 -2px 0 rgba(99, 56, 13, .55),
+      0 10px 26px #0007,
+      0 0 20px rgba(215, 164, 63, .18);
+  }
+}
+
+@keyframes landingSweep {
+  0%, 72% { transform: rotate(18deg) translateX(-190%); opacity: 0; }
+  78% { opacity: .9; }
+  92%, 100% { transform: rotate(18deg) translateX(560%); opacity: 0; }
+}
+
+@keyframes landingCardReveal {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landingFinalGlow {
+  0%, 100% { border-color: rgba(215, 164, 63, .3); }
+  50% { border-color: rgba(242, 207, 115, .55); box-shadow: 0 22px 55px #0005, 0 0 30px rgba(215, 164, 63, .08); }
+}
+
+.landing-page::before {
+  animation: landingStarsDrift 34s linear infinite;
+}
+
+.landing-ambient-a {
+  animation: landingAmbientFloatA 12s ease-in-out infinite;
+}
+
+.landing-ambient-b {
+  animation: landingAmbientFloatB 15s ease-in-out infinite;
+}
+
+.landing-wordmark {
+  animation: landingHeroFloat 5.5s ease-in-out infinite;
+}
+
+.landing-launch-chip {
+  animation: landingGlowPulse 3.2s ease-in-out infinite;
+}
+
+.landing-online-pill i,
+.landing-game-preview-head i.online,
+.landing-ranking-name i {
+  animation: landingOnlinePulse 1.9s ease-in-out infinite;
+}
+
+.landing-nav-play,
+.landing-primary {
+  animation: landingButtonBreath 3.4s ease-in-out infinite;
+}
+
+.landing-nav-play::after,
+.landing-primary::after {
+  animation: landingSweep 4.8s ease-in-out infinite;
+}
+
+.landing-why-card {
+  animation: landingCardReveal .55s ease both;
+}
+
+.landing-why-card:nth-child(1) { animation-delay: .03s; }
+.landing-why-card:nth-child(2) { animation-delay: .11s; }
+.landing-why-card:nth-child(3) { animation-delay: .19s; }
+.landing-why-card:nth-child(4) { animation-delay: .27s; }
+
+.landing-why-card .landing-why-icon {
+  animation: landingIconFloat 4.2s ease-in-out infinite;
+}
+
+.landing-why-card:nth-child(2) .landing-why-icon { animation-delay: -.8s; }
+.landing-why-card:nth-child(3) .landing-why-icon { animation-delay: -1.6s; }
+.landing-why-card:nth-child(4) .landing-why-icon { animation-delay: -2.4s; }
+
+.landing-final-cta {
+  animation: landingFinalGlow 4.6s ease-in-out infinite;
+}
+
+.landing-section-kicker {
+  text-shadow: 0 0 12px rgba(193, 135, 54, .2);
+}
+
+.landing-quick-rail button.active {
+  animation: landingGlowPulse 2.7s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
