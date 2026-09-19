@@ -1,5 +1,5 @@
 import { AwayModal } from '../components/AwayModal.js';
-import { CITY_MERCHANT, CITY_SPAWN, STARTER_VOCATION_APPEARANCE, cityWalkable } from '@tibia-idle/data';
+import { CITY_MERCHANT, CITY_SPAWN, STARTER_VOCATION_APPEARANCE, cityPath, cityWalkable } from '@tibia-idle/data';
 import { PartyManagerModal } from '../components/PartyManagerModal.js';
 import { PartyMemberModal } from '../components/PartyMemberModal.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -29,16 +29,22 @@ import { usePredictedCharacter } from '../live/predict.js';
 type PolicyView = CharacterView['policy'];
 
 const CITY_BOT_TEMPLATES = [
-  { name: '[BOT] Aric', vocationId: 4, gender: 'm' as const, dx: -3, dy: 1 },
-  { name: '[BOT] Lyra', vocationId: 3, gender: 'f' as const, dx: 3, dy: 2 },
-  { name: '[BOT] Kael', vocationId: 1, gender: 'm' as const, dx: -2, dy: -2 },
-  { name: '[BOT] Nara', vocationId: 2, gender: 'f' as const, dx: 1, dy: 3 },
-  { name: '[BOT] Rook', vocationId: 9, gender: 'm' as const, dx: 3, dy: -2 },
+  { name: 'Aric', vocationId: 4, gender: 'm' as const, mode: 'stationary' as const, start: [-1, 0] as const },
+  { name: 'Mira', vocationId: 3, gender: 'f' as const, mode: 'stationary' as const, start: [1, 0] as const },
+  { name: 'Torin', vocationId: 9, gender: 'm' as const, mode: 'stationary' as const, start: [0, 1] as const },
+
+  { name: 'Lyra', vocationId: 3, gender: 'f' as const, mode: 'patrol' as const, start: [-3, 2] as const, route: [[-3, 2], [4, 3], [5, -3], [-2, -3]] as const },
+  { name: 'Kael', vocationId: 1, gender: 'm' as const, mode: 'patrol' as const, start: [3, -2] as const, route: [[3, -2], [-4, -3], [-5, 2], [2, 3]] as const },
+  { name: 'Nara', vocationId: 2, gender: 'f' as const, mode: 'patrol' as const, start: [2, 3] as const, route: [[2, 3], [5, 1], [3, -4], [-4, -2]] as const },
+  { name: 'Rook', vocationId: 9, gender: 'm' as const, mode: 'patrol' as const, start: [-4, -2] as const, route: [[-4, -2], [-5, 3], [4, 3], [4, -3]] as const },
+  { name: 'Selene', vocationId: 4, gender: 'f' as const, mode: 'patrol' as const, start: [4, 2] as const, route: [[4, 2], [-3, 3], [-4, -3], [3, -3]] as const },
 ] as const;
+
+type CityBotTemplate = (typeof CITY_BOT_TEMPLATES)[number];
 
 function nearestBotTile(targetX: number, targetY: number): { x: number; y: number } {
   if (cityWalkable(targetX, targetY)) return { x: targetX, y: targetY };
-  for (let radius = 1; radius <= 5; radius += 1) {
+  for (let radius = 1; radius <= 6; radius += 1) {
     for (let dy = -radius; dy <= radius; dy += 1) {
       for (let dx = -radius; dx <= radius; dx += 1) {
         if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
@@ -51,6 +57,10 @@ function nearestBotTile(targetX: number, targetY: number): { x: number; y: numbe
   return { ...CITY_SPAWN };
 }
 
+function botPoint(offset: readonly [number, number]): { x: number; y: number } {
+  return nearestBotTile(CITY_SPAWN.x + offset[0], CITY_SPAWN.y + offset[1]);
+}
+
 function createCityBots(): LobbyPlayer[] {
   return CITY_BOT_TEMPLATES.map((bot, index) => {
     const visual = STARTER_VOCATION_APPEARANCE[bot.vocationId];
@@ -61,7 +71,7 @@ function createCityBots(): LobbyPlayer[] {
       level: 18 + index * 7,
       vocationId: bot.vocationId,
       active: true,
-      cityPosition: nearestBotTile(CITY_SPAWN.x + bot.dx, CITY_SPAWN.y + bot.dy),
+      cityPosition: botPoint(bot.start),
       appearance: visual && outfit ? {
         outfit,
         ...visual.colors,
@@ -71,6 +81,11 @@ function createCityBots(): LobbyPlayer[] {
       } : undefined,
     };
   });
+}
+
+function botTemplateForId(id: number): CityBotTemplate | undefined {
+  const index = -1000 - id;
+  return CITY_BOT_TEMPLATES[index];
 }
 
 function applyPolicyPatch(view: CharacterView, patch: Record<string, unknown>): CharacterView | null {
@@ -132,6 +147,8 @@ export function GameScreen({
   const [bosses, setBosses] = useState<BossView[]>([]);
   const [lobbyPlayers, setLobbyPlayers] = useState<Awaited<ReturnType<typeof api.lobby>>['players']>([]);
   const [cityBots, setCityBots] = useState<LobbyPlayer[]>(() => createCityBots());
+  const cityBotRouteIndex = useRef(new Map<number, number>());
+  const cityBotPauseUntil = useRef(new Map<number, number>());
   const bossesByHuntId = useMemo(() => new Map(bosses.map((boss) => [boss.huntId, boss])), [bosses]);
   const huntLabel = (huntId: string) => huntsById.get(huntId)?.name ?? bossesByHuntId.get(huntId)?.name ?? huntId;
   const [busy, setBusy] = useState(false);
@@ -196,20 +213,39 @@ export function GameScreen({
 
   useEffect(() => {
     if (character.session || trainingRoomId) return;
-    const directions = [[0, -1], [1, 0], [0, 1], [-1, 0], [0, 0]] as const;
+
     const timer = window.setInterval(() => {
-      setCityBots((current) => current.map((bot, index) => {
-        const position = bot.cityPosition ?? CITY_SPAWN;
-        const start = Math.floor(Math.random() * directions.length);
-        for (let offset = 0; offset < directions.length; offset += 1) {
-          const [dx, dy] = directions[(start + offset + index) % directions.length]!;
-          const x = position.x + dx;
-          const y = position.y + dy;
-          if (cityWalkable(x, y)) return { ...bot, cityPosition: { x, y } };
+      const now = Date.now();
+      setCityBots((current) => current.map((bot) => {
+        const template = botTemplateForId(bot.id);
+        if (!template || template.mode === 'stationary') return bot;
+
+        const pausedUntil = cityBotPauseUntil.current.get(bot.id) ?? 0;
+        if (pausedUntil > now) return bot;
+
+        const routeIndex = cityBotRouteIndex.current.get(bot.id) ?? 1;
+        const target = botPoint(template.route[routeIndex % template.route.length]!);
+        const position = bot.cityPosition ?? botPoint(template.start);
+
+        if (position.x === target.x && position.y === target.y) {
+          cityBotRouteIndex.current.set(bot.id, (routeIndex + 1) % template.route.length);
+          cityBotPauseUntil.current.set(bot.id, now + 900 + Math.floor(Math.random() * 2200));
+          return bot;
         }
-        return bot;
+
+        const path = cityPath(position, target);
+        if (!path.length) {
+          cityBotRouteIndex.current.set(bot.id, (routeIndex + 1) % template.route.length);
+          cityBotPauseUntil.current.set(bot.id, now + 700);
+          return bot;
+        }
+
+        // Advance a single tile at a time. The renderer interpolates between
+        // positions, so patrols look like real characters walking through town.
+        return { ...bot, cityPosition: path[0] };
       }));
-    }, 900);
+    }, 520);
+
     return () => window.clearInterval(timer);
   }, [Boolean(character.session), trainingRoomId]);
 
