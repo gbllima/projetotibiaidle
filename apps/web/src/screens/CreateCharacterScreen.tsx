@@ -1,9 +1,10 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { PLAYABLE_VOCATION_IDS, vocationsById } from '@tibia-idle/data';
 import { ApiError, api, storeToken } from '../api/client.js';
 import { AuthLogo, AuthShell } from '../components/AuthShell.js';
 import { useLocale } from '../i18n/Locale.js';
 import type { AccountView } from '../api/types.js';
+import { outfitIconUrl, type OutfitColors } from '../render/outfitIcon.js';
 
 const VOCATION_GUIDE: Record<number, { role: string; summary: string; difficulty: string; recommended?: boolean }> = {
   4: {
@@ -42,7 +43,75 @@ const VOC_ACCENT: Record<number, string> = {
   2: '#3dba9a',
 };
 
+type VocationPreviewConfig = {
+  male: number;
+  female: number;
+  colors: OutfitColors;
+};
+
+const VOCATION_PREVIEW: Record<number, VocationPreviewConfig> = {
+  4: { male: 131, female: 139, colors: { head: 114, body: 120, legs: 114, feet: 115 } },
+  9: { male: 1824, female: 1825, colors: { head: 95, body: 113, legs: 39, feet: 115 } },
+  3: { male: 129, female: 137, colors: { head: 95, body: 113, legs: 39, feet: 115 } },
+  1: { male: 130, female: 138, colors: { head: 0, body: 86, legs: 87, feet: 95 } },
+  2: { male: 144, female: 148, colors: { head: 39, body: 57, legs: 76, feet: 95 } },
+};
+
 const WEAPONS = ['Machado', 'Espada', 'Clava'] as const;
+function VocationSprite({
+  vocationId,
+  gender,
+  active,
+}: {
+  vocationId: number;
+  gender: 'm' | 'f';
+  active: boolean;
+}) {
+  const [frames, setFrames] = useState<string[]>([]);
+  const [frameIndex, setFrameIndex] = useState(0);
+  const config = VOCATION_PREVIEW[vocationId];
+
+  useEffect(() => {
+    let live = true;
+    setFrameIndex(0);
+    setFrames([]);
+    if (!config) return () => { live = false; };
+
+    const lookType = gender === 'f' ? config.female : config.male;
+    void Promise.all(
+      [0, 1, 2, 3].map((phase) =>
+        outfitIconUrl(lookType, 64, config.colors, 0, 2, false, phase, '1').catch(() => null),
+      ),
+    ).then((urls) => {
+      if (!live) return;
+      const unique = urls.filter((url): url is string => Boolean(url))
+        .filter((url, index, all) => all.indexOf(url) === index);
+      setFrames(unique);
+    });
+
+    return () => {
+      live = false;
+    };
+  }, [config, gender]);
+
+  useEffect(() => {
+    if (frames.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setFrameIndex((current) => (current + 1) % frames.length);
+    }, active ? 155 : 190);
+    return () => window.clearInterval(timer);
+  }, [active, frames.length]);
+
+  return (
+    <span className={`select-voc-sprite-shell ${active ? 'is-active' : ''}`} aria-hidden="true">
+      <span className="select-voc-sprite-shadow" />
+      {frames[frameIndex]
+        ? <img className="select-voc-sprite" src={frames[frameIndex]} alt="" />
+        : <span className="select-voc-sprite-fallback">✦</span>}
+    </span>
+  );
+}
+
 export function CreateCharacterScreen({
   account,
   onEnter,
@@ -190,10 +259,13 @@ export function CreateCharacterScreen({
                       style={{ '--voc-accent': VOC_ACCENT[id] ?? '#e8c547' } as CSSProperties}
                       onClick={() => setVocationId(id)}
                     >
-                      <strong>{vocation.name}{guide.recommended ? ' · ⭐ Recomendado' : ''}</strong>
-                      <small>{guide.role}</small>
-                      <small>{guide.summary}</small>
-                      <small>{guide.difficulty}</small>
+                      <VocationSprite vocationId={id} gender={gender} active={vocationId === id} />
+                      <span className="select-voc-copy">
+                        <strong>{vocation.name}{guide.recommended ? ' · ⭐ Recomendado' : ''}</strong>
+                        <small>{guide.role}</small>
+                        <small>{guide.summary}</small>
+                        <small>{guide.difficulty}</small>
+                      </span>
                     </button>
                   );
                 })}
