@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { storedToken } from '../api/client.js';
+import { itemIconUrl } from '../render/itemIcon.js';
+import { outfitIconUrl } from '../render/outfitIcon.js';
 import '../launch-notice.css';
 import './HomeNews.css';
 import './HomeServerStatus.css';
@@ -231,10 +233,10 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
         <p className="landing-section-lead">Uma experiência inspirada nos RPGs clássicos, construída para quem quer progressão constante sem precisar ficar preso à tela.</p>
 
         <div className="landing-why-grid">
-          <FeatureCard image="/home/Monster.png" title="ELE CAÇA ENQUANTO VOCÊ VIVE" text="A hunt roda no servidor. Feche a aba, trabalhe ou durma; quando voltar, seu progresso estará esperando." />
-          <FeatureCard image="/home/Wings.png" title="VOCAÇÕES QUE JOGAM DIFERENTE" text="Monte sua conta com estilos distintos e escolha como quer evoluir, lutar e compor sua party." />
-          <FeatureCard image="/home/Rune.png" title="LOOT QUE TEM PROPÓSITO" text="Itens, ouro e recursos alimentam sua evolução. Cada caçada pode melhorar seu próximo passo." />
-          <FeatureCard image="/home/PlanetaHome.png" title="UM MUNDO ONLINE DE VERDADE" text="Mercado, guilds, party, ranking e jogadores compartilhando o mesmo servidor." />
+          <FeatureCard icon={<img src="/home/swordhome.gif" alt="" />} title="ELE CAÇA ENQUANTO VOCÊ VIVE" text="A hunt roda no servidor. Feche a aba, trabalhe ou durma; quando voltar, seu progresso estará esperando." />
+          <FeatureCard icon={<LandingOutfitSprite />} title="VOCAÇÕES QUE JOGAM DIFERENTE" text="Monte sua conta com estilos distintos e escolha como quer evoluir, lutar e compor sua party." />
+          <FeatureCard icon={<LandingItemSprite itemId={28945} />} title="LOOT QUE TEM PROPÓSITO" text="Itens, ouro e recursos alimentam sua evolução. Cada caçada pode melhorar seu próximo passo." />
+          <FeatureCard icon={<img src="/home/PlanetaHome.png" alt="" />} title="UM MUNDO ONLINE DE VERDADE" text="Mercado, guilds, party, ranking e jogadores compartilhando o mesmo servidor." />
         </div>
       </section>
 
@@ -276,14 +278,50 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
   );
 }
 
-function FeatureCard({ image, title, text }: { image: string; title: string; text: string }) {
+function FeatureCard({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
   return (
     <article className="landing-why-card">
-      <div className="landing-why-icon"><img src={image} alt="" /></div>
+      <div className="landing-why-icon">{icon}</div>
       <h3>{title}</h3>
       <p>{text}</p>
     </article>
   );
+}
+
+function LandingOutfitSprite() {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void outfitIconUrl(131, 48, { head: 114, body: 120, legs: 114, feet: 115 }, 3)
+      .then((url) => {
+        if (live) setSrc(url);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return src ? <img src={src} alt="" /> : <span className="landing-why-icon-fallback">♟</span>;
+}
+
+function LandingItemSprite({ itemId }: { itemId: number }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void itemIconUrl(itemId)
+      .then((url) => {
+        if (live) setSrc(url);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [itemId]);
+
+  return src ? <img src={src} alt="" /> : <span className="landing-why-icon-fallback">▣</span>;
 }
 
 function renderNewsBody(body: string) {
