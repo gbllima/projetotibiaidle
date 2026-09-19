@@ -1,3 +1,4 @@
+import { STARTER_VOCATION_APPEARANCE } from '@tibia-idle/data';
 import type { CharacterState, HuntSession } from '@tibia-idle/sim';
 import type { Database } from './db.js';
 
@@ -21,42 +22,60 @@ const BASE_VOCATION: Record<number, number> = {
   10: 9,
 };
 
-const CLASS_LOOK: Record<number, { m: number; f: number }> = {
-  1: { m: 130, f: 138 }, // Mage
-  2: { m: 144, f: 148 }, // Druid
-  3: { m: 129, f: 137 }, // Hunter / Paladin
-  4: { m: 131, f: 139 }, // Knight
-  9: { m: 146, f: 150 }, // Oriental / Monk
+/** Old automatic looks that were assigned before the vocation mapping fix. */
+const LEGACY_AUTOMATIC_LOOK: Record<number, number[]> = {
+  1: [130, 138],
+  2: [144, 148],
+  3: [129, 137],
+  4: [131, 139],
+  9: [128, 146, 150, 1824, 1825],
 };
 
-/** Old automatic looks that were assigned before the vocation mapping fix. */
-const LEGACY_AUTOMATIC_LOOK: Record<number, number> = {
-  1: 130,
-  2: 144,
-  3: 137, // female Hunter was incorrectly used for every Paladin
-  4: 131,
-  9: 128, // Citizen placeholder
-};
+const LEGACY_AUTOMATIC_COLORS = { head: 78, body: 94, legs: 114, feet: 115 };
+
+function hasLegacyAutomaticColors(character: CharacterState): boolean {
+  const appearance = character.appearance;
+  if (!appearance) return false;
+  return appearance.head === LEGACY_AUTOMATIC_COLORS.head
+    && appearance.body === LEGACY_AUTOMATIC_COLORS.body
+    && appearance.legs === LEGACY_AUTOMATIC_COLORS.legs
+    && appearance.feet === LEGACY_AUTOMATIC_COLORS.feet;
+}
+
 
 function repairAutomaticAppearance(character: CharacterState): boolean {
   const base = BASE_VOCATION[character.vocationId] ?? character.vocationId;
-  const looks = CLASS_LOOK[base];
-  const legacy = LEGACY_AUTOMATIC_LOOK[base];
+  const canonical = STARTER_VOCATION_APPEARANCE[base];
+  const legacyLooks = LEGACY_AUTOMATIC_LOOK[base];
   const appearance = character.appearance;
-  if (!looks || legacy === undefined || !appearance) return false;
+  if (!canonical || !legacyLooks || !appearance) return false;
 
-  // Only migrate the exact look that the old character creator assigned.
-  // This deliberately leaves store/outfit selections alone.
-  if (appearance.outfit !== legacy) return false;
+  // Only migrate starter looks that still carry the old automatic colors.
+  // Purchased/customized appearances are deliberately left untouched.
+  if (!legacyLooks.includes(appearance.outfit) || !hasLegacyAutomaticColors(character)) return false;
 
   const gender = character.gender === 'f' ? 'f' : 'm';
-  const canonical = looks[gender];
-  if (appearance.outfit === canonical) return false;
+  const targetOutfit = gender === 'f' ? canonical.female : canonical.male;
+  const next = {
+    outfit: targetOutfit,
+    ...canonical.colors,
+  };
 
-  appearance.outfit = canonical;
+  const changed = appearance.outfit !== next.outfit
+    || appearance.head !== next.head
+    || appearance.body !== next.body
+    || appearance.legs !== next.legs
+    || appearance.feet !== next.feet;
+  if (!changed) return false;
+
+  appearance.outfit = next.outfit;
+  appearance.head = next.head;
+  appearance.body = next.body;
+  appearance.legs = next.legs;
+  appearance.feet = next.feet;
   character.unlockedOutfits ??= [];
-  if (!character.unlockedOutfits.includes(canonical)) {
-    character.unlockedOutfits.push(canonical);
+  if (!character.unlockedOutfits.includes(targetOutfit)) {
+    character.unlockedOutfits.push(targetOutfit);
   }
   return true;
 }
