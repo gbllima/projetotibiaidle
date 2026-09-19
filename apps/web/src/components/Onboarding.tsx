@@ -6,8 +6,10 @@ import './Onboarding.css';
 
 type Rect = { left: number; top: number; width: number; height: number };
 type Target = { rect: Rect; selector: string };
-const TOTAL = 14;
-const SAVED_BASE = 20;
+const TOTAL = 17;
+// Bump the saved-step base whenever the tutorial sequence changes so players
+// who stopped midway through an older version restart with the correct steps.
+const SAVED_BASE = 40;
 
 export function Onboarding({ character, guest = false, replay = false, helperOpen, huntsOpen, huntMode, trainingActive, gameBusy,
   onSave, onClose, onCloseHelper, onOpenHelper, onOpenHunts, onOpenTraining, onLeaveTraining,
@@ -38,7 +40,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     // Windows are closed after login: resume at the action that opens them.
     if (saved === 2 && !helperOpen) return 1;
     if (saved === 4 && (!huntsOpen || huntMode !== 'hunts') && !active && !queued) return 3;
-    if ((saved === 9 || saved === 10 || saved === 11) && !trainingActive) return 8;
+    if ((saved === 12 || saved === 13 || saved === 14) && !trainingActive) return 11;
     return saved;
   });
   const [busy, setBusy] = useState(false);
@@ -85,11 +87,11 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     else if (step === 3 && active) void advance(5);
     else if (step === 3 && huntsOpen && huntMode === 'hunts') void advance(4);
     else if (step === 4 && active) void advance(5);
-    else if (step === 7 && !active && !queued) void advance(8);
-    else if (step === 8 && huntsOpen) void advance(huntMode === 'training' ? 10 : 9);
-    else if (step === 9 && huntsOpen && huntMode === 'training') void advance(10);
-    else if (step === 10 && trainingActive) void advance(11);
-    else if (step === 12 && !trainingActive) void advance(13);
+    else if (step === 10 && !active && !queued) void advance(11);
+    else if (step === 11 && huntsOpen) void advance(huntMode === 'training' ? 13 : 12);
+    else if (step === 12 && huntsOpen && huntMode === 'training') void advance(13);
+    else if (step === 13 && trainingActive) void advance(14);
+    else if (step === 15 && !trainingActive) void advance(16);
   }, [step, helperOpen, huntsOpen, huntMode, trainingActive, active, queued, busy, gameBusy, failedStep, closed]);
 
   let selectors: string[] = [];
@@ -100,12 +102,15 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
   if (step === 4 && queued) selectors = ['.queue-card'];
   if (step === 5) selectors = ['.action-bar__panel', '.action-bar'];
   if (step === 6) selectors = ['[data-tutorial="vitals"]', '.topnav'];
-  if (step === 7) selectors = ['[data-tutorial="city"]'];
-  if (step === 8) selectors = ['[data-tutorial="hunts"]'];
-  if (step === 9) selectors = ['[data-tutorial="training-tab"]', '[data-tab="training"]'];
-  if (step === 10) selectors = ['[data-tutorial="training-option"]:not(:disabled)', '.training-browser'];
-  if (step === 11) selectors = ['.training-hud-card', '.training-viewport'];
-  if (step === 12) selectors = ['[data-tutorial="training-exit"]'];
+  if (step === 7) selectors = ['#backpack-panel'];
+  if (step === 8) selectors = ['#loot-pouch'];
+  if (step === 9) selectors = ['#supply-pouch'];
+  if (step === 10) selectors = ['[data-tutorial="city"]'];
+  if (step === 11) selectors = ['[data-tutorial="hunts"]'];
+  if (step === 12) selectors = ['[data-tutorial="training-tab"]', '[data-tab="training"]'];
+  if (step === 13) selectors = ['[data-tutorial="training-option"]:not(:disabled)', '.training-browser'];
+  if (step === 14) selectors = ['.training-hud-card', '.training-viewport'];
+  if (step === 15) selectors = ['[data-tutorial="training-exit"]'];
   const selectorKey = selectors.join('|');
 
   useEffect(() => {
@@ -156,7 +161,10 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
       'Acesse o ícone Hunts',
       queued ? 'Você entrou na fila' : 'Escolha o inimigo e a caçada',
       'Conheça sua barra de magias',
-      'Entenda o combate',
+      'HP, MP, XP e ST: o que significam',
+      'Backpack: seu inventário',
+      'Loot Pouch: o que você coleta',
+      'Supply Pouch: seus consumíveis',
       'Volte para a cidade',
       'Abra Hunts novamente',
       'Abra a aba Treino online',
@@ -172,7 +180,10 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
       'Open the Hunts icon',
       queued ? 'You joined the queue' : 'Choose the enemy and hunt',
       'Meet your spell bar',
-      'Understand combat',
+      'HP, MP, XP and ST: what they mean',
+      'Backpack: your inventory',
+      'Loot Pouch: what you collect',
+      'Supply Pouch: your consumables',
       'Return to the city',
       'Open Hunts again',
       'Open Online Training',
@@ -183,7 +194,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     ];
 
   const descriptions = pt ? [
-    'Você vai aprender na prática: configurar o Helper, abrir Hunts, escolher qual inimigo caçar, entender a barra de magias e depois conhecer o Treino online.',
+    'Você vai aprender na prática: configurar o Helper, abrir Hunts, escolher inimigos, entender a barra de magias, conhecer seus status e organizar Backpack, Loot Pouch e Supply Pouch antes de conhecer o Treino online.',
     target?.selector.includes('mobile-menu')
       ? 'No celular, toque em Menu e depois em Helper. É nele que você configura poções, cura e magias automáticas.'
       : 'Clique no Helper destacado. É nele que você configura poções, cura e magias automáticas do personagem.',
@@ -197,7 +208,10 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
           ? 'Não apareceu uma opção disponível nessa lista. Troque a região ou os filtros e confira ouro e suprimentos.'
           : 'Cada opção mostra os inimigos daquela caçada, nível recomendado, XP/h e custo de suprimentos. Escolha qual inimigo quer enfrentar e clique em uma caçada liberada para entrar.',
     'Esta é a barra de magias na parte inferior. Ela mostra seus ataques, magias e atalhos principais. Durante a hunt, essas habilidades são usadas conforme a configuração do personagem e do Helper.',
-    'Agora observe o combate: HP é vida, MP é mana e XP é experiência. Loot são os itens deixados pelos inimigos. A hunt continua funcionando mesmo se você fechar a aba.',
+    'Essas quatro barras mostram o estado do personagem. HP (Health Points) é sua vida: se chegar a 0, o personagem morre. MP (Mana Points) é a mana usada para magias, ataques e curas. XP (Experience) é a experiência: ao completar a barra você sobe de nível e libera novas hunts e sistemas. ST (Stamina) é sua energia de caça: ela diminui durante as hunts e precisa ser recuperada; com ST zerada, o Loot Pouch deixa de receber loot.',
+    'A Backpack é o inventário principal do personagem. Aqui ficam itens que você quer guardar, usar ou equipar. Você também pode mover itens da Backpack para a Supply Pouch ou para o Depot. O espaço disponível depende da capacidade da mochila equipada.',
+    'O Loot Pouch recebe os itens derrubados pelos monstros durante a hunt. É a bolsa de loot da caçada. Você pode vender o conteúdo, proteger itens para não serem vendidos, impedir a coleta de certos drops e configurar para onde cada tipo de item deve ir.',
+    'A Supply Pouch guarda os suprimentos usados para manter o personagem lutando, como poções de vida, poções de mana e flechas. Os itens configurados nela ficam disponíveis para consumo durante a hunt. Manter suprimentos suficientes é importante para a sobrevivência e para hunts mais longas.',
     'Clique em Cidade para encerrar a hunt e voltar ao mapa da cidade.',
     'Agora abra Hunts novamente. Além das caçadas, esse menu também dá acesso ao Treino online.',
     'Clique na aba Treino online destacada. Ali ficam as salas com dummies para aumentar suas skills.',
@@ -205,10 +219,10 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     'No Treino online seu personagem bate nos dummies para evoluir a skill. Se houver cargas de exercise, elas também são utilizadas durante o treino.',
     'Clique em Sair para voltar à cidade. Você pode acessar o Treino online novamente pelo menu Hunts ou pelo botão Treino no celular.',
     guest
-      ? 'Agora você sabe usar o Helper, escolher inimigos e hunts, entender a barra de magias, voltar para a cidade e usar o Treino online. Reivindique sua conta de visitante para não perder o personagem.'
-      : 'Agora você sabe usar o Helper, escolher inimigos e hunts, entender a barra de magias, voltar para a cidade e usar o Treino online. Você pode rever este tutorial nas Configurações.',
+      ? 'Agora você já entende Helper, hunts, barra de magias, HP/MP/XP/ST, Backpack, Loot Pouch, Supply Pouch, cidade e Treino online. Reivindique sua conta de visitante para não perder o personagem.'
+      : 'Agora você já entende Helper, hunts, barra de magias, HP/MP/XP/ST, Backpack, Loot Pouch, Supply Pouch, cidade e Treino online. Você pode rever este tutorial nas Configurações.',
   ] : [
-    'You will learn by doing: configure Helper, open Hunts, choose which enemy to hunt, understand the spell bar and then use Online Training.',
+    'You will learn by doing: configure Helper, open Hunts, choose enemies, understand the spell bar, learn your status bars and organize Backpack, Loot Pouch and Supply Pouch before trying Online Training.',
     target?.selector.includes('mobile-menu')
       ? 'On mobile, tap Menu and then Helper. This is where automatic potions, healing and spells are configured.'
       : 'Click the highlighted Helper. This is where automatic potions, healing and spells are configured.',
@@ -222,7 +236,10 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
           ? 'No available option is visible. Change region or filters and check gold and supplies.'
           : 'Each option shows the enemies in that hunt, recommended level, XP/h and supply cost. Choose the enemy you want to fight and click an unlocked hunt to enter.',
     'This is the spell bar at the bottom. It shows your attacks, spells and main shortcuts. During a hunt, these abilities are used according to your character and Helper configuration.',
-    'Watch combat now: HP is health, MP is mana and XP is experience. Loot is dropped by enemies. The hunt keeps running even if you close the browser tab.',
+    'These four bars show your character status. HP (Health Points) is your life: if it reaches 0, the character dies. MP (Mana Points) is mana spent on spells, attacks and healing. XP (Experience) fills as you earn experience; completing it raises your level and unlocks new hunts and systems. ST (Stamina) is hunting energy: it decreases during hunts and must recover; at zero ST, the Loot Pouch stops receiving loot.',
+    'The Backpack is your main inventory. It holds items you want to keep, use or equip. You can also move items from it to the Supply Pouch or Depot. Available space depends on the equipped backpack capacity.',
+    'The Loot Pouch receives items dropped by monsters during a hunt. You can sell its contents, protect items from selling, ignore unwanted drops and configure where each kind of item should go.',
+    'The Supply Pouch stores supplies used to keep fighting, such as health potions, mana potions and arrows. Configured items are available for consumption during hunts. Keeping enough supplies is important for survival and longer hunts.',
     'Click City to stop the hunt and return to the city map.',
     'Open Hunts again. Besides hunting locations, this menu also gives access to Online Training.',
     'Click the highlighted Online Training tab. It contains rooms with dummies used to improve your skills.',
@@ -230,10 +247,9 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     'In Online Training your character attacks dummies to improve the skill. Exercise charges are also used when available.',
     'Click Leave to return to the city. You can access Online Training again from Hunts or the Training button on mobile.',
     guest
-      ? 'You now know Helper, hunts, the spell bar, returning to the city and Online Training. Claim your guest account so you do not lose the character.'
-      : 'You now know Helper, hunts, the spell bar, returning to the city and Online Training. You can replay this tutorial in Settings.',
+      ? 'You now understand Helper, hunts, the spell bar, HP/MP/XP/ST, Backpack, Loot Pouch, Supply Pouch, city and Online Training. Claim your guest account so you do not lose the character.'
+      : 'You now understand Helper, hunts, the spell bar, HP/MP/XP/ST, Backpack, Loot Pouch, Supply Pouch, city and Online Training. You can replay this tutorial in Settings.',
   ];
-
   const mobile = viewport.width < 600;
   const right = Math.max(12, viewport.width - panelSize.width - 16);
   const bottom = Math.max(12, viewport.height - panelSize.height - (mobile ? 82 : 16));
@@ -244,7 +260,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
     return Math.max(0, Math.min(pos.left + panelSize.width + 12, r.left + r.width) - Math.max(pos.left - 12, r.left))
       * Math.max(0, Math.min(pos.top + panelSize.height + 12, r.top + r.height) - Math.max(pos.top - 12, r.top));
   }
-  const position = step === 0 || step === 13
+  const position = step === 0 || step === 16
     ? { left: Math.max(12, (viewport.width - panelSize.width) / 2), top: Math.max(12, (viewport.height - panelSize.height) / 2) }
     : [...positions].sort((a, b) => overlap(a) - overlap(b))[0]!;
 
@@ -264,14 +280,17 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
           : step === 0 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(1)}>{pt ? 'Começar na prática →' : 'Start playing →'}</button>
           : step === 2 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(3)}>{pt ? 'Cura conferida →' : 'Healing checked →'}</button>
           : step === 5 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(6)}>{pt ? 'Entendi a barra →' : 'I understand the bar →'}</button>
-          : step === 6 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(7)}>{pt ? 'Entendi. Como volto?' : 'Got it. How do I return?'}</button>
-          : step === 11 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(12)}>{pt ? 'Entendi. Como saio?' : 'Got it. How do I leave?'}</button>
-          : step === 13 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(99)}>{pt ? 'Concluir tutorial' : 'Finish tutorial'}</button>
+          : step === 6 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(7)}>{pt ? 'Entendi os status →' : 'I understand the status bars →'}</button>
+          : step === 7 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(8)}>{pt ? 'Entendi a Backpack →' : 'I understand the Backpack →'}</button>
+          : step === 8 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(9)}>{pt ? 'Entendi o Loot Pouch →' : 'I understand the Loot Pouch →'}</button>
+          : step === 9 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(10)}>{pt ? 'Entendi a Supply Pouch →' : 'I understand the Supply Pouch →'}</button>
+          : step === 14 ? <button className="guided-tutorial__primary" disabled={busy || gameBusy} onClick={() => void advance(15)}>{pt ? 'Entendi. Como saio?' : 'Got it. How do I leave?'}</button>
+          : step === 16 ? <button className="guided-tutorial__primary" disabled={busy} onClick={() => void advance(99)}>{pt ? 'Concluir tutorial' : 'Finish tutorial'}</button>
           : <span className="guided-tutorial__waiting">{busy ? (pt ? 'Salvando…' : 'Saving…') : (pt ? 'Faça a ação destacada para continuar.' : 'Perform the highlighted action to continue.')}</span>}
         {!target && !busy && step === 1 && <button onClick={onOpenHelper}>{pt ? 'Abrir Helper' : 'Open Helper'}</button>}
-        {!target && !busy && (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued) || step === 8) && <button onClick={onOpenHunts}>{pt ? 'Abrir Hunts' : 'Open Hunts'}</button>}
-        {!target && !busy && (step === 9 || (step === 10 && !trainingActive)) && <button onClick={onOpenTraining}>{pt ? 'Abrir Treino online' : 'Open Online Training'}</button>}
-        {!target && !busy && step === 12 && trainingActive && <button onClick={onLeaveTraining}>{pt ? 'Sair do treino' : 'Leave training'}</button>}
+        {!target && !busy && (step === 3 || (step === 4 && (!huntsOpen || huntMode !== 'hunts') && !queued) || step === 11) && <button onClick={onOpenHunts}>{pt ? 'Abrir Hunts' : 'Open Hunts'}</button>}
+        {!target && !busy && (step === 12 || (step === 13 && !trainingActive)) && <button onClick={onOpenTraining}>{pt ? 'Abrir Treino online' : 'Open Online Training'}</button>}
+        {!target && !busy && step === 15 && trainingActive && <button onClick={onLeaveTraining}>{pt ? 'Sair do treino' : 'Leave training'}</button>}
       </footer>
     </section>
   </>, document.body);
