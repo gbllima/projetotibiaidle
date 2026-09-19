@@ -71,11 +71,38 @@ function sellerName(row: MarketRow): string { return String(row['seller_name'] ?
 
 function marketCategory(item: Record<string, unknown> | undefined): string {
   if (!item) return 'Loot';
-  if (item['slot'] || item['weaponType']) return 'Equipamentos';
   const type = String(item['type'] ?? '').toLowerCase();
+  const slot = String(item['slot'] ?? '').toLowerCase();
+  const weaponType = String(item['weaponType'] ?? '').toLowerCase();
   const name = String(item['name'] ?? '').toLowerCase();
-  if (/potion|rune|food|fluid|consum/.test(`${type} ${name}`)) return 'Consumíveis';
+  const text = `${type} ${slot} ${weaponType} ${name}`;
+
+  if (/sword|axe|club|wand|rod|bow|crossbow|fist|weapon/.test(weaponType) || /sword|axe|club|wand|rod|bow|crossbow/.test(name)) return 'Armas';
+  if (/shield/.test(text)) return 'Escudos';
+  if (/head|helmet|hat/.test(text)) return 'Capacetes';
+  if (/armor|body|chest/.test(text)) return 'Armaduras';
+  if (/legs|legging/.test(text)) return 'Calças';
+  if (/feet|boot|shoe/.test(text)) return 'Botas';
+  if (/ring/.test(text)) return 'Anéis';
+  if (/neck|amulet|necklace/.test(text)) return 'Amuletos';
+  if (/ammo|arrow|bolt|quiver/.test(text)) return 'Munição';
+  if (/backpack|bag|container/.test(text)) return 'Containers';
+  if (/potion|rune|food|fluid|consum/.test(text)) return 'Consumíveis';
+  if (item['slot'] || item['weaponType']) return 'Equipamentos';
   return 'Loot';
+}
+
+function marketVocations(item: Record<string, unknown> | undefined): string[] {
+  const raw = Array.isArray(item?.['vocations']) ? item?.['vocations'] as unknown[] : [];
+  if (!raw.length) return [];
+  const text = raw.map((value) => String(value).toLowerCase()).join(' ');
+  const result: string[] = [];
+  if (/knight/.test(text)) result.push('Knight');
+  if (/paladin/.test(text)) result.push('Paladin');
+  if (/sorcerer/.test(text)) result.push('Sorcerer');
+  if (/druid/.test(text)) result.push('Druid');
+  if (/monk/.test(text)) result.push('Monk');
+  return result;
 }
 
 function readHistory(db: Database): TradeHistory[] {
@@ -169,6 +196,7 @@ function snapshot(db: Database, loaded: LoadedCharacter, now = Date.now()) {
     itemId: number;
     name: string;
     category: string;
+    vocations: string[];
     available: number;
     offers: number;
     lowestPrice: number;
@@ -189,6 +217,7 @@ function snapshot(db: Database, loaded: LoadedCharacter, now = Date.now()) {
         itemId: id,
         name,
         category: marketCategory(item),
+        vocations: marketVocations(item),
         available: listingCount(row),
         offers: 1,
         lowestPrice: unit,
@@ -226,6 +255,7 @@ function snapshot(db: Database, loaded: LoadedCharacter, now = Date.now()) {
       name: String(item?.['name'] ?? `Item ${stack.itemId}`),
       count: stack.count,
       category: marketCategory(item),
+      vocations: marketVocations(item),
       npcPrice: Number(item?.['sellPrice'] ?? 0),
     };
   }).sort((a, b) => a.name.localeCompare(b.name));
