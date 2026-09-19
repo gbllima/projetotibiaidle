@@ -303,7 +303,7 @@ function LandingOutfitSprite() {
     };
   }, []);
 
-  return src ? <img src={src} alt="" /> : <span className="landing-why-icon-fallback">♟</span>;
+  return src ? <img className="landing-outfit-sprite" src={src} alt="" /> : <span className="landing-why-icon-fallback">♟</span>;
 }
 
 function LandingItemSprite({ itemId }: { itemId: number }) {
