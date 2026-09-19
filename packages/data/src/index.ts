@@ -135,6 +135,23 @@ export const mountsByServerId: ReadonlyMap<number, MountCatalogEntry> = new Map(
 /** The five vocations a player can start as, in the order the UI shows them. */
 export const PLAYABLE_VOCATION_IDS = [4, 9, 3, 1, 2] as const;
 
+/**
+ * Canonical visual shown in character creation and assigned to the character
+ * when it is created. Keeping this in data prevents the preview and in-game
+ * appearance from drifting apart.
+ */
+export const STARTER_VOCATION_APPEARANCE: Readonly<Record<number, {
+  male: number;
+  female: number;
+  colors: Readonly<{ head: number; body: number; legs: number; feet: number }>;
+}>> = {
+  4: { male: 131, female: 139, colors: { head: 114, body: 120, legs: 114, feet: 115 } }, // Knight
+  9: { male: 1824, female: 1825, colors: { head: 95, body: 113, legs: 39, feet: 115 } }, // Monk
+  3: { male: 129, female: 137, colors: { head: 95, body: 113, legs: 39, feet: 115 } }, // Paladin/Hunter
+  1: { male: 130, female: 138, colors: { head: 0, body: 86, legs: 87, feet: 95 } }, // Sorcerer/Mage
+  2: { male: 144, female: 148, colors: { head: 39, body: 57, legs: 76, feet: 95 } }, // Druid
+};
+
 export function getMonster(id: string): Monster {
   const monster = monstersById.get(id);
   if (!monster) throw new Error(`unknown monster: ${id}`);
