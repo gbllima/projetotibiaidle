@@ -5,6 +5,7 @@ type MarketItem = {
   itemId: number;
   name: string;
   category: string;
+  vocations: string[];
   available: number;
   offers: number;
   lowestPrice: number;
@@ -35,6 +36,7 @@ type InventoryItem = {
   name: string;
   count: number;
   category: string;
+  vocations: string[];
   npcPrice: number;
 };
 type HistoryEntry = {
@@ -67,6 +69,7 @@ type UiState = {
   tab: MarketTab;
   query: string;
   category: string;
+  vocation: string;
   selectedItemId: number | null;
   selectedSellId: number | null;
   buyCount: number;
@@ -138,11 +141,46 @@ async function currentCharacterId(): Promise<number> {
   throw new Error('Não consegui identificar o personagem atual.');
 }
 
+const MARKET_CATEGORY_ORDER = ['Todos', 'Armas', 'Escudos', 'Capacetes', 'Armaduras', 'Calças', 'Botas', 'Anéis', 'Amuletos', 'Munição', 'Containers', 'Consumíveis', 'Equipamentos', 'Loot'];
+const MARKET_VOCATIONS = ['Todas', 'Knight', 'Paladin', 'Sorcerer', 'Druid', 'Monk'];
+
 function categoryButtons(state: UiState): string {
-  const categories = ['Todos', ...new Set((state.snapshot?.items ?? []).map((item) => item.category))];
+  const discovered = new Set([
+    ...(state.snapshot?.items ?? []).map((item) => item.category),
+    ...(state.snapshot?.inventory ?? []).map((item) => item.category),
+  ]);
+  const categories = MARKET_CATEGORY_ORDER.filter((category) => category === 'Todos' || discovered.has(category));
   return categories.map((category) => `
     <button type="button" class="${state.category === category ? 'on' : ''}" data-market-category="${esc(category)}">${esc(category)}</button>
   `).join('');
+}
+
+function vocationButtons(state: UiState): string {
+  return MARKET_VOCATIONS.map((vocation) => `
+    <button type="button" class="${state.vocation === vocation ? 'on' : ''}" data-market-vocation="${esc(vocation)}">${esc(vocation)}</button>
+  `).join('');
+}
+
+function matchesVocation(item: { vocations?: string[] }, vocation: string): boolean {
+  if (vocation === 'Todas') return true;
+  const allowed = item.vocations ?? [];
+  return allowed.length === 0 || allowed.includes(vocation);
+}
+
+function filterToolbar(state: UiState, placeholder: string): string {
+  return `
+    <div class="market-v2-toolbar">
+      <input class="market-v2-search" data-market-search placeholder="${esc(placeholder)}" value="${esc(state.query)}">
+      <div class="market-v2-filter-line">
+        <span class="market-v2-filter-label">Categoria</span>
+        <div class="market-v2-cats">${categoryButtons(state)}</div>
+      </div>
+      <div class="market-v2-filter-line">
+        <span class="market-v2-filter-label">Vocação</span>
+        <div class="market-v2-cats market-v2-vocations">${vocationButtons(state)}</div>
+      </div>
+    </div>
+  `;
 }
 
 function averageFor(snapshot: MarketSnapshot, itemId: number): number {
@@ -169,6 +207,7 @@ function renderBuy(state: UiState, snapshot: MarketSnapshot): string {
   const needle = state.query.trim().toLocaleLowerCase('pt-BR');
   const rows = snapshot.items.filter((item) => {
     if (state.category !== 'Todos' && item.category !== state.category) return false;
+    if (!matchesVocation(item, state.vocation)) return false;
     return !needle || item.name.toLocaleLowerCase('pt-BR').includes(needle) || String(item.itemId) === needle;
   });
   if (state.selectedItemId === null && rows.length) state.selectedItemId = rows[0]!.itemId;
@@ -182,10 +221,7 @@ function renderBuy(state: UiState, snapshot: MarketSnapshot): string {
   const avg = selected ? averageFor(snapshot, selected.itemId) : 0;
 
   return `
-    <div class="market-v2-toolbar">
-      <input class="market-v2-search" data-market-search placeholder="Buscar item pelo nome ou ID..." value="${esc(state.query)}">
-      <div class="market-v2-cats">${categoryButtons(state)}</div>
-    </div>
+    ${filterToolbar(state, 'Buscar item pelo nome ou ID...')}
     <div class="market-v2-grid">
       <section class="market-v2-panel">
         <div class="market-v2-panel-head"><span>Item</span><span class="market-v2-num">Disp.</span><span class="market-v2-num">Menor preço</span></div>
@@ -229,7 +265,11 @@ function renderBuy(state: UiState, snapshot: MarketSnapshot): string {
 
 function renderSell(state: UiState, snapshot: MarketSnapshot): string {
   const needle = state.query.trim().toLocaleLowerCase('pt-BR');
-  const inventory = snapshot.inventory.filter((item) => !needle || item.name.toLocaleLowerCase('pt-BR').includes(needle) || String(item.itemId) === needle);
+  const inventory = snapshot.inventory.filter((item) => {
+    if (state.category !== 'Todos' && item.category !== state.category) return false;
+    if (!matchesVocation(item, state.vocation)) return false;
+    return !needle || item.name.toLocaleLowerCase('pt-BR').includes(needle) || String(item.itemId) === needle;
+  });
   if (state.selectedSellId === null && inventory.length) state.selectedSellId = inventory[0]!.itemId;
   const selected = snapshot.inventory.find((item) => item.itemId === state.selectedSellId) ?? null;
   const market = selected ? snapshot.items.find((item) => item.itemId === selected.itemId) : null;
@@ -241,9 +281,7 @@ function renderSell(state: UiState, snapshot: MarketSnapshot): string {
   const net = Math.floor(total * (1 - snapshot.rules.feePercent / 100));
 
   return `
-    <div class="market-v2-toolbar">
-      <input class="market-v2-search" data-market-search placeholder="Buscar no seu Depot..." value="${esc(state.query)}">
-    </div>
+    ${filterToolbar(state, 'Buscar no seu Depot...')}
     <div class="market-v2-grid">
       <section class="market-v2-panel market-v2-inventory">
         <div class="market-v2-panel-head"><span>Depot</span><span class="market-v2-num">Qtd.</span><span class="market-v2-num">Mercado</span></div>
@@ -404,6 +442,7 @@ function bind(host: HTMLElement): void {
     state.tab = button.dataset['marketTab'] as MarketTab;
     state.query = '';
     state.category = 'Todos';
+    state.vocation = 'Todas';
     state.message = '';
     render(host);
   }));
@@ -417,6 +456,12 @@ function bind(host: HTMLElement): void {
   host.querySelectorAll<HTMLButtonElement>('[data-market-category]').forEach((button) => button.addEventListener('click', () => {
     state.category = button.dataset['marketCategory'] ?? 'Todos';
     state.selectedItemId = null;
+    render(host);
+  }));
+  host.querySelectorAll<HTMLButtonElement>('[data-market-vocation]').forEach((button) => button.addEventListener('click', () => {
+    state.vocation = button.dataset['marketVocation'] ?? 'Todas';
+    state.selectedItemId = null;
+    state.selectedSellId = null;
     render(host);
   }));
   host.querySelectorAll<HTMLButtonElement>('[data-market-item]').forEach((button) => button.addEventListener('click', () => {
@@ -475,6 +520,7 @@ async function install(card: HTMLElement): Promise<void> {
       tab: 'buy',
       query: '',
       category: 'Todos',
+      vocation: 'Todas',
       selectedItemId: null,
       selectedSellId: null,
       buyCount: 1,
