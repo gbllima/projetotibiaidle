@@ -110,6 +110,7 @@ export function GameScreen({
   const [claimUser, setClaimUser] = useState('');
   const [claimEmail, setClaimEmail] = useState('');
   const [claimPass, setClaimPass] = useState('');
+  const [claimBannerMode, setClaimBannerMode] = useState<'open' | 'minimized' | 'closed'>('open');
   const lastWave = useRef<number | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -366,6 +367,82 @@ export function GameScreen({
     setOverlay('helper');
   }
 
+  function closeClaimBanner() {
+    const confirmed = window.confirm(
+      'A criação de conta é necessária para salvar seu progresso no servidor. '
+      + 'Se você fechar esta janela e continuar como visitante, poderá perder o personagem. '
+      + 'Deseja fechar mesmo assim?',
+    );
+    if (confirmed) setClaimBannerMode('closed');
+  }
+
+  function renderClaimBanner() {
+    if (claimBannerMode === 'closed') {
+      return (
+        <button
+          type="button"
+          className="claim-banner-reopen"
+          onClick={() => setClaimBannerMode('open')}
+          title="Crie sua conta para salvar o progresso"
+        >
+          💾 Salvar progresso
+        </button>
+      );
+    }
+
+    return (
+      <form
+        className={`onboard claim-banner ${claimBannerMode === 'minimized' ? 'is-minimized' : ''}`}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void act(async () => {
+            const result = await api.claim(claimUser.trim(), claimPass, claimEmail.trim());
+            storeToken(result.token);
+            onClaimed?.();
+            pushLog(t('claimOk'));
+          });
+        }}
+      >
+        <div className="claim-banner__head">
+          <div>
+            <strong>Salve seu personagem</strong>
+            <small>Crie sua conta para manter o progresso no servidor.</small>
+          </div>
+          <div className="claim-banner__controls">
+            <button
+              type="button"
+              className="claim-banner__control"
+              aria-label={claimBannerMode === 'minimized' ? 'Expandir' : 'Minimizar'}
+              title={claimBannerMode === 'minimized' ? 'Expandir' : 'Minimizar'}
+              onClick={() => setClaimBannerMode((current) => current === 'minimized' ? 'open' : 'minimized')}
+            >
+              {claimBannerMode === 'minimized' ? '▢' : '−'}
+            </button>
+            <button
+              type="button"
+              className="claim-banner__control claim-banner__close"
+              aria-label="Fechar"
+              title="Fechar"
+              onClick={closeClaimBanner}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {claimBannerMode !== 'minimized' && (
+          <div className="claim-banner__body">
+            <p>{t('claimLede')}</p>
+            <input value={claimUser} onChange={(event) => setClaimUser(event.target.value)} placeholder={t('account')} autoComplete="username" />
+            <input type="email" value={claimEmail} onChange={(event) => setClaimEmail(event.target.value)} placeholder="Email" autoComplete="email" />
+            <input type="password" value={claimPass} onChange={(event) => setClaimPass(event.target.value)} placeholder={t('password')} autoComplete="new-password" />
+            <button className="btn gold" disabled={busy} type="submit">{t('claim')}</button>
+          </div>
+        )}
+      </form>
+    );
+  }
+
   return (
     <div className="shell">
       {(((server.onboardingStep ?? 0) < 99 && dismissedTutorial !== server.id) || replayTutorial) && (
@@ -512,23 +589,7 @@ export function GameScreen({
                 }}
               />
               {banner && <div className="banner">{banner}</div>}
-              {guest && (character.onboardingStep ?? 0) >= 99 && (
-                <form className="onboard claim-banner" onSubmit={(event) => {
-                  event.preventDefault();
-                  void act(async () => {
-                    const result = await api.claim(claimUser.trim(), claimPass, claimEmail.trim());
-                    storeToken(result.token);
-                    onClaimed?.();
-                    pushLog(t('claimOk'));
-                  });
-                }}>
-                  <p>{t('claimLede')}</p>
-                  <input value={claimUser} onChange={(event) => setClaimUser(event.target.value)} placeholder={t('account')} autoComplete="username" />
-                  <input type="email" value={claimEmail} onChange={(event) => setClaimEmail(event.target.value)} placeholder="Email" autoComplete="email" />
-                  <input type="password" value={claimPass} onChange={(event) => setClaimPass(event.target.value)} placeholder={t('password')} autoComplete="new-password" />
-                  <button className="btn gold" disabled={busy} type="submit">{t('claim')}</button>
-                </form>
-              )}
+              {guest && (character.onboardingStep ?? 0) >= 99 && renderClaimBanner()}
             </div>
           ) : (
             <div className="viewport">
@@ -658,23 +719,7 @@ export function GameScreen({
                   onTraining={() => { setHuntError(''); setHuntModalTab('training'); setPickingHunt(true); }}
                 />
               )}
-              {guest && !trainingRoomId && (character.onboardingStep ?? 0) >= 99 && (
-                <form className="onboard claim-banner" onSubmit={(event) => {
-                  event.preventDefault();
-                  void act(async () => {
-                    const result = await api.claim(claimUser.trim(), claimPass, claimEmail.trim());
-                    storeToken(result.token);
-                    onClaimed?.();
-                    pushLog(t('claimOk'));
-                  });
-                }}>
-                  <p>{t('claimLede')}</p>
-                  <input value={claimUser} onChange={(event) => setClaimUser(event.target.value)} placeholder={t('account')} autoComplete="username" />
-                  <input type="email" value={claimEmail} onChange={(event) => setClaimEmail(event.target.value)} placeholder="Email" autoComplete="email" />
-                  <input type="password" value={claimPass} onChange={(event) => setClaimPass(event.target.value)} placeholder={t('password')} autoComplete="new-password" />
-                  <button className="btn gold" disabled={busy} type="submit">{t('claim')}</button>
-                </form>
-              )}
+              {guest && !trainingRoomId && (character.onboardingStep ?? 0) >= 99 && renderClaimBanner()}
             </div>
           )}
 
