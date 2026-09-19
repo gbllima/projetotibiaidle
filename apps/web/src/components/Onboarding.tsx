@@ -52,6 +52,7 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
   const [panelSize, setPanelSize] = useState({ width: 360, height: 220 });
   const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
   const panel = useRef<HTMLElement>(null);
+  const mobileScrollSettleUntil = useRef(0);
   const seenHelper = useRef(helperOpen);
   if (helperOpen) seenHelper.current = true;
 
@@ -137,20 +138,33 @@ export function Onboarding({ character, guest = false, replay = false, helperOpe
           || matched === '#backpack-panel'
           || matched === '#loot-pouch'
           || matched === '#supply-pouch';
-        element.scrollIntoView({ block: guidedDockTarget ? 'center' : 'nearest', inline: 'nearest', behavior: 'instant' });
+
+        if (mobile) {
+          // On phones, bring every tutorial target into view automatically.
+          // Hide the pulse while the smooth scroll is moving so the golden
+          // outline only appears after the resource has settled on screen.
+          setTarget(null);
+          mobileScrollSettleUntil.current = Date.now() + 550;
+          element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        } else {
+          element.scrollIntoView({ block: guidedDockTarget ? 'center' : 'nearest', inline: 'nearest', behavior: 'instant' });
+        }
         previous = element;
       }
+
+      setViewport((old) => old.width === window.innerWidth && old.height === window.innerHeight ? old : { width: window.innerWidth, height: window.innerHeight });
+      if (mobile && Date.now() < mobileScrollSettleUntil.current) return;
+
       const bounds = element?.getBoundingClientRect();
       const next = bounds ? { selector: matched, rect: { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height } } : null;
       setTarget((old) => JSON.stringify(old) === JSON.stringify(next) ? old : next);
-      setViewport((old) => old.width === window.innerWidth && old.height === window.innerHeight ? old : { width: window.innerWidth, height: window.innerHeight });
     }
     update();
     const timer = window.setInterval(update, 250);
     window.addEventListener('scroll', update, true);
     window.addEventListener('resize', update);
     return () => { window.clearInterval(timer); window.removeEventListener('scroll', update, true); window.removeEventListener('resize', update); };
-  }, [selectorKey, closed]);
+  }, [selectorKey, closed, mobile]);
 
   useEffect(() => {
     if (!panel.current) return;
