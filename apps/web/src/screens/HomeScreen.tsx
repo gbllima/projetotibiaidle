@@ -59,8 +59,10 @@ export function HomeScreen({ onPlay, onWiki, onAccount }: Props) {
       void Promise.all([
         fetch('/api/public-stats').then((r) => r.ok ? r.json() : Promise.reject()),
         fetch('/api/public-ranking').then((r) => r.ok ? r.json() : Promise.reject()),
-      ]).then(([statsPayload, rankingPayload]: [PublicStats, { ranking?: RankingEntry[] }]) => {
+      ]).then((payloads) => {
         if (!mounted) return;
+        const statsPayload = payloads[0] as PublicStats;
+        const rankingPayload = payloads[1] as { ranking?: RankingEntry[] };
         setStats(statsPayload);
         setRanking(Array.isArray(rankingPayload.ranking) ? rankingPayload.ranking : []);
         setServerStatus('online');
