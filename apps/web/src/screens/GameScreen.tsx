@@ -149,6 +149,7 @@ export function GameScreen({
   const [cityBots, setCityBots] = useState<LobbyPlayer[]>(() => createCityBots());
   const cityBotRouteIndex = useRef(new Map<number, number>());
   const cityBotPauseUntil = useRef(new Map<number, number>());
+  const cityBotNextStepAt = useRef(new Map<number, number>());
   const bossesByHuntId = useMemo(() => new Map(bosses.map((boss) => [boss.huntId, boss])), [bosses]);
   const huntLabel = (huntId: string) => huntsById.get(huntId)?.name ?? bossesByHuntId.get(huntId)?.name ?? huntId;
   const [busy, setBusy] = useState(false);
@@ -223,13 +224,17 @@ export function GameScreen({
         const pausedUntil = cityBotPauseUntil.current.get(bot.id) ?? 0;
         if (pausedUntil > now) return bot;
 
+        const nextStepAt = cityBotNextStepAt.current.get(bot.id) ?? 0;
+        if (nextStepAt > now) return bot;
+
         const routeIndex = cityBotRouteIndex.current.get(bot.id) ?? 1;
         const target = botPoint(template.route[routeIndex % template.route.length]!);
         const position = bot.cityPosition ?? botPoint(template.start);
 
         if (position.x === target.x && position.y === target.y) {
           cityBotRouteIndex.current.set(bot.id, (routeIndex + 1) % template.route.length);
-          cityBotPauseUntil.current.set(bot.id, now + 900 + Math.floor(Math.random() * 2200));
+          cityBotPauseUntil.current.set(bot.id, now + 900 + Math.floor(Math.random() * 2600));
+          cityBotNextStepAt.current.set(bot.id, now + 1200);
           return bot;
         }
 
@@ -240,11 +245,12 @@ export function GameScreen({
           return bot;
         }
 
-        // Advance a single tile at a time. The renderer interpolates between
-        // positions, so patrols look like real characters walking through town.
+        // Each ambient character has a slightly different walking rhythm.
+        // This avoids the group moving in lockstep and makes the city feel organic.
+        cityBotNextStepAt.current.set(bot.id, now + 360 + Math.floor(Math.random() * 310));
         return { ...bot, cityPosition: path[0] };
       }));
-    }, 520);
+    }, 160);
 
     return () => window.clearInterval(timer);
   }, [Boolean(character.session), trainingRoomId]);
