@@ -141,6 +141,34 @@ export async function createApp(options: AppOptions): Promise<{ app: FastifyInst
     };
   });
 
+  // Public level ranking for the landing page. Only the character name, level,
+  // vocation and online state are exposed; account/private state stays server-side.
+  app.get('/api/public-ranking', async () => {
+    const online = new Set(onlineCharacterIds());
+    const ranking = db.allCharacters()
+      .map((character) => {
+        let level = 1;
+        try {
+          const state = JSON.parse(character.state) as { level?: unknown };
+          const parsedLevel = Number(state.level ?? 1);
+          if (Number.isFinite(parsedLevel) && parsedLevel > 0) level = Math.floor(parsedLevel);
+        } catch {
+          // Ignore malformed legacy state in the public ranking.
+        }
+        return {
+          id: character.id,
+          name: character.name,
+          level,
+          vocationId: character.vocationId,
+          online: online.has(character.id),
+        };
+      })
+      .sort((a, b) => b.level - a.level || a.name.localeCompare(b.name, 'pt-BR'))
+      .slice(0, 10)
+      .map(({ id: _id, ...entry }, index) => ({ position: index + 1, ...entry }));
+    return { ranking };
+  });
+
   // Public news feed for the Knock Hunt BR landing page. Drafts remain private
   // and are visible only through the authenticated administration endpoint.
   app.get('/api/news', async () => ({
