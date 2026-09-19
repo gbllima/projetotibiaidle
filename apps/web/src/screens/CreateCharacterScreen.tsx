@@ -1,10 +1,10 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { PLAYABLE_VOCATION_IDS, vocationsById } from '@tibia-idle/data';
+import { PLAYABLE_VOCATION_IDS, STARTER_VOCATION_APPEARANCE, vocationsById } from '@tibia-idle/data';
 import { ApiError, api, storeToken } from '../api/client.js';
 import { AuthLogo, AuthShell } from '../components/AuthShell.js';
 import { useLocale } from '../i18n/Locale.js';
 import type { AccountView } from '../api/types.js';
-import { outfitIconUrl, type OutfitColors } from '../render/outfitIcon.js';
+import { outfitIconUrl } from '../render/outfitIcon.js';
 
 const VOCATION_GUIDE: Record<number, { role: string; summary: string; difficulty: string; recommended?: boolean }> = {
   4: {
@@ -43,20 +43,6 @@ const VOC_ACCENT: Record<number, string> = {
   2: '#3dba9a',
 };
 
-type VocationPreviewConfig = {
-  male: number;
-  female: number;
-  colors: OutfitColors;
-};
-
-const VOCATION_PREVIEW: Record<number, VocationPreviewConfig> = {
-  4: { male: 131, female: 139, colors: { head: 114, body: 120, legs: 114, feet: 115 } },
-  9: { male: 1824, female: 1825, colors: { head: 95, body: 113, legs: 39, feet: 115 } },
-  3: { male: 129, female: 137, colors: { head: 95, body: 113, legs: 39, feet: 115 } },
-  1: { male: 130, female: 138, colors: { head: 0, body: 86, legs: 87, feet: 95 } },
-  2: { male: 144, female: 148, colors: { head: 39, body: 57, legs: 76, feet: 95 } },
-};
-
 const WEAPONS = ['Machado', 'Espada', 'Clava'] as const;
 function VocationSprite({
   vocationId,
@@ -69,7 +55,7 @@ function VocationSprite({
 }) {
   const [frames, setFrames] = useState<string[]>([]);
   const [frameIndex, setFrameIndex] = useState(0);
-  const config = VOCATION_PREVIEW[vocationId];
+  const config = STARTER_VOCATION_APPEARANCE[vocationId];
 
   useEffect(() => {
     let live = true;
