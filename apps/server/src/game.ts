@@ -1,6 +1,6 @@
 import { cityPresence } from './city.js';
 import { partyPrincipal } from './party-access.js';
-import { getMonster, getVocation, hunts, itemsById, recommendedLevelFor } from '@tibia-idle/data';
+import { getMonster, getVocation, hunts, itemsById, recommendedLevelFor, STARTER_VOCATION_APPEARANCE } from '@tibia-idle/data';
 import {
   activeBoosts, bestLoadout, bossPoints, bossSlotCap, bossCooldownRemainingMs, bossEncounters, bossHuntId,
   calculateBosstiaryLootBonus, charmPointsEarned, charmPointsLeft,   combatProcs, createCharacter,
@@ -462,6 +462,18 @@ export function createNewCharacter(
 
   const character = createCharacter(name, vocationId);
   character.gender = options.gender === 'f' ? 'f' : 'm';
+  const starterAppearance = STARTER_VOCATION_APPEARANCE[vocationId];
+  if (starterAppearance) {
+    const outfit = character.gender === 'f' ? starterAppearance.female : starterAppearance.male;
+    character.appearance = {
+      outfit,
+      ...starterAppearance.colors,
+      aura: 0,
+      mount: 0,
+      addons: 0,
+    };
+    character.unlockedOutfits = [outfit];
+  }
   character.startWeapon = options.weapon === 'axe' || options.weapon === 'club' ? options.weapon : 'sword';
   if (vocationId === 4) {
     character.skills[character.startWeapon].level = 12;
