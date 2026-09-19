@@ -48,7 +48,7 @@ export function DockBox({
     if (!backpack) return null;
 
     return (
-      <section className={`box ${open ? '' : 'collapsed'}`}>
+      <section id={id} data-tutorial-dock={id} className={`box ${open ? '' : 'collapsed'}`}>
         <WindowHead
           title="Backpack"
           collapsible
@@ -61,7 +61,7 @@ export function DockBox({
   }
 
   return (
-    <section className={`box ${open ? '' : 'collapsed'}`}>
+    <section id={id} data-tutorial-dock={id} className={`box ${open ? '' : 'collapsed'}`}>
       <WindowHead
         title={title}
         extra={extra}
